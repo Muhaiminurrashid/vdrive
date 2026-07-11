@@ -18,8 +18,18 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../release.keystore")
+            storePassword = "vdrive123"
+            keyAlias = "vdrive"
+            keyPassword = "vdrive123"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
