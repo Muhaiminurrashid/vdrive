@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetGoogleIdTokenCredentialOption
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.vdrive.app.data.repository.AuthRepository
@@ -85,7 +85,7 @@ class AuthViewModel @Inject constructor(
                 val credentialManager = CredentialManager.create(activity)
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(
-                        GetGoogleIdTokenCredentialOption.Builder()
+                        GetGoogleIdOption.Builder()
                             .setServerClientId(webClientId)
                             .build()
                     )

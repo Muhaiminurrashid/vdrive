@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vdrive.app.ui.theme.*
 
@@ -38,6 +39,7 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     var isRegister by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val scroll = rememberScrollState()
 
     LaunchedEffect(state.isSuccess) {
