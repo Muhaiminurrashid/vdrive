@@ -18,6 +18,7 @@ export default {
       if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(env)
       if (url.pathname === '/api/download-url' && request.method === 'GET') return await handleDownloadUrl(request, env)
       if (url.pathname === '/api/delete' && request.method === 'DELETE') return await handleDelete(request, env)
+      if (url.pathname === '/api/set-cors' && request.method === 'POST') return await handleSetCors(env)
       return new Response('Not found', { status: 404, headers: corsHeaders })
     } catch (e) {
       return new Response(e.message, { status: 500, headers: corsHeaders })
@@ -95,4 +96,31 @@ async function handleDelete(request, env) {
   })
   if (!res.ok) throw new Error('B2 delete failed: ' + (await res.text()))
   return new Response('ok', { headers: corsHeaders })
+}
+
+async function handleSetCors(env) {
+  const auth = await b2Authorize(env)
+  const apiUrl = auth.apiInfo?.storageApi?.apiUrl
+  const authToken = auth.authorizationToken
+  const accountId = auth.accountId
+  if (!apiUrl) throw new Error('B2 auth: missing apiUrl')
+  if (!accountId) throw new Error('B2 auth: missing accountId')
+
+  const res = await fetch(`${apiUrl}/b2api/v3/b2_update_bucket`, {
+    method: 'POST',
+    headers: { Authorization: authToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      accountId,
+      bucketId: env.B2_BUCKET_ID,
+      corsRules: [{
+        corsRuleName: 'webUpload',
+        allowedOrigins: ['*'],
+        allowedHeaders: ['Authorization', 'X-Bz-File-Name', 'X-Bz-Content-Sha1', 'Content-Type'],
+        allowedOperations: ['b2_upload_file'],
+        maxAgeSeconds: 3600
+      }]
+    })
+  })
+  if (!res.ok) throw new Error('B2 CORS setup failed: ' + (await res.text()))
+  return new Response('CORS configured', { headers: corsHeaders })
 }
