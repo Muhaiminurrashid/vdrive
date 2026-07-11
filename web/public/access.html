@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classroom Access — Virtual Pendrive</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-brand">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+    Virtual Pendrive
+  </a>
+</nav>
+
+<main style="min-height: calc(100vh - 56px); display: flex; align-items: center; justify-content: center; padding: 24px;">
+  <div id="codeEntry" style="width: 100%; max-width: 380px;">
+    <div class="text-center" style="margin-bottom: 32px;">
+      <h1 style="font-family: var(--font-serif); font-size: 1.8rem; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 4px;">Classroom Access</h1>
+      <p class="text-sm text-muted">Enter the code your teacher shared</p>
+    </div>
+
+    <div class="card">
+      <div id="errorBox" class="error-banner" style="display: none;"></div>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <input id="codeInput" type="text" placeholder="Enter code" maxlength="6" class="input" style="font-family: var(--font-mono); font-size: 22px; font-weight: 700; text-align: center; letter-spacing: 0.3em; height: 52px;" oninput="this.value=this.value.toUpperCase()">
+        <button id="accessBtn" class="btn-primary" style="width: 100%; justify-content: center; height: 44px;" onclick="handleAccess()">Access files</button>
+      </div>
+    </div>
+
+    <p class="text-center text-xs" style="margin-top: 20px; color: var(--muted-soft);">
+      <a href="/" style="color: var(--muted-soft); text-decoration: underline;">Back to home</a>
+    </p>
+  </div>
+
+  <div id="fileView" style="width: 100%; max-width: 560px; display: none;">
+    <div class="text-center" style="margin-bottom: 32px;">
+      <h1 style="font-family: var(--font-serif); font-size: 1.6rem; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 4px;">Files shared with you</h1>
+      <p class="text-sm text-muted">
+        Code <span id="displayCode" class="mono" style="font-weight: 700; letter-spacing: 0.15em; color: var(--ink);"></span> —
+        <button onclick="resetAccess()" style="background: none; border: none; font-size: 14px; color: var(--primary); cursor: pointer;">enter a different code</button>
+      </p>
+    </div>
+    <div id="fileList"></div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC4LhzNvivwitunV6qJp3-Pb6UjyDXPoLU",
+  authDomain: "vdrive-64deb.firebaseapp.com",
+  projectId: "vdrive-64deb",
+  messagingSenderId: "541773803308",
+  appId: "1:541773803308:web:f2c49d374a13abb8920689",
+}
+firebase.initializeApp(firebaseConfig)
+const db = firebase.firestore()
+// ponytail: set B2_PROXY_URL after deploying Worker
+const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
+
+function showError(msg) {
+  const el = document.getElementById('errorBox')
+  if (msg) { el.textContent = msg; el.style.display = 'block'; }
+  else { el.style.display = 'none'; }
+}
+
+function getFileType(name) {
+  const map = { pdf: 'PDF', pptx: 'PPT', ppt: 'PPT', docx: 'DOC', doc: 'DOC', mp4: 'Video', xlsx: 'XLS', zip: 'ZIP' }
+  const ext = name.split('.').pop().toLowerCase()
+  return map[ext] || ext.toUpperCase()
+}
+
+async function handleAccess() {
+  const code = document.getElementById('codeInput').value.toUpperCase()
+  if (code.length !== 6) return
+  showError('')
+  document.getElementById('accessBtn').disabled = true
+  document.getElementById('accessBtn').textContent = 'Checking...'
+  try {
+    const snap = await db.collection('accessCodes').where('code', '==', code).get()
+    if (snap.empty) { showError('Invalid code'); return }
+    const data = snap.docs[0].data()
+    const exp = data.expiresAt
+    const expired = typeof exp === 'number' ? exp < Date.now() : exp.toDate() < new Date()
+    if (expired) { showError('Code expired'); return }
+    const fileIds = data.fileIds || []
+    const items = await Promise.all(fileIds.map(async id => {
+      const metaSnap = await db.collection('files').doc(id).get()
+      if (!metaSnap.exists) return null
+      const meta = metaSnap.data()
+      if (!meta.b2FileName) return null
+      const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(meta.b2FileName)}`)
+      const { url } = await res.json()
+      return { name: meta.name, url }
+    }))
+    const filtered = items.filter(Boolean)
+    document.getElementById('displayCode').textContent = code
+    const list = document.getElementById('fileList')
+    list.innerHTML = ''
+    if (filtered.length === 0) {
+      list.innerHTML = '<p class="text-center text-sm text-muted" style="padding: 32px;">No files available for this code.</p>'
+    } else {
+      filtered.forEach(f => {
+        const el = document.createElement('a')
+        el.href = f.url
+        el.download = f.name
+        el.className = 'flex-between card-hairline'
+        el.style.marginBottom = '8px'
+        el.innerHTML = `
+          <div class="flex gap-3 min-w-0">
+            <span class="badge">${getFileType(f.name)}</span>
+            <span class="truncate text-sm text-ink">${f.name}</span>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" style="margin-left: 12px; color: var(--muted-soft);">
+            <path d="M4 8h8M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>`
+        list.appendChild(el)
+      })
+    }
+    document.getElementById('codeEntry').style.display = 'none'
+    document.getElementById('fileView').style.display = 'block'
+  } catch (e) { showError(e.message) }
+  document.getElementById('accessBtn').disabled = false
+  document.getElementById('accessBtn').textContent = 'Access files'
+}
+
+function resetAccess() {
+  document.getElementById('codeEntry').style.display = 'block'
+  document.getElementById('fileView').style.display = 'none'
+  document.getElementById('codeInput').value = ''
+}
+</script>
+</body>
+</html>

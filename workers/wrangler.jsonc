@@ -1,0 +1,9 @@
+{
+  "name": "b2-proxy",
+  "main": "b2-proxy.js",
+  "compatibility_date": "2026-01-01",
+  "vars": {
+    "B2_BUCKET_ID": "4d7288f14126592793f30117",
+    "B2_BUCKET_NAME": "vdrive12"
+  }
+}

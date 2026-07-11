@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Files — Virtual Pendrive</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <a href="/" class="nav-brand">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+    <span class="mobile-hide">Virtual Pendrive</span>
+  </a>
+  <div class="nav-links">
+    <span id="userEmail" class="text-sm text-muted" style="font-weight: 400;"></span>
+    <a href="#" onclick="handleChangePassword()" class="text-sm text-muted" style="text-decoration: underline;">Password</a>
+    <a href="#" onclick="handleLogout()" class="text-sm text-muted" style="text-decoration: underline;">Sign out</a>
+  </div>
+</header>
+
+<main style="max-width: 680px; margin: 0 auto; padding: 32px 24px;">
+
+  <div class="flex gap-3" style="margin-bottom: 28px; flex-wrap: wrap;">
+    <label class="btn-primary" style="cursor: pointer;">
+      <span id="uploadLabel">Upload file</span>
+      <input id="fileInput" type="file" style="display: none;" onchange="handleUpload(this)">
+    </label>
+    <button id="shareBtn" class="btn-secondary" onclick="shareSelected()" disabled>Share selected</button>
+  </div>
+
+  <div id="codeDisplay" class="card" style="margin-bottom: 28px; display: none;">
+    <p style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 2px;">Classroom Access Code</p>
+    <p class="text-sm text-muted" style="margin-bottom: 14px;">Share this code. Expires in 15 minutes.</p>
+    <div class="flex gap-3">
+      <span id="codeValue" class="mono" style="background: var(--surface-dark); color: var(--on-dark); padding: 12px 20px; border-radius: var(--radius); font-size: 22px; font-weight: 700; letter-spacing: 0.3em;"></span>
+      <button id="copyBtn" class="btn-primary" onclick="copyCode()">Copy</button>
+    </div>
+  </div>
+
+  <!-- ponytail: storage bar, no separate query, computed from loaded files -->
+  <div class="card" style="margin-bottom: 28px; padding: 16px;">
+    <div class="flex-between" style="margin-bottom: 6px;">
+      <span style="font-size: 14px; font-weight: 600; color: var(--ink);">Storage</span>
+      <span id="storageText" style="font-size: 13px; color: var(--muted-soft);">0 MB / 1 GB</span>
+    </div>
+    <div style="height: 6px; background: var(--hairline); border-radius: 3px; overflow: hidden;">
+      <div id="storageFill" style="height: 100%; width: 0%; background: var(--accent); border-radius: 3px; transition: width 0.3s;"></div>
+    </div>
+  </div>
+
+  <p id="fileCount" class="text-sm text-muted" style="margin-bottom: 14px;"></p>
+
+  <div id="fileList"></div>
+
+  <div id="emptyState" class="card-dashed" style="display: none;">
+    <p style="font-family: var(--font-serif); font-size: 18px; font-weight: 500; color: var(--ink); margin-bottom: 4px;">No files yet</p>
+    <p class="text-sm text-muted">Upload your first lecture material to get started.</p>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC4LhzNvivwitunV6qJp3-Pb6UjyDXPoLU",
+  authDomain: "vdrive-64deb.firebaseapp.com",
+  projectId: "vdrive-64deb",
+  messagingSenderId: "541773803308",
+  appId: "1:541773803308:web:f2c49d374a13abb8920689",
+}
+firebase.initializeApp(firebaseConfig)
+const auth = firebase.auth()
+const db = firebase.firestore()
+
+// ponytail: set B2_PROXY_URL after deploying Worker
+const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
+
+auth.onAuthStateChanged(user => {
+  if (!user) { window.location.href = '/login.html'; return }
+  document.getElementById('userEmail').textContent = user.email
+  window.currentUser = user
+  loadFiles()
+})
+
+function handleLogout() { auth.signOut(); window.location.href = '/' }
+
+async function handleChangePassword() {
+  const newPass = prompt('Enter new password (min 6 characters):')
+  if (!newPass || newPass.length < 6) return
+  try {
+    await window.currentUser.updatePassword(newPass)
+    alert('Password changed successfully!')
+  } catch (e) { alert(e.message) }
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1048576).toFixed(1) + ' MB'
+}
+
+function getFileType(name) {
+  const map = { pdf: 'PDF', pptx: 'PPT', ppt: 'PPT', docx: 'DOC', doc: 'DOC', mp4: 'Video', xlsx: 'XLS', zip: 'ZIP' }
+  const ext = name.split('.').pop().toLowerCase()
+  return map[ext] || ext.toUpperCase()
+}
+
+async function loadFiles() {
+  const user = window.currentUser
+  if (!user) return
+  const snap = await db.collection('files').where('userId', '==', user.uid).get()
+  const list = document.getElementById('fileList')
+  const empty = document.getElementById('emptyState')
+  list.innerHTML = ''
+  const totalBytes = snap.docs.reduce((sum, d) => sum + (d.data().size || 0), 0)
+  const maxBytes = 1_000_000_000
+  document.getElementById('storageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
+  document.getElementById('storageFill').style.width = Math.min(100, (totalBytes / maxBytes) * 100) + '%'
+  document.getElementById('fileCount').textContent = snap.docs.length + ' file' + (snap.docs.length !== 1 ? 's' : '')
+  if (snap.empty) { empty.style.display = 'block'; return }
+  empty.style.display = 'none'
+  snap.docs.forEach(doc => {
+    const data = doc.data()
+    const el = document.createElement('div')
+    el.className = 'flex-between card-hairline'
+    el.style.marginBottom = '8px'
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'
+    cb.className = 'file-check'
+    cb.dataset.id = doc.id
+    cb.onchange = updateShareBtn
+    const nameLink = document.createElement('a')
+    nameLink.href = '#'
+    nameLink.className = 'flex gap-3 min-w-0'
+    nameLink.style.flex = '1'
+    nameLink.innerHTML = `<span class="badge shrink-0">${getFileType(data.name)}</span><span class="truncate text-sm text-ink">${data.name}</span>`
+    nameLink.onclick = async (e) => {
+      e.preventDefault()
+      if (!data.b2FileName) return
+      try {
+        const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(data.b2FileName)}`)
+        if (!res.ok) throw new Error('Download service unavailable')
+        const { url } = await res.json()
+        const a = document.createElement('a')
+        a.href = url; a.download = data.name; a.click()
+      } catch (e) { alert('Download failed: ' + e.message) }
+    }
+    const delBtn = document.createElement('button')
+    delBtn.textContent = 'Delete'
+    delBtn.style.cssText = 'background: none; border: none; font-size: 12px; color: var(--muted-soft); cursor: pointer; margin-left: 12px; flex-shrink: 0;'
+    delBtn.onmouseenter = () => delBtn.style.color = 'var(--error)'
+    delBtn.onmouseleave = () => delBtn.style.color = 'var(--muted-soft)'
+    delBtn.onclick = async () => {
+      delBtn.textContent = 'Deleting...'
+      delBtn.disabled = true
+      try {
+        if (data.b2FileId && data.b2FileName) {
+          const res = await fetch(`${B2_PROXY_URL}/api/delete`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileId: data.b2FileId, fileName: data.b2FileName })
+          })
+          if (!res.ok) throw new Error('Delete failed')
+        }
+        await db.collection('files').doc(doc.id).delete()
+        loadFiles()
+      } catch (e) { alert('Delete failed: ' + e.message); loadFiles() }
+    }
+    el.insertBefore(cb, el.firstChild)
+    el.appendChild(nameLink)
+    el.appendChild(delBtn)
+    list.appendChild(el)
+  })
+}
+
+async function handleUpload(input) {
+  const file = input.files[0]
+  if (!file || !window.currentUser) return
+  // ponytail: 100 MB limit, B2 has no real cap but keeps free tier sane
+  if (file.size > 100 * 1024 * 1024) { alert('File too large (max 100 MB)'); return }
+  document.getElementById('uploadLabel').textContent = 'Uploading...'
+  try {
+    const { uploadUrl, authToken } = await fetch(`${B2_PROXY_URL}/api/upload-url`).then(r => r.json())
+    // ponytail: prefix with userId+timestamp to avoid collisions in public bucket
+    const b2FileName = `${window.currentUser.uid}_${Date.now()}_${file.name}`
+    const b2Res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: authToken,
+        'X-Bz-File-Name': encodeURIComponent(b2FileName),
+        'Content-Type': file.type || 'application/octet-stream',
+        'X-Bz-Content-Sha1': 'do_not_verify'
+      },
+      body: file
+    })
+    if (!b2Res.ok) throw new Error(await b2Res.text())
+    const b2Result = await b2Res.json()
+    await db.collection('files').add({
+      name: file.name, size: file.size, type: file.type,
+      userId: window.currentUser.uid,
+      b2FileId: b2Result.fileId,
+      b2FileName: b2FileName,
+      createdAt: firebase.firestore.Timestamp.now(),
+    })
+  } catch (e) { alert('Upload failed: ' + e.message) }
+  document.getElementById('uploadLabel').textContent = 'Upload file'
+  input.value = ''
+  loadFiles()
+}
+
+function updateShareBtn() {
+  const checked = document.querySelectorAll('.file-check:checked').length
+  document.getElementById('shareBtn').disabled = checked === 0
+}
+
+async function shareSelected() {
+  const user = window.currentUser
+  if (!user) return
+  const checks = document.querySelectorAll('.file-check:checked')
+  const fileIds = Array.from(checks).map(c => c.dataset.id)
+  if (fileIds.length === 0) return
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+  await db.collection('accessCodes').add({
+    code, userId: user.uid, fileIds,
+    expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+    createdAt: firebase.firestore.Timestamp.now(),
+  })
+  document.getElementById('codeValue').textContent = code
+  document.getElementById('codeDisplay').style.display = 'block'
+  window.lastCode = code
+  checks.forEach(c => c.checked = false)
+  updateShareBtn()
+}
+
+function copyCode() {
+  if (window.lastCode) {
+    navigator.clipboard.writeText(window.lastCode)
+    document.getElementById('copyBtn').textContent = 'Copied!'
+    setTimeout(() => { document.getElementById('copyBtn').textContent = 'Copy' }, 2000)
+  }
+}
+</script>
+</body>
+</html>

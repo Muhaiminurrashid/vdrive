@@ -1,0 +1,27 @@
+package com.vdrive.app.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val Canvas = Color(0xFFF7F8FA)
+val SurfaceSoft = Color(0xFFF0F2F4)
+val SurfaceCard = Color(0xFFFFFFFF)
+val SurfaceDark = Color(0xFF1E2937)
+val SurfaceDarkElevated = Color(0xFF263341)
+val SurfaceDarkSoft = Color(0xFF334155)
+val Ink = Color(0xFF1E2937)
+val Body = Color(0xFF475569)
+val BodyStrong = Color(0xFF334155)
+val Muted = Color(0xFF94A3B8)
+val MutedSoft = Color(0xFFB4C1D4)
+val Primary = Color(0xFF3B5C9A)
+val PrimaryActive = Color(0xFF2D4A7A)
+val PrimaryDisabled = Color(0xFFC8D2E0)
+val Accent = Color(0xFFE87A5A)
+val Hairline = Color(0xFFE2E4E9)
+val HairlineSoft = Color(0xFFEBEDF0)
+val OnPrimary = Color(0xFFFFFFFF)
+val OnDark = Color(0xFFF1F5F9)
+val OnDarkSoft = Color(0xFF94A3B8)
+val Success = Color(0xFF22C55E)
+val Warning = Color(0xFFEAB308)
+val ErrorRed = Color(0xFFEF4444)

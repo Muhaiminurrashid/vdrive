@@ -1,0 +1,238 @@
+/* Virtual Pendrive — Scholar palette */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  --primary: #3B5C9A;
+  --primary-active: #2D4A7A;
+  --primary-disabled: #C8D2E0;
+  --accent: #E87A5A;
+  --accent-active: #D46545;
+  --canvas: #F7F8FA;
+  --surface-card: #FFFFFF;
+  --surface-soft: #F0F2F4;
+  --surface-dark: #1E2937;
+  --surface-dark-elevated: #263341;
+  --surface-dark-soft: #334155;
+  --ink: #1E2937;
+  --body: #475569;
+  --body-strong: #334155;
+  --muted: #94A3B8;
+  --muted-soft: #B4C1D4;
+  --hairline: #E2E4E9;
+  --hairline-soft: #EBEDF0;
+  --on-primary: #FFFFFF;
+  --on-dark: #F1F5F9;
+  --on-dark-soft: #94A3B8;
+  --success: #22C55E;
+  --warning: #EAB308;
+  --error: #EF4444;
+
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--canvas);
+  color: var(--body);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-card);
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.nav-links { display: flex; align-items: center; gap: 12px; }
+.nav-links a { font-size: 14px; font-weight: 500; color: var(--body); }
+.nav-links a:hover { color: var(--primary); }
+
+/* Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--primary-active); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--hairline);
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--surface-soft); }
+
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  transition: background 0.15s;
+}
+.btn-accent:hover { background: var(--accent-active); }
+
+/* Inputs */
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 92, 154, 0.12);
+}
+.input::placeholder { color: var(--muted-soft); }
+
+/* Cards */
+.card {
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  padding: 24px;
+  border: 1px solid var(--hairline);
+}
+.card-flat {
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+  padding: 32px;
+}
+.card-dark {
+  border-radius: var(--radius-xl);
+  background: var(--surface-dark);
+  padding: 32px;
+}
+.card-hairline {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--hairline);
+  background: var(--surface-card);
+  padding: 12px 16px;
+  transition: box-shadow 0.15s;
+}
+.card-hairline:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card-dashed {
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--hairline);
+  padding: 48px;
+  text-align: center;
+}
+
+/* Serif headings */
+h1.display, h2.display, .display {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Container */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* Layout */
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.mb-8 { margin-bottom: 32px; }
+.my-6 { margin: 24px 0; }
+.text-center { text-align: center; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.min-w-0 { min-width: 0; }
+.shrink-0 { flex-shrink: 0; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+@media (max-width: 768px) { .grid-3 { grid-template-columns: 1fr; } }
+
+/* Sections */
+.section { padding: 80px 0; }
+.section-soft { background: var(--surface-soft); padding: 80px 0; }
+
+/* Badge */
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+
+/* Error */
+.error-banner {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--error);
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* Text */
+.text-sm { font-size: 14px; }
+.text-xs { font-size: 13px; }
+.text-muted { color: var(--muted); }
+.text-muted-soft { color: var(--muted-soft); }
+.text-ink { color: var(--ink); }
+.text-body { color: var(--body); }
+.mono { font-family: var(--font-mono); }
+.file-check { width: 16px; height: 16px; margin-right: 8px; cursor: pointer; accent-color: var(--primary); }
