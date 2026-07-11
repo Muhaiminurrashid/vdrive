@@ -87,6 +87,8 @@ class AuthViewModel @Inject constructor(
                     .addCredentialOption(
                         GetGoogleIdOption.Builder()
                             .setServerClientId(webClientId)
+                            .setFilterByAuthorizedAccounts(false)
+                            .setAutoSelectEnabled(false)
                             .build()
                     )
                     .build()
