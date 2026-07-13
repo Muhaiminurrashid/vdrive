@@ -89,6 +89,14 @@ auth.onAuthStateChanged(user => {
   loadFiles()
 })
 
+// ponytail: native drag-drop upload, drop anywhere on page
+document.addEventListener('dragover', e => e.preventDefault())
+document.addEventListener('drop', e => {
+  e.preventDefault()
+  const file = e.dataTransfer?.files[0]
+  if (file) handleUpload(file)
+})
+
 function handleLogout() { auth.signOut(); window.location.href = '/' }
 
 async function handleChangePassword() {
@@ -140,7 +148,7 @@ async function loadFiles() {
     nameLink.href = '#'
     nameLink.className = 'flex gap-3 min-w-0'
     nameLink.style.flex = '1'
-    nameLink.innerHTML = `<span class="badge shrink-0">${getFileType(data.name)}</span><span class="truncate text-sm text-ink">${data.name}</span>`
+    nameLink.innerHTML = `    <span class="badge shrink-0">${getFileType(data.name)}</span><span class="truncate text-sm text-ink">${data.name}</span><span class="text-xs text-muted shrink-0" style="margin-left: 8px;">${formatBytes(data.size)}</span>`
     nameLink.onclick = async (e) => {
       e.preventDefault()
       if (!data.b2FileName) return
@@ -180,8 +188,9 @@ async function loadFiles() {
   })
 }
 
-async function handleUpload(input) {
-  const file = input.files[0]
+// ponytail: accepts <input> or raw File (from drag-drop)
+async function handleUpload(inputOrFile) {
+  const file = inputOrFile.files ? inputOrFile.files[0] : inputOrFile
   if (!file || !window.currentUser) return
   // ponytail: 100 MB limit, B2 has no real cap but keeps free tier sane
   if (file.size > 100 * 1024 * 1024) { alert('File too large (max 100 MB)'); return }
@@ -211,7 +220,7 @@ async function handleUpload(input) {
     })
   } catch (e) { alert('Upload failed: ' + e.message) }
   document.getElementById('uploadLabel').textContent = 'Upload file'
-  input.value = ''
+  if (inputOrFile.files) inputOrFile.value = ''
   loadFiles()
 }
 

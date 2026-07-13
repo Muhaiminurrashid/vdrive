@@ -72,6 +72,12 @@ function showError(msg) {
   else { el.style.display = 'none'; }
 }
 
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1048576).toFixed(1) + ' MB'
+}
+
 function getFileType(name) {
   const map = { pdf: 'PDF', pptx: 'PPT', ppt: 'PPT', docx: 'DOC', doc: 'DOC', mp4: 'Video', xlsx: 'XLS', zip: 'ZIP' }
   const ext = name.split('.').pop().toLowerCase()
@@ -99,7 +105,7 @@ async function handleAccess() {
       if (!meta.b2FileName) return null
       const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(meta.b2FileName)}`)
       const { url } = await res.json()
-      return { name: meta.name, url }
+      return { name: meta.name, url, size: meta.size || 0 }
     }))
     const filtered = items.filter(Boolean)
     document.getElementById('displayCode').textContent = code
@@ -119,9 +125,12 @@ async function handleAccess() {
             <span class="badge">${getFileType(f.name)}</span>
             <span class="truncate text-sm text-ink">${f.name}</span>
           </div>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" style="margin-left: 12px; color: var(--muted-soft);">
-            <path d="M4 8h8M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>`
+          <div class="flex items-center shrink-0" style="margin-left: 12px; gap: 10px;">
+            <span class="text-xs text-muted">${formatBytes(f.size)}</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0" style="color: var(--muted-soft);">
+              <path d="M4 8h8M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>`
         list.appendChild(el)
       })
     }

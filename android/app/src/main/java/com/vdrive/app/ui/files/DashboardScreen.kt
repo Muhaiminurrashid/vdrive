@@ -432,7 +432,7 @@ private fun FileCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = file.typeLabel,
+                    text = "${file.typeLabel} · ${file.sizeBytes.formatBytes()}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Accent,
                 )

@@ -27,6 +27,7 @@ data class FileUiItem(
     val id: String,
     val name: String,
     val typeLabel: String,
+    val sizeBytes: Long = 0L,
     val mimeType: String = "application/octet-stream",
     val b2FileId: String? = null,
     val b2FileName: String? = null
@@ -81,6 +82,7 @@ class DashboardViewModel @Inject constructor(
                         id = doc.id,
                         name = data["name"] as? String ?: "",
                         typeLabel = getFileType(data["name"] as? String ?: ""),
+                        sizeBytes = (data["size"] as? Long) ?: 0L,
                         mimeType = data["type"] as? String ?: "application/octet-stream",
                         b2FileId = data["b2FileId"] as? String,
                         b2FileName = data["b2FileName"] as? String
@@ -203,4 +205,10 @@ class DashboardViewModel @Inject constructor(
         val ext = name.substringAfterLast('.', "").lowercase()
         return map[ext] ?: ext.uppercase()
     }
+}
+
+internal fun Long.formatBytes(): String = when {
+    this < 1024 -> "$this B"
+    this < 1048576 -> "%.1f KB".format(this / 1024f)
+    else -> "%.1f MB".format(this / 1048576f)
 }
