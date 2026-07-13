@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Virtual Pendrive</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
-<body>
+<body class="bg-canvas text-body antialiased leading-relaxed">
 
-<nav class="nav">
-  <a href="/" class="nav-brand">
+<nav class="h-16 px-6 bg-canvas flex items-center justify-between max-w-6xl mx-auto">
+  <a href="/" class="flex items-center gap-2 text-sm font-semibold text-ink tracking-tight">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
       <line x1="3" y1="6" x2="21" y2="6"/>
@@ -17,126 +20,126 @@
     </svg>
     Virtual Pendrive
   </a>
-  <div class="nav-links">
-    <a href="/login.html">Sign in</a>
-    <a href="/login.html" class="btn-primary">Get Started</a>
+  <div class="flex items-center gap-3">
+    <a href="/login.html" class="text-sm font-medium text-body hover:text-primary">Sign in</a>
+    <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Get Started</a>
   </div>
 </nav>
 
-<section class="container" style="padding: 120px 24px;">
-  <div class="flex" style="gap: 80px; align-items: center; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 320px;">
-      <h1 class="display" style="font-size: clamp(2.5rem, 5vw, 3.8rem); line-height: 1.12; letter-spacing: -0.02em; margin-bottom: 20px;">
+<section class="max-w-6xl mx-auto px-6 py-24 lg:py-32">
+  <div class="flex gap-20 items-center flex-wrap lg:flex-nowrap">
+    <div class="flex-1 min-w-80">
+      <h1 class="font-serif font-normal text-ink leading-tight tracking-tight text-5xl lg:text-6xl mb-5">
         Your pendrive.<br>In the cloud.
       </h1>
-      <p style="font-size: 16px; color: var(--body); max-width: 420px; margin-bottom: 28px; line-height: 1.7;">
+      <p class="text-base text-body max-w-md mb-7 leading-relaxed">
         Carry all your lecture slides, PDFs, and notes in one place. Access them from any classroom PC — no USB drive needed.
       </p>
       <div class="flex gap-3">
-        <a href="/login.html" class="btn-primary">Get Started Free</a>
-        <a href="/access.html" class="btn-secondary">Classroom Access</a>
+        <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Get Started Free</a>
+        <a href="/access.html" class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft inline-flex items-center">Classroom Access</a>
       </div>
     </div>
 
-    <div class="card-dark" style="flex: 1; min-width: 320px;">
-      <div class="flex gap-2" style="margin-bottom: 20px; align-items: center;">
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--error);"></span>
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--warning);"></span>
-        <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--success);"></span>
-        <span style="margin-left: 6px; font-size: 12px; color: var(--on-dark-soft); font-family: var(--font-mono);">lectures / cse216</span>
+    <div class="bg-surface-dark rounded-2xl p-8 flex-1 min-w-80">
+      <div class="flex gap-2 items-center mb-5">
+        <span class="size-2.5 rounded-full bg-error"></span>
+        <span class="size-2.5 rounded-full bg-warning"></span>
+        <span class="size-2.5 rounded-full bg-success"></span>
+        <span class="ml-1.5 text-xs text-on-dark-soft font-mono">lectures / cse216</span>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <div class="flex-between" style="background: var(--surface-dark-soft); border-radius: var(--radius); padding: 10px 14px;">
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between bg-surface-dark-soft rounded-lg px-3.5 py-2.5">
           <div class="flex gap-3">
-            <span class="badge" style="color: var(--accent);">PDF</span>
-            <span style="color: var(--on-dark); font-size: 14px;">Week-01-Intro.pdf</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-file-pdf">PDF</span>
+            <span class="text-sm text-on-dark">Week-01-Intro.pdf</span>
           </div>
-          <span style="font-size: 12px; color: var(--on-dark-soft);">2.4 MB</span>
+          <span class="text-xs text-on-dark-soft">2.4 MB</span>
         </div>
-        <div class="flex-between" style="background: var(--surface-dark-soft); border-radius: var(--radius); padding: 10px 14px;">
+        <div class="flex items-center justify-between bg-surface-dark-soft rounded-lg px-3.5 py-2.5">
           <div class="flex gap-3">
-            <span class="badge" style="color: var(--accent);">PPT</span>
-            <span style="color: var(--on-dark); font-size: 14px;">Week-02-Variables.pptx</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-file-ppt">PPT</span>
+            <span class="text-sm text-on-dark">Week-02-Variables.pptx</span>
           </div>
-          <span style="font-size: 12px; color: var(--on-dark-soft);">4.1 MB</span>
+          <span class="text-xs text-on-dark-soft">4.1 MB</span>
         </div>
-        <div class="flex-between" style="background: var(--surface-dark-soft); border-radius: var(--radius); padding: 10px 14px;">
+        <div class="flex items-center justify-between bg-surface-dark-soft rounded-lg px-3.5 py-2.5">
           <div class="flex gap-3">
-            <span class="badge" style="color: var(--accent);">Video</span>
-            <span style="color: var(--on-dark); font-size: 14px;">Lecture-03-Recording.mp4</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-file-video">Video</span>
+            <span class="text-sm text-on-dark">Lecture-03-Recording.mp4</span>
           </div>
-          <span style="font-size: 12px; color: var(--on-dark-soft);">48 MB</span>
+          <span class="text-xs text-on-dark-soft">48 MB</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section-soft">
-  <div class="container text-center">
-    <h2 class="display" style="font-size: clamp(1.6rem, 2.8vw, 2.3rem); margin-bottom: 48px;">
+<section class="bg-surface-soft py-20">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <h2 class="font-serif font-normal text-ink text-3xl lg:text-4xl mb-12">
       Built for the classroom
     </h2>
-    <div class="grid-3">
-      <div class="card" style="text-align: left;">
-        <div style="width: 36px; height: 36px; border-radius: var(--radius); background: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left">
+        <div class="size-9 rounded-lg bg-primary flex items-center justify-center mb-4">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
         </div>
-        <h3 style="font-family: var(--font-sans); font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">Upload from anywhere</h3>
-        <p style="font-size: 14px; color: var(--body); line-height: 1.6;">Add files from your phone. Organize by subject and semester.</p>
+        <h3 class="text-base font-semibold text-ink mb-1.5">Upload from anywhere</h3>
+        <p class="text-sm text-body leading-relaxed">Add files from your phone. Organize by subject and semester.</p>
       </div>
-      <div class="card" style="text-align: left;">
-        <div style="width: 36px; height: 36px; border-radius: var(--radius); background: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left">
+        <div class="size-9 rounded-lg bg-primary flex items-center justify-center mb-4">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0110 0v4"/>
           </svg>
         </div>
-        <h3 style="font-family: var(--font-sans); font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">Instant classroom access</h3>
-        <p style="font-size: 14px; color: var(--body); line-height: 1.6;">Generate a code. Enter it on any PC. Files appear in seconds.</p>
+        <h3 class="text-base font-semibold text-ink mb-1.5">Instant classroom access</h3>
+        <p class="text-sm text-body leading-relaxed">Generate a code. Enter it on any PC. Files appear in seconds.</p>
       </div>
-      <div class="card" style="text-align: left;">
-        <div style="width: 36px; height: 36px; border-radius: var(--radius); background: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left">
+        <div class="size-9 rounded-lg bg-primary flex items-center justify-center mb-4">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
-        <h3 style="font-family: var(--font-sans); font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">No USB, no worries</h3>
-        <p style="font-size: 14px; color: var(--body); line-height: 1.6;">Lost drives, corrupted files, infected ports — gone.</p>
+        <h3 class="text-base font-semibold text-ink mb-1.5">No USB, no worries</h3>
+        <p class="text-sm text-body leading-relaxed">Lost drives, corrupted files, infected ports — gone.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section container">
-  <div style="border-radius: var(--radius-xl); background: linear-gradient(135deg, var(--primary) 0%, #2D4A7A 100%); padding: 56px 32px; text-align: center;">
-    <h2 class="display" style="font-size: clamp(1.4rem, 2.2vw, 1.8rem); color: var(--on-primary); margin-bottom: 10px;">
+<section class="py-20 max-w-6xl mx-auto px-6">
+  <div class="rounded-2xl bg-primary text-center px-8 py-14">
+    <h2 class="font-serif font-normal text-on-primary text-2xl lg:text-3xl mb-2.5">
       Ready to ditch the USB drive?
     </h2>
-    <p style="font-size: 14px; color: rgba(255,255,255,0.75); margin-bottom: 24px;">
+    <p class="text-sm text-on-primary/75 mb-6">
       Free plan includes 1 GB storage. No credit card required.
     </p>
-    <a href="/login.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 24px; border-radius: var(--radius); background: var(--on-primary); color: var(--primary); font-size: 14px; font-weight: 500;">
+    <a href="/login.html" class="inline-flex items-center h-10 px-6 rounded-lg bg-white text-primary text-sm font-medium hover:bg-white/90">
       Get Started Free
     </a>
   </div>
 </section>
 
-<footer style="background: var(--surface-dark); padding: 48px 24px;">
-  <div class="container">
-    <div class="flex gap-2" style="margin-bottom: 20px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--on-dark);">
+<footer class="bg-surface-dark py-12 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex gap-2 items-center mb-5">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-on-dark">
         <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
         <line x1="3" y1="6" x2="21" y2="6"/>
         <path d="M16 10a4 4 0 01-8 0"/>
       </svg>
-      <span style="font-size: 14px; font-weight: 600; color: var(--on-dark); letter-spacing: -0.01em;">Virtual Pendrive</span>
+      <span class="text-sm font-semibold text-on-dark tracking-tight">Virtual Pendrive</span>
     </div>
-    <p style="font-size: 14px; color: var(--on-dark-soft);">Built for teachers who deserve better than a USB drive.</p>
+    <p class="text-sm text-on-dark-soft">Built for teachers who deserve better than a USB drive.</p>
   </div>
 </footer>
 

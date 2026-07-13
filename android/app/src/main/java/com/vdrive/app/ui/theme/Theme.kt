@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 private val VDriveColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    secondary = Accent,
+    secondary = Primary,
     surface = SurfaceCard,
     surfaceVariant = SurfaceSoft,
     background = Canvas,

@@ -95,6 +95,30 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **Storage bar 0% on Android**: `(data["size"] as? Long)` failed on `Double` (web-uploaded files) → fixed with `Number?.toLong()`
 - **Folder filter not applying**: `Query.whereEqualTo()` returns new Query (immutable), result was discarded → fixed with `var` + reassignment
 
+### Phase 9 — Web Design Overhaul (Tailwind v4 + DESIGN.md)
+- **DESIGN.md rewritten**: replaced Claude marketing components with dashboard-specific specs (file-row, folder-row, breadcrumb, storage-bar, access-code-card, auth-card, etc.)
+- **Tailwind v4 installed** (`web/package.json` + `web/input.css`): `@theme` with 25+ color tokens from DESIGN.md (cool gray canvas, navy primary, dark navy surfaces, file-type badge colors), sans/mono font families
+- **`styles.css` replaced**: hand-written CSS (238 lines) → Tailwind build output (~980 lines, purged to only used classes)
+- **All 6 HTML pages rewritten**: inline `style=` attributes and custom CSS classes replaced with Tailwind utility classes:
+  - `index.html` — landing hero, feature cards, CTA band, footer
+  - `login.html` — auth card, form inputs, Google button
+  - `dashboard.html` — nav, action bar, breadcrumb, storage bar, folder/file rows, empty state
+  - `access.html` — code entry, file view list
+  - `reset-password.html` — reset form, success/error banners
+- **Dynamic JS class strings updated**: `loadContents()`, `handleUpload()`, `renderBreadcrumb()` element creation uses Tailwind classes
+- **Checkbox selector fixed**: `.file-check` → `#fileList input[type="checkbox"]`
+- **Build command**: `npm run css` (Tailwind CLI), output to `public/styles.css`
+- **Deployed**: Firebase Hosting
+
+### Phase 10 — Brand Rebrand (Navy & Cool)
+- **Palette overhaul**: Claude-inspired warm cream + coral → cool gray `#f4f5f6` canvas, navy `#3B5C9A` primary, no accent color
+- **Serif removed**: dropped Cormorant Garamond, Inter only throughout
+- **Firefox CSS fix**: moved Google Fonts from CSS `@import` to HTML `<link>` to fix `@layer` ordering issue
+- **Cache config**: `Cache-Control: no-cache` in `firebase.json` + `?v=2` query param busts stale browser cache
+- **All pages redesigned**: auth cards got navy top strip, plum replaced with navy, dark surfaces changed to deep navy `#1a1f2e`
+- **Android parity**: Color.kt + Theme.kt updated to match
+- **DESIGN.md v1.2**: Navy & Cool design system spec
+
 ## Next Steps (Priority Order)
 
 ### 1. Folder Tree Polish
@@ -105,19 +129,21 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **Hardware back button (Android)**: navigate up via `BackHandler`.
 
 ### 2. UI/UX Polish (Web + Android)
+- Loading skeletons / shimmer placeholders while files load
+- Storage bar text overlaps on narrow widths (post-redesign check)
 - M3 theme colors not fully applied in Compose
-- Dashboard file list flat (no icons, no hierarchy)
-- No loading skeletons / empty state illustrations
-- Storage bar text overlaps on narrow widths
-- Login screen spacing tight on small screens
-- Google Sign-In button inconsistent with M3 style
+- Google Sign-In button inconsistent with M3 style (Android)
+- Login screen spacing tight on small screens (Android)
 
-### 3. Custom Domain
+### 3. Folder Tree Polish
+- Folder sidebar with expand/collapse (web)
+- Move file to folder via drag-drop or context menu
+- Rename folder
+- Navigation rail or bottom sheet breadcrumb (Android)
+- Hardware back button navigate up (Android)
+
+### 4. Custom Domain
 - Firebase Hosting custom domain instead of `vdrive-64deb.web.app`
-
-### 4. Web design overhaul
-- Match DESIGN.md spec (warm cream canvas, coral accent)
-- Responsive polish for mobile browsers
 
 ### 5. CI / CD
 - GitHub Actions: test on PR, deploy on merge

@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "css": "npx @tailwindcss/cli -i input.css -o public/styles.css",
+    "css:watch": "npx @tailwindcss/cli -i input.css -o public/styles.css --watch"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.2",
+    "tailwindcss": "^4.3.2"
+  }
+}
