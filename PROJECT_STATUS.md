@@ -2,8 +2,8 @@
 
 ## What's Built
 
-- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. File upload/download/delete, access code sharing (6-char, 15 min TTL), marketing landing page.
-- **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device.
+- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. File upload/download/delete, access code sharing (6-char, 15 min TTL), marketing landing page. Drag-drop upload. File size display. Flat folder filter.
+- **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder chips + create/delete. File size display.
 - **Storage**: Backblaze B2 (private bucket `vdrive12`) via Cloudflare Worker proxy. Files stored on B2, metadata in Firestore.
 - **Web deployed**: Firebase Hosting → https://vdrive-64deb.web.app
 - **Worker deployed**: `b2-proxy` at `https://b2-proxy.muhaiminurrashid99.workers.dev`
@@ -12,7 +12,7 @@
 
 ```text
 Client → Cloudflare Worker (upload auth, signed download, delete, rate-limited) → Backblaze B2
-Client → Firestore (file metadata, access codes, users)
+Client → Firestore (file metadata, access codes, users, folders)
 Client → B2 directly via signed URL (download, CORS-enabled)
 ```
 
@@ -29,6 +29,7 @@ Client → B2 directly via signed URL (download, CORS-enabled)
   - `/users/{userId}` — self only
   - `/files/{fileId}` — owner read/write/create
   - `/accessCodes/{code}` — anyone read (student code entry), owner write
+  - `/folders/{folderId}` — owner read/write/create
   - Catch-all deny
 
 ### Phase 2 — Storage Bar & File Size Limit
@@ -66,6 +67,15 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **DashboardViewModelTest**: loadFiles doc parsing + storage% computation, empty state, error handling, toggleSelection, generateCode (6-char validation), uploadFile delegation, deleteFile
 - **Test command**: `./gradlew app:testDebugUnitTest` (requires JDK with jlink, e.g. `/home/wise/.gradle/jdks/eclipse_adoptium-21-amd64-linux.2`)
 
+### Phase 7 — Folders (MVP) + UX Polish
+- **Firestore rules**: added `/folders/{folderId}` owner-only rule
+- **Folder CRUD (web)**: create via "+ Folder" button + prompt, delete resets children to root
+- **Folder filter (web)**: dropdown above file list filters files by folder. Upload targets selected folder.
+- **Folder chips (Android)**: chip row below storage bar, filter by tap, clear by tap again. "+" chip opens create dialog.
+- **Folder name display**: shown in file rows (web badge, Android subtitle line)
+- **Web drag-drop upload**: native HTML5 API, drop anywhere on page triggers upload
+- **File size display**: formatted size (`3.2 MB`) shown in file rows on both platforms
+
 ### Bugfixes
 - **B2 API v3 Compatibility**: authorize response URLs moved from top-level `apiUrl`/`downloadUrl` to nested `apiInfo.storageApi.apiUrl`/`apiInfo.storageApi.downloadUrl`
 - **Google Sign-In API**: `GetGoogleIdTokenCredentialOption` → `GetGoogleIdOption` (renamed in credentials 1.2.2)
@@ -74,13 +84,14 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 
 ## Next Steps (Priority Order)
 
-### 1. File System / Folders (Web + Android)
-- **Folder CRUD**: create, rename, delete folders. `folders` collection in Firestore: `/{userId}/folders/{folderId}` — `{ name, parentId?, createdAt }`
-- **File folder assignment**: `files/{fileId}` gets `folderId` field. Move files between folders via drag-drop or context menu.
-- **Folder tree UI**: expandable sidebar or breadcrumb navigation. Android: Navigation Rail or bottom sheet. Web: collapsible tree.
-- **File size display**: show formatted size (`3.2 MB`) in file rows. Web: add to `card-hairline` template. Android: add to `FileUiItem` + LazyColumn.
-- **Empty folder state**: illustration + prompt to upload
-- **Storage bar context**: show per-folder breakdown if folders used
+### 1. Folder Tree (Google Drive-like file system)
+- **Nested folders**: enable `parentId` on folders for hierarchy. Breadcrumb or tree navigation.
+- **Folder sidebar (web)**: collapsible tree on left pane with expand/collapse icons. Shows nested folder structure.
+- **Navigation rail (Android)**: folder tree panel or bottom sheet breadcrumb for navigating hierarchy.
+- **Move file to folder**: context menu or drag-drop file onto folder in sidebar to move.
+- **Breadcrumb bar**: show current path (e.g., "My Files > Math > Homework") with clickable segments.
+- **Empty folder state**: illustration + prompt on folder with no files.
+- **Rename folder**: context menu option on folder items.
 
 ### 2. UI/UX Polish (Web + Android)
 - M3 theme colors not fully applied in Compose
@@ -90,14 +101,14 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - Login screen spacing tight on small screens
 - Google Sign-In button inconsistent with M3 style
 
-### 2. Custom Domain
+### 3. Custom Domain
 - Firebase Hosting custom domain instead of `vdrive-64deb.web.app`
 
-### 3. Web design overhaul
+### 4. Web design overhaul
 - Match DESIGN.md spec (warm cream canvas, coral accent)
 - Responsive polish for mobile browsers
 
-### 4. CI / CD
+### 5. CI / CD
 - GitHub Actions: test on PR, deploy on merge
 
 ## What Was Tried & Failed

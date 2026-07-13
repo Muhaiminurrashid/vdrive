@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -37,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vdrive.app.domain.model.Folder
 import com.vdrive.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,13 +53,14 @@ fun DashboardScreen(
     var showCodeSheet by remember { mutableStateOf(false) }
 
     var showPasswordDialog by remember { mutableStateOf(false) }
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { viewModel.uploadFile(it, context.contentResolver) }
+        uri?.let { viewModel.uploadFile(it, context.contentResolver, state.selectedFolderId) }
     }
 
     LaunchedEffect(state.generatedCode) {
@@ -72,6 +76,16 @@ fun DashboardScreen(
                 viewModel.changePassword(pass) { error ->
                     if (error == null) showPasswordDialog = false
                 }
+            }
+        )
+    }
+
+    if (showCreateFolderDialog) {
+        CreateFolderDialog(
+            onDismiss = { showCreateFolderDialog = false },
+            onCreate = { name ->
+                viewModel.createFolder(name)
+                showCreateFolderDialog = false
             }
         )
     }
@@ -150,8 +164,19 @@ fun DashboardScreen(
         ) {
             StorageCard(
                 percent = state.storagePercent,
+                totalBytes = state.totalStorageBytes,
                 fileCount = state.fileCount,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            // ponytail: flat folder filter, no nested tree
+            FolderFilterRow(
+                folders = state.folders,
+                selectedId = state.selectedFolderId,
+                onSelect = { viewModel.selectFolder(it) },
+                onCreate = { showCreateFolderDialog = true },
+                onDelete = { viewModel.deleteFolder(it) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
             if (state.files.isNotEmpty()) {
@@ -216,10 +241,10 @@ fun DashboardScreen(
                             onDelete = { viewModel.deleteFile(file) },
                         )
                         }
-                    }
-                }
             }
         }
+    }
+}
 
     if (showCodeSheet && state.generatedCode != null) {
         CodeBottomSheet(
@@ -229,6 +254,88 @@ fun DashboardScreen(
         )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FolderFilterRow(
+    folders: List<Folder>,
+    selectedId: String?,
+    onSelect: (String?) -> Unit,
+    onCreate: () -> Unit,
+    onDelete: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            for (folder in folders) {
+                FilterChip(
+                    selected = folder.id == selectedId,
+                    onClick = { onSelect(if (folder.id == selectedId) null else folder.id) },
+                    label = { Text(folder.name, style = MaterialTheme.typography.labelSmall) },
+                    shape = RoundedCornerShape(8.dp),
+                )
+            }
+            SmallFloatingActionButton(
+                onClick = onCreate,
+                containerColor = Primary.copy(alpha = 0.1f),
+                contentColor = Primary,
+                modifier = Modifier.size(28.dp),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "New folder", modifier = Modifier.size(16.dp))
+            }
+        }
+        if (selectedId != null) {
+            TextButton(
+                onClick = { onDelete(selectedId) },
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp),
+                modifier = Modifier.height(28.dp)
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(12.dp), tint = ErrorRed)
+                Spacer(Modifier.width(2.dp))
+                Text("Delete folder", style = MaterialTheme.typography.labelSmall, color = ErrorRed)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateFolderDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New folder", style = MaterialTheme.typography.titleLarge, color = Ink) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Folder name") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary,
+                    focusedContainerColor = Canvas,
+                    unfocusedContainerColor = Canvas,
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { if (name.isNotBlank()) onCreate(name) }) {
+                Text("Create", color = if (name.isBlank()) Muted else Primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Muted) }
+        }
+    )
+}
+
 
 @Composable
 private fun ChangePasswordDialog(
@@ -280,6 +387,7 @@ private fun ChangePasswordDialog(
 @Composable
 private fun StorageCard(
     percent: Float,
+    totalBytes: Long,
     fileCount: Int,
     modifier: Modifier = Modifier
 ) {
@@ -308,11 +416,21 @@ private fun StorageCard(
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Free",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Ink
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Storage",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Ink
+                    )
+                    Text(
+                        text = "${totalBytes.formatBytes()} / 1 GB",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MutedSoft
+                    )
+                }
                 Spacer(modifier = Modifier.height(6.dp))
                 LinearProgressIndicator(
                     progress = { percent },
@@ -431,8 +549,13 @@ private fun FileCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                val subtitle = buildString {
+                    append(file.typeLabel)
+                    append(" · ${file.sizeBytes.formatBytes()}")
+                    file.folderName?.let { append(" · in $it") }
+                }
                 Text(
-                    text = "${file.typeLabel} · ${file.sizeBytes.formatBytes()}",
+                    text = subtitle,
                     style = MaterialTheme.typography.labelSmall,
                     color = Accent,
                 )

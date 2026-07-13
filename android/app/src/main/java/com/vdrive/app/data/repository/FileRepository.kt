@@ -26,7 +26,7 @@ class FileRepository @Inject constructor(
 ) {
     private val client = OkHttpClient()
 
-    suspend fun uploadFile(userId: String, uri: Uri, contentResolver: ContentResolver): String? =
+    suspend fun uploadFile(userId: String, uri: Uri, contentResolver: ContentResolver, folderId: String? = null): String? =
         withContext(Dispatchers.IO) {
             val name = getFileName(uri, contentResolver) ?: "file_${System.currentTimeMillis()}"
             val mimeType = contentResolver.getType(uri) ?: "application/octet-stream"
@@ -59,7 +59,7 @@ class FileRepository @Inject constructor(
             val b2Result = JSONObject(b2Res.body!!.string())
 
             // Save metadata to Firestore
-            val metaRef = firestore.collection("files").add(mapOf(
+            val doc = mutableMapOf<String, Any?>(
                 "name" to name,
                 "size" to bytes.size,
                 "type" to mimeType,
@@ -67,7 +67,9 @@ class FileRepository @Inject constructor(
                 "b2FileId" to b2Result.getString("fileId"),
                 "b2FileName" to b2FileName,
                 "createdAt" to FieldValue.serverTimestamp()
-            )).await()
+            )
+            if (folderId != null) doc["folderId"] = folderId
+            val metaRef = firestore.collection("files").add(doc).await()
             metaRef.id
         }
 
