@@ -66,9 +66,9 @@ vdrive/
 ## Architecture Decisions
 
 - **Files in Backblaze B2** — upload via Cloudflare Worker (auth proxy), direct download from public B2 URL. 10 GB free, 10 TB max file size. No more 1 MiB Firestore doc limit.
-- **Folders** — `folders` collection active. Hierarchical (parentId). File rows show `folderId` for organization. Flat by default, folder tree UI on roadmap.
+- **Folders** — `folders` collection active. Hierarchical (parentId). Breadcrumb navigation (Google Drive-style): "My Files > Folder > Subfolder". Sub-folders shown in file list above files, clickable to navigate deeper. Create/delete writes `parentId`.
 - **Google Sign-In**: Web (popup) + Android (Credential Manager + GetGoogleIdOption) both working.
-- **Storage bar**: computed from `size` field sum over user's files in `loadFiles()`.
+- **Storage bar**: computed from `size` field sum over ALL user files (global, not per-folder). Formatted text "X MB / 1 GB" + percentage bar.
 - **Access code algorithm**: 6 chars from "ABCDEFGHJKLMNPQRSTUVWXYZ23456789". 15 min TTL. No auth check — student enters code, fetches shared files.
 - **Firestore rules**: Open read/write (dev mode, expires Aug 2026). Needs auth-gated rules before production.
 

@@ -7,10 +7,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,11 +15,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Storage
@@ -60,7 +56,7 @@ fun DashboardScreen(
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { viewModel.uploadFile(it, context.contentResolver, state.selectedFolderId) }
+        uri?.let { viewModel.uploadFile(it, context.contentResolver, state.currentFolderId) }
     }
 
     LaunchedEffect(state.generatedCode) {
@@ -169,17 +165,17 @@ fun DashboardScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // ponytail: flat folder filter, no nested tree
-            FolderFilterRow(
-                folders = state.folders,
-                selectedId = state.selectedFolderId,
-                onSelect = { viewModel.selectFolder(it) },
+            BreadcrumbBar(
+                folderPath = state.folderPath,
+                onNavigate = { viewModel.navigateToBreadcrumb(it) },
+                onDeleteCurrent = if (state.currentFolderId != null) {
+                    { viewModel.deleteFolder(state.currentFolderId!!) }
+                } else null,
                 onCreate = { showCreateFolderDialog = true },
-                onDelete = { viewModel.deleteFolder(it) },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            if (state.files.isNotEmpty()) {
+            if (state.files.isNotEmpty() || state.subFolders.isNotEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -188,7 +184,16 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (hasSelection) "${state.selectedIds.size} selected" else "",
+                        text = when {
+                            hasSelection -> "${state.selectedIds.size} selected"
+                            else -> {
+                                val f = state.files.size; val s = state.subFolders.size
+                                buildString {
+                                    append("$f file${if (f != 1) "s" else ""}")
+                                    if (s > 0) append(" · $s folder${if (s != 1) "s" else ""}")
+                                }
+                            }
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = Muted
                     )
@@ -212,7 +217,7 @@ fun DashboardScreen(
                 }
             }
 
-            if (state.isLoading && state.files.isEmpty()) {
+            if (state.isLoading && state.files.isEmpty() && state.subFolders.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -221,7 +226,7 @@ fun DashboardScreen(
                 ) {
                     CircularProgressIndicator(color = Primary)
                 }
-            } else if (state.files.isEmpty()) {
+            } else if (state.files.isEmpty() && state.subFolders.isEmpty()) {
                 EmptyState(modifier = Modifier.fillMaxSize())
             } else {
                 LazyColumn(
@@ -232,6 +237,13 @@ fun DashboardScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    items(state.subFolders, key = { "folder_${it.id}" }) { folder ->
+                        FolderCard(
+                            folder = folder,
+                            onClick = { viewModel.navigateToFolder(folder.id) },
+                            onDelete = { viewModel.deleteFolder(folder.id) },
+                        )
+                    }
                     items(state.files, key = { it.id }) { file ->
                         FileCard(
                             file = file,
@@ -240,11 +252,11 @@ fun DashboardScreen(
                             onDownload = { viewModel.downloadFile(file, context) },
                             onDelete = { viewModel.deleteFile(file) },
                         )
-                        }
+                    }
+                }
             }
         }
     }
-}
 
     if (showCodeSheet && state.generatedCode != null) {
         CodeBottomSheet(
@@ -255,48 +267,105 @@ fun DashboardScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FolderFilterRow(
-    folders: List<Folder>,
-    selectedId: String?,
-    onSelect: (String?) -> Unit,
+private fun BreadcrumbBar(
+    folderPath: List<Folder>,
+    onNavigate: (Int) -> Unit,
+    onDeleteCurrent: (() -> Unit)?,
     onCreate: () -> Unit,
-    onDelete: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            for (folder in folders) {
-                FilterChip(
-                    selected = folder.id == selectedId,
-                    onClick = { onSelect(if (folder.id == selectedId) null else folder.id) },
-                    label = { Text(folder.name, style = MaterialTheme.typography.labelSmall) },
-                    shape = RoundedCornerShape(8.dp),
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        val parts = listOf(null as String?, *folderPath.map { it.id }.toTypedArray())
+        for ((i, _) in parts.withIndex()) {
+            val name = when (i) {
+                0 -> "My Files"
+                else -> folderPath[i - 1].name
+            }
+            val last = i == parts.lastIndex
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (last) Ink else Primary,
+                modifier = if (last) Modifier else Modifier.clickable { onNavigate(i) }
+            )
+            if (!last) {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MutedSoft,
+                    modifier = Modifier.size(14.dp)
                 )
             }
-            SmallFloatingActionButton(
-                onClick = onCreate,
-                containerColor = Primary.copy(alpha = 0.1f),
-                contentColor = Primary,
-                modifier = Modifier.size(28.dp),
+        }
+        Spacer(Modifier.weight(1f))
+        if (onDeleteCurrent != null) {
+            IconButton(
+                onClick = onDeleteCurrent,
+                modifier = Modifier.size(28.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New folder", modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Delete, contentDescription = "Delete folder", tint = ErrorRed, modifier = Modifier.size(16.dp))
             }
         }
-        if (selectedId != null) {
-            TextButton(
-                onClick = { onDelete(selectedId) },
-                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp),
-                modifier = Modifier.height(28.dp)
+        SmallFloatingActionButton(
+            onClick = onCreate,
+            containerColor = Primary.copy(alpha = 0.1f),
+            contentColor = Primary,
+            modifier = Modifier.size(28.dp),
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "New folder", modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun FolderCard(
+    folder: Folder,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = SurfaceCard,
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Primary.copy(alpha = 0.1f)
             ) {
-                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(12.dp), tint = ErrorRed)
-                Spacer(Modifier.width(2.dp))
-                Text("Delete folder", style = MaterialTheme.typography.labelSmall, color = ErrorRed)
+                Icon(
+                    Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = Primary,
+                    modifier = Modifier.padding(10.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = folder.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Ink,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MutedSoft,
+                )
             }
         }
     }
@@ -442,21 +511,11 @@ private fun StorageCard(
                     trackColor = Hairline,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "${(percent * 100).toInt()}% used",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (percent > 0.9f) ErrorRed else MutedSoft
-                    )
-                    Text(
-                        text = "$fileCount files",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MutedSoft
-                    )
-                }
+                Text(
+                    text = "${(percent * 100).toInt()}% used",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (percent > 0.9f) ErrorRed else MutedSoft
+                )
             }
         }
     }

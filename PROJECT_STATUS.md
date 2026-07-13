@@ -2,8 +2,8 @@
 
 ## What's Built
 
-- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. File upload/download/delete, access code sharing (6-char, 15 min TTL), marketing landing page. Drag-drop upload. File size display. Flat folder filter.
-- **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder chips + create/delete. File size display.
+- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. File upload/download/delete, access code sharing (6-char, 15 min TTL), marketing landing page. Drag-drop upload. File size display. Folder tree navigation with breadcrumb.
+- **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder tree navigation with breadcrumb. File size display.
 - **Storage**: Backblaze B2 (private bucket `vdrive12`) via Cloudflare Worker proxy. Files stored on B2, metadata in Firestore.
 - **Web deployed**: Firebase Hosting → https://vdrive-64deb.web.app
 - **Worker deployed**: `b2-proxy` at `https://b2-proxy.muhaiminurrashid99.workers.dev`
@@ -75,23 +75,34 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **Folder name display**: shown in file rows (web badge, Android subtitle line)
 - **Web drag-drop upload**: native HTML5 API, drop anywhere on page triggers upload
 - **File size display**: formatted size (`3.2 MB`) shown in file rows on both platforms
+- **Storage bar**: shows global used space (not per-folder), with formatted text (e.g. "5.2 MB / 1 GB")
+
+### Phase 8 — Folder Tree Navigation (Google Drive-style)
+- **Breadcrumb navigation**: "My Files › Folder › Subfolder" with clickable segments on both platforms
+- **Nested folders**: `parentId` actively written on `createFolder()`, read on `loadContents()`
+- **Navigate into folders**: click folder → shows sub-folders + files inside. Breadcrumb to go back up.
+- **Sub-folders rendered first** in file list (Drive convention), clickable to navigate deeper
+- **createFolder()**: writes `parentId = currentFolderId` (creates inside current folder)
+- **deleteFolder()**: detaches files + sub-folders (sets folderId/parentId to null), navigates up
+- **Upload targets current folder**: uses `currentFolderId` on both platforms
+- **Storage bar fixed**: always computed from ALL user files, not filtered by current folder
 
 ### Bugfixes
 - **B2 API v3 Compatibility**: authorize response URLs moved from top-level `apiUrl`/`downloadUrl` to nested `apiInfo.storageApi.apiUrl`/`apiInfo.storageApi.downloadUrl`
 - **Google Sign-In API**: `GetGoogleIdTokenCredentialOption` → `GetGoogleIdOption` (renamed in credentials 1.2.2)
 - **LoginScreen missing context**: added `import LocalContext` + `val context = LocalContext.current`
 - **Missing FileProvider config**: created `res/xml/file_paths.xml` (needed by AndroidManifest FileProvider)
+- **Storage bar 0% on Android**: `(data["size"] as? Long)` failed on `Double` (web-uploaded files) → fixed with `Number?.toLong()`
+- **Folder filter not applying**: `Query.whereEqualTo()` returns new Query (immutable), result was discarded → fixed with `var` + reassignment
 
 ## Next Steps (Priority Order)
 
-### 1. Folder Tree (Google Drive-like file system)
-- **Nested folders**: enable `parentId` on folders for hierarchy. Breadcrumb or tree navigation.
+### 1. Folder Tree Polish
 - **Folder sidebar (web)**: collapsible tree on left pane with expand/collapse icons. Shows nested folder structure.
 - **Navigation rail (Android)**: folder tree panel or bottom sheet breadcrumb for navigating hierarchy.
 - **Move file to folder**: context menu or drag-drop file onto folder in sidebar to move.
-- **Breadcrumb bar**: show current path (e.g., "My Files > Math > Homework") with clickable segments.
-- **Empty folder state**: illustration + prompt on folder with no files.
 - **Rename folder**: context menu option on folder items.
+- **Hardware back button (Android)**: navigate up via `BackHandler`.
 
 ### 2. UI/UX Polish (Web + Android)
 - M3 theme colors not fully applied in Compose

@@ -34,12 +34,9 @@
     <button id="shareBtn" class="btn-secondary" onclick="shareSelected()" disabled>Share selected</button>
   </div>
 
-  <!-- ponytail: flat folder filter, no nested tree -->
-  <div class="flex gap-3" style="margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+  <div id="folderBar" class="flex gap-3" style="margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+    <div id="breadcrumb" class="flex gap-2" style="flex: 1; align-items: center; flex-wrap: wrap;"></div>
     <button class="btn-secondary" onclick="createFolder()" style="font-size: 13px; height: 34px; padding: 0 14px;">+ Folder</button>
-    <select id="folderFilter" class="input" style="width: auto; min-width: 140px; height: 34px; font-size: 13px; padding: 0 10px;" onchange="onFolderChange()">
-      <option value="">All Files</option>
-    </select>
     <button id="deleteFolderBtn" style="display: none; background: none; border: none; font-size: 12px; color: var(--error); cursor: pointer; padding: 4px 8px;" onclick="deleteCurrentFolder()">Delete folder</button>
   </div>
 
@@ -95,7 +92,9 @@ auth.onAuthStateChanged(user => {
   if (!user) { window.location.href = '/login.html'; return }
   document.getElementById('userEmail').textContent = user.email
   window.currentUser = user
-  loadFolders().then(() => loadFiles())
+  window.currentFolderId = null
+  window.folderPath = []
+  loadFolders().then(() => loadContents())
 })
 
 // ponytail: native drag-drop upload, drop anywhere on page
@@ -125,51 +124,76 @@ function formatBytes(bytes) {
 
 window.folderNames = {}
 
-// ponytail: flat folders, single level, no nesting
+// ponytail: loads all folders once, filtered in-memory for current context
 async function loadFolders() {
   if (!window.currentUser) return
   const snap = await db.collection('folders').where('userId', '==', window.currentUser.uid).get()
-  const select = document.getElementById('folderFilter')
-  const current = select.value
-  select.innerHTML = '<option value="">All Files</option>'
   window.folderNames = {}
   snap.docs.forEach(doc => {
-    const data = doc.data()
-    window.folderNames[doc.id] = data.name
-    const opt = document.createElement('option')
-    opt.value = doc.id
-    opt.textContent = data.name
-    if (doc.id === current) opt.selected = true
-    select.appendChild(opt)
+    window.folderNames[doc.id] = doc.data().name
   })
-  document.getElementById('deleteFolderBtn').style.display = current ? 'inline' : 'none'
+}
+
+function renderBreadcrumb() {
+  const el = document.getElementById('breadcrumb')
+  const parts = [{ id: null, name: 'My Files' }, ...window.folderPath]
+  el.innerHTML = parts.map((p, i) => {
+    const last = i === parts.length - 1
+    const style = last ? '' : ' style="cursor:pointer;color:var(--primary)" onclick="navigateToBreadcrumb(' + i + ')"'
+    return `<span${style} class="text-sm">${p.name}</span>${last ? '' : '<span class="text-xs text-muted-soft" style="margin:0 4px;">›</span>'}`
+  }).join('')
+  document.getElementById('deleteFolderBtn').style.display = window.currentFolderId ? 'inline' : 'none'
+}
+
+function navigateToFolder(id) {
+  const folder = window.folderNames[id]
+  if (!folder) return
+  window.currentFolderId = id
+  window.folderPath.push({ id, name: folder })
+  renderBreadcrumb()
+  loadContents()
+}
+
+function navigateUp() {
+  if (window.folderPath.length === 0) return
+  window.folderPath.pop()
+  window.currentFolderId = window.folderPath.length > 0 ? window.folderPath[window.folderPath.length - 1].id : null
+  renderBreadcrumb()
+  loadContents()
+}
+
+function navigateToBreadcrumb(index) {
+  if (index >= window.folderPath.length + 1) return
+  window.folderPath = window.folderPath.slice(0, index)
+  window.currentFolderId = index === 0 ? null : window.folderPath[index - 1].id
+  renderBreadcrumb()
+  loadContents()
 }
 
 async function createFolder() {
   const name = prompt('Folder name:')
   if (!name) return
-  await db.collection('folders').add({ name, userId: window.currentUser.uid, createdAt: firebase.firestore.Timestamp.now() })
+  await db.collection('folders').add({
+    name,
+    userId: window.currentUser.uid,
+    parentId: window.currentFolderId || null,
+    createdAt: firebase.firestore.Timestamp.now()
+  })
   await loadFolders()
-}
-
-function onFolderChange() {
-  const select = document.getElementById('folderFilter')
-  document.getElementById('deleteFolderBtn').style.display = select.value ? 'inline' : 'none'
-  loadFiles()
+  loadContents()
 }
 
 async function deleteCurrentFolder() {
-  const select = document.getElementById('folderFilter')
-  const folderId = select.value
-  if (!folderId || !confirm('Delete this folder? Files in it will not be deleted.')) return
-  const snap = await db.collection('files').where('folderId', '==', folderId).get()
+  const folderId = window.currentFolderId
+  if (!folderId || !confirm('Delete this folder? Files and sub-folders will be detached.')) return
+  const fileSnap = await db.collection('files').where('folderId', '==', folderId).get()
   const batch = db.batch()
-  snap.docs.forEach(doc => batch.update(doc.ref, { folderId: null }))
+  fileSnap.docs.forEach(doc => batch.update(doc.ref, { folderId: null }))
+  const subSnap = await db.collection('folders').where('parentId', '==', folderId).get()
+  subSnap.docs.forEach(doc => batch.update(doc.ref, { parentId: null }))
   await batch.commit()
   await db.collection('folders').doc(folderId).delete()
-  select.value = ''
-  await loadFolders()
-  loadFiles()
+  navigateUp()
 }
 
 function getFileType(name) {
@@ -178,48 +202,85 @@ function getFileType(name) {
   return map[ext] || ext.toUpperCase()
 }
 
-async function loadFiles() {
+// ponytail: loads both sub-folders + files for current folder context, filters in-memory
+async function loadContents() {
   const user = window.currentUser
   if (!user) return
-  const folderId = document.getElementById('folderFilter').value
-  let query = db.collection('files').where('userId', '==', user.uid)
-  if (folderId) query = query.where('folderId', '==', folderId)
-  const snap = await query.get()
+  const [fileSnap, folderSnap] = await Promise.all([
+    db.collection('files').where('userId', '==', user.uid).get(),
+    db.collection('folders').where('userId', '==', user.uid).get()
+  ])
+
+  const folderId = window.currentFolderId
+  const files = []
+  fileSnap.forEach(doc => {
+    const d = doc.data()
+    if ((d.folderId || null) === folderId) files.push({ id: doc.id, ...d })
+  })
+  const subFolders = []
+  folderSnap.forEach(doc => {
+    const d = doc.data()
+    if ((d.parentId || null) === folderId) subFolders.push({ id: doc.id, name: d.name })
+  })
+
   const list = document.getElementById('fileList')
   const empty = document.getElementById('emptyState')
   list.innerHTML = ''
-  const totalBytes = snap.docs.reduce((sum, d) => sum + (d.data().size || 0), 0)
+
+  const totalBytes = fileSnap.docs.reduce((sum, d) => sum + (d.data().size || 0), 0)
   const maxBytes = 1_000_000_000
   document.getElementById('storageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
   document.getElementById('storageFill').style.width = Math.min(100, (totalBytes / maxBytes) * 100) + '%'
-  document.getElementById('fileCount').textContent = snap.docs.length + ' file' + (snap.docs.length !== 1 ? 's' : '')
-  if (snap.empty) { empty.style.display = 'block'; return }
+
+  const fileCount = files.length
+  const folderCount = subFolders.length
+  let countText = fileCount + ' file' + (fileCount !== 1 ? 's' : '')
+  if (folderCount) countText += ' · ' + folderCount + ' folder' + (folderCount !== 1 ? 's' : '')
+  document.getElementById('fileCount').textContent = countText
+
+  if (files.length === 0 && subFolders.length === 0) {
+    empty.style.display = 'block'
+    return
+  }
   empty.style.display = 'none'
-  snap.docs.forEach(doc => {
-    const data = doc.data()
+
+  // ponytail: sub-folders rendered first (Google Drive convention), then files
+  subFolders.forEach(folder => {
+    const el = document.createElement('div')
+    el.className = 'flex-between card-hairline'
+    el.style.marginBottom = '8px'
+    el.style.cursor = 'pointer'
+    el.onclick = () => navigateToFolder(folder.id)
+    el.innerHTML = `<div class="flex gap-3" style="flex:1;align-items:center;padding:4px 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      <span class="text-sm text-ink" style="font-weight:500;">${folder.name}</span>
+    </div>`
+    list.appendChild(el)
+  })
+
+  files.forEach(f => {
     const el = document.createElement('div')
     el.className = 'flex-between card-hairline'
     el.style.marginBottom = '8px'
     const cb = document.createElement('input')
     cb.type = 'checkbox'
     cb.className = 'file-check'
-    cb.dataset.id = doc.id
+    cb.dataset.id = f.id
     cb.onchange = updateShareBtn
     const nameLink = document.createElement('a')
     nameLink.href = '#'
     nameLink.className = 'flex gap-3 min-w-0'
     nameLink.style.flex = '1'
-    const folderBadge = data.folderId && window.folderNames[data.folderId] ? `<span class="text-xs" style="color: var(--primary); margin-left: 8px;">${window.folderNames[data.folderId]}</span>` : ''
-    nameLink.innerHTML = `    <span class="badge shrink-0">${getFileType(data.name)}</span><span class="truncate text-sm text-ink">${data.name}</span>${folderBadge}<span class="text-xs text-muted shrink-0" style="margin-left: 8px;">${formatBytes(data.size)}</span>`
+    nameLink.innerHTML = `<span class="badge shrink-0">${getFileType(f.name)}</span><span class="truncate text-sm text-ink">${f.name}</span><span class="text-xs text-muted shrink-0" style="margin-left:8px;">${formatBytes(f.size)}</span>`
     nameLink.onclick = async (e) => {
       e.preventDefault()
-      if (!data.b2FileName) return
+      if (!f.b2FileName) return
       try {
-        const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(data.b2FileName)}`)
+        const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(f.b2FileName)}`)
         if (!res.ok) throw new Error('Download service unavailable')
         const { url } = await res.json()
         const a = document.createElement('a')
-        a.href = url; a.download = data.name; a.click()
+        a.href = url; a.download = f.name; a.click()
       } catch (e) { alert('Download failed: ' + e.message) }
     }
     const delBtn = document.createElement('button')
@@ -231,17 +292,17 @@ async function loadFiles() {
       delBtn.textContent = 'Deleting...'
       delBtn.disabled = true
       try {
-        if (data.b2FileId && data.b2FileName) {
+        if (f.b2FileId && f.b2FileName) {
           const res = await fetch(`${B2_PROXY_URL}/api/delete`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileId: data.b2FileId, fileName: data.b2FileName })
+            body: JSON.stringify({ fileId: f.b2FileId, fileName: f.b2FileName })
           })
           if (!res.ok) throw new Error('Delete failed')
         }
-        await db.collection('files').doc(doc.id).delete()
-        loadFiles()
-      } catch (e) { alert('Delete failed: ' + e.message); loadFiles() }
+        await db.collection('files').doc(f.id).delete()
+        loadContents()
+      } catch (e) { alert('Delete failed: ' + e.message); loadContents() }
     }
     el.insertBefore(cb, el.firstChild)
     el.appendChild(nameLink)
@@ -278,13 +339,13 @@ async function handleUpload(inputOrFile) {
       userId: window.currentUser.uid,
       b2FileId: b2Result.fileId,
       b2FileName: b2FileName,
-      folderId: document.getElementById('folderFilter').value || null,
+      folderId: window.currentFolderId || null,
       createdAt: firebase.firestore.Timestamp.now(),
     })
   } catch (e) { alert('Upload failed: ' + e.message) }
   document.getElementById('uploadLabel').textContent = 'Upload file'
   if (inputOrFile.files) inputOrFile.value = ''
-  loadFiles()
+  loadContents()
 }
 
 function updateShareBtn() {
