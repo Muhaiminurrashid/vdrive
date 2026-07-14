@@ -32,3 +32,6 @@ Thumbs.db
 .idea/
 *.suo
 *.user
+
+# Graphify
+/graphify-out/

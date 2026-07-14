@@ -211,17 +211,15 @@ class DashboardViewModel @Inject constructor(
     fun deleteFolder(folderId: String) {
         viewModelScope.launch {
             try {
-                val children = firestore.collection("files")
-                    .whereEqualTo("folderId", folderId).get().await()
-                val subFolders = firestore.collection("folders")
-                    .whereEqualTo("parentId", folderId).get().await()
-                val batch = firestore.batch()
-                children.documents.forEach { batch.update(it.reference, "folderId", null) }
-                subFolders.documents.forEach { batch.update(it.reference, "parentId", null) }
-                batch.commit().await()
                 firestore.collection("folders").document(folderId).delete().await()
-                navigateUp()
-                loadFolders()
+                navigateUp(); loadFolders()
+                // ponytail: silent child cleanup, errors don't block navigation
+                runCatching {
+                    firestore.collection("files").whereEqualTo("folderId", folderId).get().await()
+                        .documents.forEach { runCatching { it.reference.update("folderId", null).await() } }
+                    firestore.collection("folders").whereEqualTo("parentId", folderId).get().await()
+                        .documents.forEach { runCatching { it.reference.update("parentId", null).await() } }
+                }
             } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
         }
     }

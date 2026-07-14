@@ -131,47 +131,41 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **Rename folder function (Web)**: prompt for new name, updates Firestore `name`
 - **Tests fixed**: mock Firestore folders collection, add kotlin-test dependency
 
+### Phase 12 — Android Google Drive-style UI/UX Redesign
+- **Navigation drawer**: `ModalNavigationDrawer` with Virtual Pendrive header, compact storage bar, dark mode toggle, sign out (300dp width, Google Drive-style)
+- **Top bar**: `TopAppBar` with hamburger (back in subfolder), "My Files" title, view mode toggle, account icon (dropdown with email/password/sign-out)
+- **Grid/list toggle**: `LazyVerticalGrid`/`LazyColumn` switch via `ViewMode` enum, toggle icon in top bar
+- **File detail bottom sheet**: metadata (name, size, type, folder, upload date) + Download/Rename/Share/Delete buttons
+- **File 3-dot menu**: Download, Rename, Move to, Delete (was Move/Delete only)
+- **File rename**: `renameFile()` in ViewModel + `RenameFileDialog`
+- **Dark theme**: `darkColorScheme` in Theme.kt, `isDarkTheme` state hoisted in MainActivity, drawer toggle
+- **Grid cards**: `FolderGridCard` + `FileGridCard` with compact icon+name layout
+- **Drawer storage**: compact `DrawerStorageIndicator` (just bar + text, no icon/card, Google Drive-style)
+- **YAGNI cuts**: Trash placeholder, SharedPreferences for view mode, View Info on folders, separate component files, real thumbnails
+
+### Bugfixes
+- **Delete folder permission denied (Firestore rules)**: batch update on children failed if any child lacked matching `userId` → split into folder delete first (ownership), then best-effort individual child updates with per-document try/catch
+- **graphify-out/ git tracking**: added `/graphify-out/` to `.gitignore`, removed from git index
+
+### Removed Code
+- **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms — use context menu instead
+- **Breadcrumb + button**: small `+` in breadcrumb bar removed — use FAB instead
+- **Share row removed**: generate code / share selected buttons removed from file list header (re-add later)
+- **CodeBottomSheet invocation**: removed (composable kept for later re-add)
+
 ## Next Steps (Priority Order)
 
-### 1. Android — Google Drive-style UI/UX Redesign
-
-#### Navigation Drawer
-- Replace top-right email dropdown with hamburger → `ModalDrawerSheet`
-- Drawer sections: app header ("Virtual Pendrive"), storage bar ("X MB of 1 GB used"), theme toggle (light/dark), Trash (placeholder + empty state)
-
-#### Top App Bar
-- Hamburger icon (left), "My Files" title, account menu (right) with email/sign out/change password
-- Breadcrumb bar below top bar for folder navigation (exists, refine)
-
-#### View Mode Toggle
-- Toggle between grid (thumbnail cards) / list (compact rows) view
-- Persist preference in `SharedPreferences` or saved state handle
-
-#### File/Folder 3-dot Menu
-- Each file row gets: View Info, Rename, Delete, Download
-- Each folder row gets: View Info, Rename, Delete
-
-#### File Detail Bottom Sheet
-- Tap file → bottom sheet with: file icon/thumbnail, name, size, type, upload date, folder location
-- Actions: Download, Rename, Share access code, Delete
-
-#### Scaffolding
-- Add `ModalNavigationDrawer` around existing `Scaffold`
-- Grid view: `LazyVerticalGrid` with compact folder/file cards
-- List view: existing `LazyColumn` layout
-- Wire theme toggle to `isSystemInDarkTheme()` override
-
-### 2. Web UI/UX Polish (prompt TBD)
+### 1. Web UI/UX Polish (prompt TBD)
 - Awaiting user prompt for web redesign
 
-### 3. Folder Sidebar (Web)
+### 2. Folder Sidebar (Web)
 - Collapsible tree on left pane with expand/collapse icons
 - Shows nested folder structure, click to navigate
 
-### 4. Custom Domain
+### 3. Custom Domain
 - Firebase Hosting custom domain instead of `vdrive-64deb.web.app`
 
-### 5. CI / CD
+### 4. CI / CD
 - GitHub Actions: test on PR, deploy on merge
 
 ## What Was Tried & Failed

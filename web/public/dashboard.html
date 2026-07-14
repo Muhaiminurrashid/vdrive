@@ -202,13 +202,16 @@ async function deleteCurrentFolder() {
 
 // ponytail: shared helper, used by both delete btn and context menu
 async function deleteFolderById(folderId) {
-  const fileSnap = await db.collection('files').where('folderId', '==', folderId).get()
-  const batch = db.batch()
-  fileSnap.docs.forEach(doc => batch.update(doc.ref, { folderId: null }))
-  const subSnap = await db.collection('folders').where('parentId', '==', folderId).get()
-  subSnap.docs.forEach(doc => batch.update(doc.ref, { parentId: null }))
-  await batch.commit()
   await db.collection('folders').doc(folderId).delete()
+  // ponytail: silent child cleanup
+  Promise.allSettled([
+    db.collection('files').where('folderId', '==', folderId).get().then(snap =>
+      Promise.allSettled(snap.docs.map(d => d.ref.update({ folderId: null }).catch(() => {})))
+    ).catch(() => {}),
+    db.collection('folders').where('parentId', '==', folderId).get().then(snap =>
+      Promise.allSettled(snap.docs.map(d => d.ref.update({ parentId: null }).catch(() => {})))
+    ).catch(() => {})
+  ])
 }
 
 function getFileType(name) {
