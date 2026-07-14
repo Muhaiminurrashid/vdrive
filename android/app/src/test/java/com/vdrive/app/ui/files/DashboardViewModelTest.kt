@@ -18,6 +18,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import com.google.android.gms.tasks.Tasks
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -42,13 +44,28 @@ class DashboardViewModelTest {
         every { user.email } returns "teacher@school.edu"
     }
 
-    private fun mockFirestoreSnapshot(docs: List<Pair<String, Map<String, Any?>>>) {
-        val colRef = mockk<CollectionReference>()
-        val snap = mockk<QuerySnapshot>()
-        every { firestore.collection("files") } returns colRef
-        every { colRef.whereEqualTo("userId", "user123") } returns colRef
-        coEvery { colRef.get() } returns snap
-        every { snap.documents } returns docs.map { (id, data) ->
+    private fun mockFirestoreSnapshot(
+        docs: List<Pair<String, Map<String, Any?>>> = emptyList(),
+        folders: List<Pair<String, Map<String, Any?>>> = emptyList()
+    ) {
+        val filesColRef = mockk<CollectionReference>()
+        val filesSnap = mockk<QuerySnapshot>()
+        every { firestore.collection("files") } returns filesColRef
+        every { filesColRef.whereEqualTo("userId", "user123") } returns filesColRef
+        coEvery { filesColRef.get() } returns Tasks.forResult(filesSnap)
+        every { filesSnap.documents } returns docs.map { (id, data) ->
+            val doc = mockk<com.google.firebase.firestore.QueryDocumentSnapshot>()
+            every { doc.id } returns id
+            every { doc.data } returns data
+            doc
+        }
+
+        val foldersColRef = mockk<CollectionReference>()
+        val foldersSnap = mockk<QuerySnapshot>()
+        every { firestore.collection("folders") } returns foldersColRef
+        every { foldersColRef.whereEqualTo("userId", "user123") } returns foldersColRef
+        coEvery { foldersColRef.get() } returns Tasks.forResult(foldersSnap)
+        every { foldersSnap.documents } returns folders.map { (id, data) ->
             val doc = mockk<com.google.firebase.firestore.QueryDocumentSnapshot>()
             every { doc.id } returns id
             every { doc.data } returns data
@@ -84,10 +101,18 @@ class DashboardViewModelTest {
 
     @Test
     fun `loadFiles sets error on exception`() = runTest(testDispatcher) {
-        val colRef = mockk<CollectionReference>()
-        every { firestore.collection("files") } returns colRef
-        every { colRef.whereEqualTo("userId", "user123") } returns colRef
-        coEvery { colRef.get() } throws Exception("network error")
+        val filesColRef = mockk<CollectionReference>()
+        every { firestore.collection("files") } returns filesColRef
+        every { filesColRef.whereEqualTo("userId", "user123") } returns filesColRef
+        coEvery { filesColRef.get() } returns Tasks.forException(Exception("network error"))
+
+        val foldersColRef = mockk<CollectionReference>()
+        val foldersSnap = mockk<QuerySnapshot>()
+        every { firestore.collection("folders") } returns foldersColRef
+        every { foldersColRef.whereEqualTo("userId", "user123") } returns foldersColRef
+        coEvery { foldersColRef.get() } returns Tasks.forResult(foldersSnap)
+        every { foldersSnap.documents } returns emptyList()
+
         viewModel = DashboardViewModel(auth, firestore, fileRepository)
         advanceUntilIdle()
         assertEquals("network error", viewModel.state.value.error)
@@ -118,17 +143,20 @@ class DashboardViewModelTest {
 
     @Test
     fun `generateCode creates 6-char code`() = runTest(testDispatcher) {
-        mockFirestoreSnapshot(emptyList())
+        mockFirestoreSnapshot(
+            docs = listOf("f1" to mapOf("name" to "a.pdf", "size" to 100L))
+        )
         val accessColRef = mockk<CollectionReference>()
         every { firestore.collection("accessCodes") } returns accessColRef
-        coEvery { accessColRef.add(any()) } returns mockk()
+        coEvery { accessColRef.add(any()) } returns Tasks.forResult(mockk())
         viewModel = DashboardViewModel(auth, firestore, fileRepository)
         advanceUntilIdle()
+        viewModel.toggleSelection("f1")
         viewModel.generateCode()
         advanceUntilIdle()
         val code = viewModel.state.value.generatedCode
         assertNotNull(code)
-        assertEquals(6, code!!.length)
+        assertEquals(6, code.length)
         assertTrue(code.all { it in "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" })
     }
 

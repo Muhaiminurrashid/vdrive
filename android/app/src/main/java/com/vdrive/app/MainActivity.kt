@@ -3,7 +3,7 @@ package com.vdrive.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -18,15 +18,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            VDriveTheme {
-                VDriveNavHost()
+            var isDarkTheme by remember { mutableStateOf(false) }
+            VDriveTheme(darkTheme = isDarkTheme) {
+                VDriveNavHost(isDarkTheme = isDarkTheme, onToggleTheme = { isDarkTheme = !isDarkTheme })
             }
         }
     }
 }
 
 @Composable
-fun VDriveNavHost() {
+fun VDriveNavHost(isDarkTheme: Boolean, onToggleTheme: () -> Unit) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Route.Login.route) {
         composable(Route.Login.route) {
@@ -40,6 +41,8 @@ fun VDriveNavHost() {
         }
         composable(Route.Dashboard.route) {
             DashboardScreen(
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme,
                 onSignOut = {
                     navController.navigate(Route.Login.route) {
                         popUpTo(Route.Dashboard.route) { inclusive = true }

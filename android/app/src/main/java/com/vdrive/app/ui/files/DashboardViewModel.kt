@@ -24,6 +24,8 @@ import org.json.JSONObject
 import java.net.URL
 import javax.inject.Inject
 
+enum class ViewMode { List, Grid }
+
 data class FileUiItem(
     val id: String,
     val name: String,
@@ -33,7 +35,8 @@ data class FileUiItem(
     val folderName: String? = null,
     val mimeType: String = "application/octet-stream",
     val b2FileId: String? = null,
-    val b2FileName: String? = null
+    val b2FileName: String? = null,
+    val createdAt: Long = 0L
 )
 
 data class DashboardUiState(
@@ -49,6 +52,7 @@ data class DashboardUiState(
     val userEmail: String = "",
     val generatedCode: String? = null,
     val selectedIds: Set<String> = emptySet(),
+    val viewMode: ViewMode = ViewMode.List,
     val error: String? = null,
 )
 
@@ -106,7 +110,8 @@ class DashboardViewModel @Inject constructor(
                         folderName = fId?.let { folderNames[it] },
                         mimeType = data["type"] as? String ?: "application/octet-stream",
                         b2FileId = data["b2FileId"] as? String,
-                        b2FileName = data["b2FileName"] as? String
+                        b2FileName = data["b2FileName"] as? String,
+                        createdAt = (data["createdAt"] as? com.google.firebase.Timestamp)?.seconds?.times(1000) ?: 0L
                     )
                 }
 
@@ -221,6 +226,42 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun renameFile(fileId: String, newName: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("files").document(fileId)
+                    .update("name", newName).await()
+                loadContents()
+            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+        }
+    }
+
+    fun toggleViewMode() {
+        _state.value = _state.value.copy(
+            viewMode = if (_state.value.viewMode == ViewMode.List) ViewMode.Grid else ViewMode.List
+        )
+    }
+
+    fun renameFolder(folderId: String, newName: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("folders").document(folderId)
+                    .update("name", newName).await()
+                loadFolders()
+            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+        }
+    }
+
+    fun moveFile(file: FileUiItem, targetFolderId: String?) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("files").document(file.id)
+                    .update("folderId", targetFolderId).await()
+                loadContents()
+            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+        }
+    }
+
     fun uploadFile(uri: Uri, contentResolver: ContentResolver, folderId: String? = null) {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
@@ -327,8 +368,4 @@ class DashboardViewModel @Inject constructor(
     }
 }
 
-internal fun Long.formatBytes(): String = when {
-    this < 1024 -> "$this B"
-    this < 1048576 -> "%.1f KB".format(this / 1024f)
-    else -> "%.1f MB".format(this / 1048576f)
-}
+

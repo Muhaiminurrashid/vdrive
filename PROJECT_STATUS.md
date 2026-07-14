@@ -119,28 +119,54 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **Android parity**: Color.kt + Theme.kt updated to match
 - **DESIGN.md v1.2**: Navy & Cool design system spec
 
+### Phase 11 — Folder Tree Polish (Google Drive-style)
+- **Hardware back button (Android)**: `BackHandler` → `navigateUp()` when in subfolder
+- **Folder context menu (Android)**: long-press → Rename / Delete via DropdownMenu
+- **File context menu (Android)**: three-dot menu → Move to / Delete
+- **Move file dialog (Android)**: folder picker dialog, updates Firestore `folderId`
+- **Rename folder dialog (Android)**: prompt for new name, updates Firestore `name`
+- **Folder context menu (Web)**: right-click → Rename / Delete
+- **File context menu (Web)**: right-click → Move to / Delete
+- **Move file function (Web)**: prompt-based folder picker, updates Firestore `folderId`
+- **Rename folder function (Web)**: prompt for new name, updates Firestore `name`
+- **Tests fixed**: mock Firestore folders collection, add kotlin-test dependency
+
 ## Next Steps (Priority Order)
 
-### 1. Folder Tree Polish
-- **Folder sidebar (web)**: collapsible tree on left pane with expand/collapse icons. Shows nested folder structure.
-- **Navigation rail (Android)**: folder tree panel or bottom sheet breadcrumb for navigating hierarchy.
-- **Move file to folder**: context menu or drag-drop file onto folder in sidebar to move.
-- **Rename folder**: context menu option on folder items.
-- **Hardware back button (Android)**: navigate up via `BackHandler`.
+### 1. Android — Google Drive-style UI/UX Redesign
 
-### 2. UI/UX Polish (Web + Android)
-- Loading skeletons / shimmer placeholders while files load
-- Storage bar text overlaps on narrow widths (post-redesign check)
-- M3 theme colors not fully applied in Compose
-- Google Sign-In button inconsistent with M3 style (Android)
-- Login screen spacing tight on small screens (Android)
+#### Navigation Drawer
+- Replace top-right email dropdown with hamburger → `ModalDrawerSheet`
+- Drawer sections: app header ("Virtual Pendrive"), storage bar ("X MB of 1 GB used"), theme toggle (light/dark), Trash (placeholder + empty state)
 
-### 3. Folder Tree Polish
-- Folder sidebar with expand/collapse (web)
-- Move file to folder via drag-drop or context menu
-- Rename folder
-- Navigation rail or bottom sheet breadcrumb (Android)
-- Hardware back button navigate up (Android)
+#### Top App Bar
+- Hamburger icon (left), "My Files" title, account menu (right) with email/sign out/change password
+- Breadcrumb bar below top bar for folder navigation (exists, refine)
+
+#### View Mode Toggle
+- Toggle between grid (thumbnail cards) / list (compact rows) view
+- Persist preference in `SharedPreferences` or saved state handle
+
+#### File/Folder 3-dot Menu
+- Each file row gets: View Info, Rename, Delete, Download
+- Each folder row gets: View Info, Rename, Delete
+
+#### File Detail Bottom Sheet
+- Tap file → bottom sheet with: file icon/thumbnail, name, size, type, upload date, folder location
+- Actions: Download, Rename, Share access code, Delete
+
+#### Scaffolding
+- Add `ModalNavigationDrawer` around existing `Scaffold`
+- Grid view: `LazyVerticalGrid` with compact folder/file cards
+- List view: existing `LazyColumn` layout
+- Wire theme toggle to `isSystemInDarkTheme()` override
+
+### 2. Web UI/UX Polish (prompt TBD)
+- Awaiting user prompt for web redesign
+
+### 3. Folder Sidebar (Web)
+- Collapsible tree on left pane with expand/collapse icons
+- Shows nested folder structure, click to navigate
 
 ### 4. Custom Domain
 - Firebase Hosting custom domain instead of `vdrive-64deb.web.app`

@@ -67,6 +67,9 @@
 
   <div id="fileList"></div>
 
+  <!-- ponytail: context menu for folders/files -->
+  <div id="contextMenu" class="hidden fixed bg-surface-card border border-hairline rounded-xl shadow-lg py-1 z-50 min-w-[140px]"></div>
+
   <div id="emptyState" class="border-2 border-dashed border-hairline rounded-xl p-12 text-center hidden">
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted-soft mx-auto mb-3"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
     <p class="font-serif font-normal text-lg text-primary mb-1">No files yet</p>
@@ -100,6 +103,7 @@ auth.onAuthStateChanged(user => {
   window.folderPath = []
   loadFolders().then(() => loadContents())
 })
+
 
 // ponytail: native drag-drop upload, drop anywhere on page
 document.addEventListener('dragover', e => e.preventDefault())
@@ -192,6 +196,12 @@ async function createFolder() {
 async function deleteCurrentFolder() {
   const folderId = window.currentFolderId
   if (!folderId || !confirm('Delete this folder? Files and sub-folders will be detached.')) return
+  await deleteFolderById(folderId)
+  navigateUp()
+}
+
+// ponytail: shared helper, used by both delete btn and context menu
+async function deleteFolderById(folderId) {
   const fileSnap = await db.collection('files').where('folderId', '==', folderId).get()
   const batch = db.batch()
   fileSnap.docs.forEach(doc => batch.update(doc.ref, { folderId: null }))
@@ -199,7 +209,6 @@ async function deleteCurrentFolder() {
   subSnap.docs.forEach(doc => batch.update(doc.ref, { parentId: null }))
   await batch.commit()
   await db.collection('folders').doc(folderId).delete()
-  navigateUp()
 }
 
 function getFileType(name) {
@@ -264,6 +273,10 @@ async function loadContents() {
     const el = document.createElement('div')
     el.className = 'flex items-center justify-between bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 cursor-pointer hover:shadow-sm'
     el.onclick = () => navigateToFolder(folder.id)
+    el.oncontextmenu = (e) => showContextMenu(e, [
+      { label: 'Rename', onclick: `renameFolder('${folder.id}', '${folder.name.replace(/'/g, "\\'")}')` },
+      { label: 'Delete', danger: true, onclick: `if(confirm('Delete this folder? Files and sub-folders will be detached.')){deleteFolderById('${folder.id}').then(()=>loadFolders().then(()=>loadContents()))}` }
+    ])
     el.innerHTML = `<div class="flex gap-3 flex-1 items-center py-1">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary shrink-0"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
       <span class="text-sm text-ink font-medium">${folder.name}</span>
@@ -297,6 +310,10 @@ async function loadContents() {
         a.href = url; a.download = f.name; a.click()
       } catch (e) { alert('Download failed: ' + e.message) }
     }
+    nameLink.oncontextmenu = (e) => showContextMenu(e, [
+      { label: 'Move to', onclick: `moveFileToFolder('${f.id}')` },
+      { label: 'Delete', danger: true, onclick: `if(confirm('Delete file?')){document.querySelector('[data-id="${f.id}"]').closest('div').querySelector('button').click()}` }
+    ])
 
     const delBtn = document.createElement('button')
     delBtn.textContent = 'Delete'
@@ -394,6 +411,42 @@ function copyCode() {
     document.getElementById('copyBtn').textContent = 'Copied!'
     setTimeout(() => { document.getElementById('copyBtn').textContent = 'Copy' }, 2000)
   }
+}
+
+// ponytail: context menu for folders and files — prompt-based rename/move, no inline edit or drag-drop
+function showContextMenu(e, items) {
+  e.preventDefault()
+  const menu = document.getElementById('contextMenu')
+  menu.innerHTML = items.map(item =>
+    `<div class="px-4 py-2 text-sm cursor-pointer hover:bg-surface-soft ${item.danger ? 'text-error' : 'text-ink'}" onclick="${item.onclick}">${item.label}</div>`
+  ).join('')
+  menu.style.left = e.clientX + 'px'
+  menu.style.top = e.clientY + 'px'
+  menu.classList.remove('hidden')
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('contextMenu').classList.add('hidden')
+})
+
+async function renameFolder(id, oldName) {
+  const newName = prompt('Rename folder:', oldName)
+  if (!newName || newName === oldName) return
+  await db.collection('folders').doc(id).update({ name: newName })
+  await loadFolders()
+  loadContents()
+}
+
+async function moveFileToFolder(fileId) {
+  const folders = Object.entries(window.folderNames).map(([id, name]) => ({ id, name }))
+  const choices = ['My Files (root)', ...folders.map(f => f.name)]
+  const choice = prompt('Move to folder:\n' + choices.map((c, i) => `${i}. ${c}`).join('\n') + '\n\nEnter number:')
+  if (choice === null) return
+  const idx = parseInt(choice)
+  if (isNaN(idx) || idx < 0 || idx > folders.length) return
+  const targetFolderId = idx === 0 ? null : folders[idx - 1].id
+  await db.collection('files').doc(fileId).update({ folderId: targetFolderId })
+  loadContents()
 }
 </script>
 </body>

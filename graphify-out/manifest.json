@@ -1,0 +1,1432 @@
+{
+  "/home/wise/Development/vdrive/opencode.json": {
+    "mtime": 1783679502.742297,
+    "ast_hash": "28edd303e15c0f20a66e0efcd2917e9d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/firestore.indexes.json": {
+    "mtime": 1783792720.0769837,
+    "ast_hash": "785d3bd9ffd2cf903c81ecad28131101",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/firebase.json": {
+    "mtime": 1783967342.617055,
+    "ast_hash": "c07b9bd0495358b345f714922f96820b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/skills-lock.json": {
+    "mtime": 1783965296.2496812,
+    "ast_hash": "006f07057beaff4e98ce7d07ae04078c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/google-services.json": {
+    "mtime": 1783796057.7339492,
+    "ast_hash": "d10db93cd2487e68ced5f4d477ae1846",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/build.gradle.kts": {
+    "mtime": 1783702328.8897088,
+    "ast_hash": "6a161e7a8423e3b15c81cff8f30057db",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/settings.gradle.kts": {
+    "mtime": 1783702373.6998322,
+    "ast_hash": "a02c1617076dffc6266439061719d078",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/gradlew": {
+    "mtime": 1783704005.886005,
+    "ast_hash": "1db6d150e9a9442ca929c1fa8b2fd25e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/build.gradle.kts": {
+    "mtime": 1784046013.4113503,
+    "ast_hash": "19d3dbc4e5c240c0a50fdef1358a2912",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/google-services.json": {
+    "mtime": 1783793044.0646029,
+    "ast_hash": "cd362024293d616f365cf9d2d51c92b3",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/VDriveApplication.kt": {
+    "mtime": 1783702338.055734,
+    "ast_hash": "c2b2bb91fda45cabdc56b2b1d63c0662",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/MainActivity.kt": {
+    "mtime": 1783705108.8096242,
+    "ast_hash": "dcba46537969d3a68b4eaa6c4b316dea",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/di/AppModule.kt": {
+    "mtime": 1783708200.7595017,
+    "ast_hash": "f03946d150c42bfdb1645856ed13e12a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/data/firebase/FirebaseService.kt": {
+    "mtime": 1783793054.2876225,
+    "ast_hash": "111e45fdb68276de65da8be82851ccad",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/data/repository/AuthRepository.kt": {
+    "mtime": 1783793058.1126297,
+    "ast_hash": "b4029af436cb416dc780a50e81386ad7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/data/repository/FileRepository.kt": {
+    "mtime": 1783923682.0296676,
+    "ast_hash": "8f3d36f5f69c752807ae1e9173233324",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/domain/model/User.kt": {
+    "mtime": 1783702348.7257633,
+    "ast_hash": "e311b23449e0a9d38c5a858f0d221b24",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/domain/model/FileItem.kt": {
+    "mtime": 1783702349.6287658,
+    "ast_hash": "70e7bd23a4f50308bc86a5f30a9635d9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/domain/model/Folder.kt": {
+    "mtime": 1783702350.384768,
+    "ast_hash": "73b2a7d5d58922552431b46d2971de10",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/navigation/NavRoutes.kt": {
+    "mtime": 1783705052.3444884,
+    "ast_hash": "9a9df703bdfab355936adbf1fbb062cf",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/auth/LoginScreen.kt": {
+    "mtime": 1783795526.4720614,
+    "ast_hash": "5ba89ee95a077574e315e28d41712d8e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/auth/AuthViewModel.kt": {
+    "mtime": 1783796061.265955,
+    "ast_hash": "61729d1ce985734caac00cdbe5044575",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/files/DashboardScreen.kt": {
+    "mtime": 1784045868.0080965,
+    "ast_hash": "acd77525ddef57fcb7e4cf0f0c14bb30",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/files/DashboardViewModel.kt": {
+    "mtime": 1784045685.7914236,
+    "ast_hash": "53108805203c1b319f9278f208e405d7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/theme/Color.kt": {
+    "mtime": 1783967232.2418082,
+    "ast_hash": "f83e80eecc4600d460420932185b1516",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/theme/Type.kt": {
+    "mtime": 1783705422.4003778,
+    "ast_hash": "59b63dac47e611e07849672fabcf1b52",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/main/java/com/vdrive/app/ui/theme/Theme.kt": {
+    "mtime": 1783967159.345649,
+    "ast_hash": "69a786da640a73e69ed5c2a86677e27f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/test/java/com/vdrive/app/ui/auth/AuthViewModelTest.kt": {
+    "mtime": 1783795305.7226887,
+    "ast_hash": "a4d60bf97cbb9521fd146cfa7c25e4dc",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/android/app/src/test/java/com/vdrive/app/ui/files/DashboardViewModelTest.kt": {
+    "mtime": 1784046283.8290784,
+    "ast_hash": "49de3dcacd20dd420eb0b8be5018ca44",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/web/package.json": {
+    "mtime": 1783965544.771226,
+    "ast_hash": "f109d5afa371ce091d9fc9c348d9fe7f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/workers/b2-proxy.js": {
+    "mtime": 1783795027.0221403,
+    "ast_hash": "e85008860d6fa6e0b7a1e6b5669c3f48",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/workers/.wrangler/cache/wrangler-account.json": {
+    "mtime": 1783792560.470674,
+    "ast_hash": "c2c922cb3a3c79d8b22748818b6c09b5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/scripts/migrate-to-b2.js": {
+    "mtime": 1783791838.7722015,
+    "ast_hash": "2fb6b9f2b189a1f73f0e93b8d0eac61a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.wrangler/cache/wrangler-account.json": {
+    "mtime": 1783793787.2849681,
+    "ast_hash": "c2c922cb3a3c79d8b22748818b6c09b5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs-index.tsx": {
+    "mtime": 1783965368.2724025,
+    "ast_hash": "393ec85437390e8e3808f8bf14bac4f1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/utils/colors.ts": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "aa008dd6f2287d3c57da048c5867f5f1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/scripts/sync_tailwind_docs.py": {
+    "mtime": 1783965296.2354615,
+    "ast_hash": "08e15d7a699c4af866061f298387deb9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.opencode/opencode.json": {
+    "mtime": 1783967604.025621,
+    "ast_hash": "e5f74d14a81702b55bdf53b33ec991d7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.opencode/package.json": {
+    "mtime": 1783967621.0216513,
+    "ast_hash": "2bffcf9dc5701114d97f5dc5e7c50482",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.opencode/plugins/graphify.js": {
+    "mtime": 1783967573.569333,
+    "ast_hash": "64ccd3c03dbfe0980b6095766f5c4e52",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/DESIGN.md": {
+    "mtime": 1783967441.539281,
+    "ast_hash": "c97f0cdea3acb446856969d65c0f66c3",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/AGENTS.md": {
+    "mtime": 1783967573.568991,
+    "ast_hash": "ff7b573ded8bccb2979de6ec336f2e5b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/PROJECT_STATUS.md": {
+    "mtime": 1784046352.0182903,
+    "ast_hash": "57ddb5b84699ab3823fd46ba1c8e44da",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/web/public/index.html": {
+    "mtime": 1783967316.755996,
+    "ast_hash": "6f07e478f448f46daccd406a4f226245",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/web/public/login.html": {
+    "mtime": 1783967317.186997,
+    "ast_hash": "e97582cbbb599442313462d9c0da1809",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/web/public/access.html": {
+    "mtime": 1783967318.090999,
+    "ast_hash": "66014cd0024525cdf17bb47254f77ff1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/web/public/dashboard.html": {
+    "mtime": 1784045773.2177908,
+    "ast_hash": "638ae087e36af56c9f032cb153c5e780",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/SKILL.md": {
+    "mtime": 1783965296.2351887,
+    "ast_hash": "523ea1f3d130374acf69b162e785e1f4",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs-source.txt": {
+    "mtime": 1783965368.6835263,
+    "ast_hash": "4f1c7e1ac5820a98ca4f54cd90da1952",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/engineering-playbook.md": {
+    "mtime": 1783965296.2354176,
+    "ast_hash": "2475e1b8de2eaec8dea286f44c580d52",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/gotchas.md": {
+    "mtime": 1783965296.2354615,
+    "ast_hash": "f83064106c396a9bd2e98473d72e9ced",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/zoom.mdx": {
+    "mtime": 1783965368.6388721,
+    "ast_hash": "af875951b2182adf699a2a4703394200",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/z-index.mdx": {
+    "mtime": 1783965368.6388721,
+    "ast_hash": "4effa184a518707e72d0c2bbbaa618cc",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/word-break.mdx": {
+    "mtime": 1783965368.6388721,
+    "ast_hash": "7a7305882e2ecab076135a18cc12fb7c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/will-change.mdx": {
+    "mtime": 1783965368.6388721,
+    "ast_hash": "2efe5a1a989d56dcba0b7434a6f915bd",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/width.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "b2ebf1ee4eacd6c79a95efe6a49754b8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/white-space.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "da547a24fde4e0ddaf64a824b2c87a06",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/visibility.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "f2933b8ca57238e39c9c8f558ed495c5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/vertical-align.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "32e51c05699edb08521c7fc37cd529e3",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/user-select.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "9401897416ee6029a968e4fca69275ce",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/upgrade-guide.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "69e5f9be248218a50531d453558a06c1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/translate.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "b9ff164dfa5667bf318ed24dbb88cc6f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transition-timing-function.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "1e698e3b6fa89cc9b479b2b5efd28f41",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transition-property.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "51105771a45b01aa7396931b95ba8915",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transition-duration.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "b605cacceeb9560b9a357e930ba67a8c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transition-delay.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "fe46caaf0d3a9af98b8c1dc39f4ed388",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transition-behavior.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "29d085b7bdd4ecd236954c1be79a934c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transform.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "0db8ac420389771684a9b94ea5f842db",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transform-style.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "dd2f939f8a96fd8ccf008602011eea1a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/transform-origin.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "b5df4904463731c2a47b95b7d655b6f2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/touch-action.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "bec4411e9d1bc4501e7856e05fd45022",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/top-right-bottom-left.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "c22207f56705737832d88b2a339a1288",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/theme.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "3b795a9b629ee0a085170b679fc769d8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-wrap.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "64d24b29b44330d2132b56dfb8884465",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-underline-offset.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "e6312057397abd7bbc1ac682fadbbd53",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-transform.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "0a431aabd57b93dbf28cbd43a5c8b4e2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-shadow.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "08259685bab3384dffc6dabf347c4aa0",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-overflow.mdx": {
+    "mtime": 1783965368.6378722,
+    "ast_hash": "a034dd37be202690f7c2500da74f0e06",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-indent.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "3945aee3c80ce2a250671c5494b100d7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-decoration-thickness.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "fc2b977c3054130581e14e577363c5c1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-decoration-style.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "13d96af440457c91880a042de82f1e46",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-decoration-line.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "e32a4be336fde041d60b7179f8534f76",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-decoration-color.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "ac6f667d07d3c22fd6cec99986b34964",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/text-align.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "4f8fa57bde2b398410bd0cb44054067e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/table-layout.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "97d8d11663b90013f6634d5af9134be2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/tab-size.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "a7d24801280d8a6e54e7b8ff08c6c0f8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/styling-with-utility-classes.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "2cf2e5cd3546cdf9d2157c64a6181251",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/stroke.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "abfac48daf6a80072a835d6ff47d0d6e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/stroke-width.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "1fb7edc5f886fc3309a408208db2f3b2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/skew.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "41e870ce8795e62a1f73f9b7e5031541",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scrollbar-width.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "0f5f081e683277d6a26df24d98f61e81",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scrollbar-gutter.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "0e032bf0b552fd46c680cf3e6079670a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scrollbar-color.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "f1afd6b71b57d8303638de3583c9d3fa",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scroll-snap-type.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "9f90b0a3ae38879d78506d5ba8ccb5c9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scroll-snap-stop.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "9d06fde442f1b28a9dd694b7107330c4",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scroll-snap-align.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "e1642af6e43bad392c7275ee47d6f041",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scroll-padding.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "b2058b931a1ad1bc4f25aa10a7595a3d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scroll-margin.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "72835e4071ed29ab0d947b30512f6aff",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scroll-behavior.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "cf8d1f526569652aecdeefd24c84fc70",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/scale.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "a19002fd426859a3d668253b2bec9afe",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/rotate.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "b517edbd048fcaa063363e480b2f1e03",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/responsive-design.mdx": {
+    "mtime": 1783965368.6368723,
+    "ast_hash": "602748c338fb928c81dcdfff7a6bfe79",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/resize.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "a200a430dc44ca9529acace9ba04d7fb",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/preflight.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "6a2685872832daa529c496f037c1a3f6",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/position.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "b3411f73f69403eb831b52840e5f68c2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/pointer-events.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "41c309e399047019321434b5d24b6633",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/place-self.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "c43393d6ea2d2e465a94d154a1510a7f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/place-items.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "8050da8c53fd2cb9ecc21cfe2b3bbb71",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/place-content.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "81524b4d7dc1f46ea914a6822ffbc81c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/perspective.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "f607905e1866773fa635737dffc69916",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/perspective-origin.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "fcabcc1a79bc12cf02007dc0760c9db0",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/padding.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "983de3e1d10346a1b3b9231f0bde811a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/overscroll-behavior.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "1b30f9003277a8b8aa5131d827977466",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/overflow.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "a598d3e111ee8e75cb250fb8b3b272de",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/overflow-wrap.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "4673ebcde28d545ba88c76fe1b49ad07",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/outline-width.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "adf84e34366972ad35942649a548fbf1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/outline-style.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "0385a04656ed20890d1b3e64e8af8b49",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/outline-offset.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "b9e249397cdcde742f677861ce6875c6",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/outline-color.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "eb813a79c2297034475d4565a38b214f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/order.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "8e5fd7ff0ae41a3ed50e60ecf072b2eb",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/opacity.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "354cde23fdf3fef25d95bcd643aee263",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/object-position.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "cf764059feca329613dc612cf8415aa1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/object-fit.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "5589f22c03e1ce087741755001e19aa4",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mix-blend-mode.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "e87d7772f665c655485b0d55f551e1aa",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/min-width.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "813cc2cbaf4e8d3ea07b4c34c912fc30",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/min-inline-size.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "d578fe7e923819f6b87927ff63e09a1b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/min-height.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "c9949e680334ff14f79f1d3bd60cc55d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/min-block-size.mdx": {
+    "mtime": 1783965368.6358721,
+    "ast_hash": "20e25a6b7a36fdaff9418a9211f87ebe",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/max-width.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "c317593d804806777298d6c0c11a11cb",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/max-inline-size.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "536580d1b27dd2254baccc54312b29c9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/max-height.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "ff939850d0e7a188f65819da792e69e2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/max-block-size.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "6fbface4e4f2f470250f653cd14d68f8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-type.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "1c740ad7183ab2f45a9637f532f81147",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-size.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "bb52171fb485e9cfd00c66063b51ad17",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-repeat.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "3b893a6faf35c99f13c5e8796ddc9352",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-position.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "f29c263ce1cde8f6bf4b758e426afb7f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-origin.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "e5492346ffbb646489a6f61197ec36c3",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-mode.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "22aeb88c20e97bf09c2bc2d7f6b2dc97",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-image.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "684465557c294a61b679dc0a0442bd2f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-composite.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "2d153dfadff1aa4316e613cf85d36e7c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/mask-clip.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "d9c69e42f5cd1ee39c0ce5e459e42a06",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/margin.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "77ae351b2b4759b52ae353643d1700ca",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/list-style-type.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "b08f8651199d24e02964ee7220a5df67",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/list-style-position.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "4aae94765a6c67cc24c07db22e66e5dc",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/list-style-image.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "78c31bbffba3f95de3258b9fdf4b9eae",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/line-height.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "44d1355e74d575cdff1809eab71a00e2",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/line-clamp.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "4d4c1b678e250099fbb5e1309e518251",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/letter-spacing.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "68bb8144b56413b68475ada2bd4b7b4e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/justify-self.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "33e995168809b6a029d7934b6bb7b468",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/justify-items.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "e71495c5f4d3b431a0060b6261b98fbe",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/justify-content.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "9b6547a303cad897d0f94d6b6e52797f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/isolation.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "00776e0ed29b0bff60b3b4a14b938b4a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/inline-size.mdx": {
+    "mtime": 1783965368.6348722,
+    "ast_hash": "5920aca03536e6e172dff10d1b676bd9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/hyphens.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "121380ee5c1011ce1057cf1c88d87432",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/hover-focus-and-other-states.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "96208c5fb6f74c2186f41a549fa66e2f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/height.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "bd74fd9b688770ef9333a0b1dfe3c88c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-template-rows.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "d940c0fe3712d32f53838257a9b1abea",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-template-columns.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "27c7e0698798d538fc687a048748e045",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-row.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "70e9ffc5f10ced0f9c14e341c3a15321",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-column.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "a82c7b843c529aaa58bb3d701b1eabbd",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-auto-rows.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "6916614c3881d208b8fcfce3a7c66176",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-auto-flow.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "49716bb7874f95f18c630a5a7d58faa8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/grid-auto-columns.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "f3e1a72e57da3725d1a3e101ba369cfe",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/gap.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "20295085cd6b4fc4ceeb5d3dfa9b81b5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/functions-and-directives.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "898b519ed7b843f5bae3703673e3a6cf",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/forced-color-adjust.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "b908849e31dd9f961a72cff8afb01d90",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-weight.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "3b81a6614ec28a771fc061434a36eced",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-variant-numeric.mdx": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "e5b5ffccbeb534fd78f114268bf2225a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-style.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "0e3a28964de9e1f6fd3c75beafe2cd09",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-stretch.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "91064357d374e701c57521e89cd2464e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-smoothing.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "00aa8e146eeeb3751051a53a0d529878",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-size.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "292befbab99e0108e94b5b3779b2e48e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-feature-settings.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "6d143afbf8b0ca2aa429dc3d778a8230",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/font-family.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "83c5990db3518113400516bf3af45c09",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/float.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "462179d460679b79860b33393a24b42d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/flex.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "a98d80493e3526171a5c6181cb4d3d20",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/flex-wrap.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "3bf44ccfb4e6198ffdd6c0af4e766f6f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/flex-shrink.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "66a2882abefec8353f5c25658f9ea61c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/flex-grow.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "7a9ad8d74cea3ee6fc0ec0926bec2022",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/flex-direction.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "d682fd681326c06b55dd98964f5509db",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/flex-basis.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "588b07712630c39ba14d43a217fed8c8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "d580c0431817375210df0735903dc59e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-sepia.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "fc7510b04de2effce353545d5686fdae",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-saturate.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "04198a7620f1976ee6b24464f829e691",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-invert.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "d2728f917a0abc19bcecca802d81694b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-hue-rotate.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "b61c637a997095fcfd2685e6b69a8767",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-grayscale.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "4e3c2c8eca051274d6d47641c3ac9ee7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-drop-shadow.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "58d86947ac2df04975f8bdddb2be4a94",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-contrast.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "bbc1677cfcae4d0bc120ac40462c4ea7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-brightness.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "adfd7f0f79fd5c62bebea4193b953636",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/filter-blur.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "3d1f3527306daee882bf4388e34b6f80",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/fill.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "ce94217ee25b0f70c0317ef785843ab9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/field-sizing.mdx": {
+    "mtime": 1783965368.619872,
+    "ast_hash": "c01dbe49e3921860eff7236bbe21d260",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/editor-setup.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "cc0cb5287128220e4d174a1ee9765441",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/display.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "d1f274aaf57d4cb71196f6c9371edd6b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/detecting-classes-in-source-files.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "3cec931e7e14017b8340756d6f1d017a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/dark-mode.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "c87d5f0a9bd922dc2af67e125a4ef88f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/cursor.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "5f9dc7cd5bfa1d6604ade48215b4e890",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/content.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "698177dd5d395abcb51589d0c2b9fb61",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/compatibility.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "d62f3afefabee7e8781342b8ddbf669b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/columns.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "9a6e19b0b87e1c1e6c2e41cda2e3bc1c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/colors.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "16ba411dadbf946848914820cfee1896",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/color.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "1a0189ec1ea77532816b21a69b7856b6",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/color-scheme.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "53dccf6d515dde9ae34cbf3c6f9a1440",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/clear.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "de009c2d73a67abf08623a7f44ef2171",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/caret-color.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "92c3c56f1f00a7b6f8884ea23fd659a9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/caption-side.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "c1c91a8ffeaa5d698c9873a5ba73a5b0",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/break-inside.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "293d590eed779248fcfe713caf851ee5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/break-before.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "2ebb5303c89d4040e3a940f21e44750e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/break-after.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "3a8eaf1bc5383e97861724a7ce794519",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/box-sizing.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "78bb4d10cac67be972174e5fa144b966",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/box-shadow.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "a843454be8dc6432ccb2dc35fb2f02b9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/box-decoration-break.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "15a86537efa7c979834727c0897dcaa5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/border-width.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "27c0c8eaeba456ec3451109214f89d01",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/border-style.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "7984076730533893957d24ffd3e42f4d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/border-spacing.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "80935908809b46af0f82b35e7d7ced5e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/border-radius.mdx": {
+    "mtime": 1783965368.6188722,
+    "ast_hash": "c642525461dfee89e490e457cd413708",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/border-color.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "ce4f99dea6e51c8a69ede13a129d728f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/border-collapse.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "2be37eab1424a188db4124b07cf88a00",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/block-size.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "c8bb68fd1edde09782d86abd69ef43ef",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-size.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "ac4dd4672ae3fc5d19f8a48c4fe385a0",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-repeat.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "1d9eccc98c0b1119834ca7ea65346192",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-position.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "689a87a12e803ac35820128c4f25c26a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-origin.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "fcfdbe0e590bcff9f81825673acbcf50",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-image.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "312f0b1d72e21de50b0cbd15fc0add5d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-color.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "df855ddeea85f1f6b3002fdfefd562ee",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-clip.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "2ea389fe0d32dabb31737d54890f2ab6",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-blend-mode.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "74f34d3ad8adfb317e14a3a7729ca6af",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/background-attachment.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "2c2895627180007376578602b6937a00",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backface-visibility.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "d32bb87734354797c9d73cee47a7aa07",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "fbd1bdae6ddc30ccbef0d31444a1b00c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-sepia.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "05d1a5f2db35968a182639356002102e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-saturate.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "07bcee4f9ea391349bebf4fde65b21f7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-opacity.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "ba24d74ce4a9908b81361b363ed87738",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-invert.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "a63ca30d4597842cfde59eed88892418",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-hue-rotate.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "0313a213619434331b20ab69f3df2eb5",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-grayscale.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "9629a88d42969209bbe3fda4d7d5da2f",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-contrast.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "efb6d9fedc24acd349555aa31f36023b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-brightness.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "7a161e629750cf22dfd77df0f0883a7b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/backdrop-filter-blur.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "e522e71af9cb706a627913ce79ee90f3",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/aspect-ratio.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "22602d51db9985d9bd90503e6c6e3942",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/appearance.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "293b87150b4bb9edcae49ca415863f46",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/animation.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "df2dddf3293b55e953686ea9b77716cb",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/align-self.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "26c8d584ffed8c473ca92b4417f03cdc",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/align-items.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "d4c7180c7146633a156acdbf80ece6d1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/align-content.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "2d8450b78543136cf5b288ddc6f3ba16",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/adding-custom-styles.mdx": {
+    "mtime": 1783965368.6186512,
+    "ast_hash": "accc3a306cddbef753920096a621b545",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/accent-color.mdx": {
+    "mtime": 1783965368.6181223,
+    "ast_hash": "5394e32117a89eb1c4ad29d61c6fd4ea",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/zed-intellisense.png": {
+    "mtime": 1783965368.6338723,
+    "ast_hash": "03bf5612ea09962fcddd3de8cc738e50",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/t-shirt.jpg": {
+    "mtime": 1783965368.6278722,
+    "ast_hash": "d6ff4458f63782288b81fc6ba48fc288",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/prettier-banner.jpg": {
+    "mtime": 1783965368.6278722,
+    "ast_hash": "b408feedfb86df318fe7351109cba5d9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/mask.png": {
+    "mtime": 1783965368.6278722,
+    "ast_hash": "64c1ad89875993a71aa21280e02df68a",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/keyboard-light.png": {
+    "mtime": 1783965368.6278722,
+    "ast_hash": "36b2c9c703bb5cc725383a45347bc5e6",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/keyboard-dark.png": {
+    "mtime": 1783965368.6258721,
+    "ast_hash": "dc32638cd4fd0c80aacc6124c7277210",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/intellisense.png": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "70463eb9068c46c061f4c5edc9159a2e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/erin-lindford.jpg": {
+    "mtime": 1783965368.6238723,
+    "ast_hash": "981dfff716f07035ea83c22c810f18bc",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/cursor-intellisense.png": {
+    "mtime": 1783965368.622872,
+    "ast_hash": "6cf9ff2a5e5efaf207222e6692cdcc0d",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/clouds.svg": {
+    "mtime": 1783965368.6208723,
+    "ast_hash": "bafdb71bb47eaee7a67889539ff0a2f4",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/vite.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "a2e3ffdf90d20dbbbe6438924d775964",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/tanstack.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "a470e701c0fce3ed9a097d0f71fcccf7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/tanstack-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "6727745e880943c1054520a9aff12281",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/symfony.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "3c7b1ccfda16e3a609a8f3c8a38594f7",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/symfony-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "fc1872e4b28b878abbcbd09f3db2dabf",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/svelte.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "385f2429dc96b47d9d347e4ab564352b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/solidjs.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "9a5f9cfd639cbb8440e2161774f31c02",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/rspack.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "6dbe0af4fe7a03cffbbd959e5f52a414",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/react-router.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "9a945b1f917b65e5efe640f38e0f9eb3",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/react-router-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "0dcbe9078c6518b26ace53c6edec33c9",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/rails.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "eb76d6a7ba36e24ea9eb9cee68901b97",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/rails-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "b62315a7b3a023ba70ab2d22c12773b8",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/qwik.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "13e959b64d2427769b45afe2d4a4904e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/phoenix.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "edf6c3629dbc1a1219521d6a92c77d98",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/parcel.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "48224433acfb0c11f4e685aa6f481951",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/nuxtjs.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "2bba877ea511a07b220efd92ae834a25",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/nextjs.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "f950f6ae09f579b9fddd4f3c620c5d5b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/nextjs-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "c48f5ad1c8747940a95bdb87b6b92c7e",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/meteor.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "8ed29328febdb041e5ae18d1b4e8a2e1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/laravel.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "10f70b4e8fd838a7c18b94f6839832e1",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/gatsby.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "4110aea110779ae5eae362f52cc84fcc",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/ember.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "d05a5a9d162d26c3191381928007acb0",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/astro.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "5e25020d26d1e2fca778e5d3868f980c",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/astro-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "3af7933d339f4af85fd578cba2353630",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/angular.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "9dcdf88830537035e077dfb8a50d08af",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/angular-white.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "aecbfaf48b39407292f197265d0911ac",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/adonis.react.svg": {
+    "mtime": 1783965368.6250365,
+    "ast_hash": "1c5514a8c0b37068b434d16dca60719b",
+    "semantic_hash": ""
+  },
+  "/home/wise/Development/vdrive/.agents/skills/tailwind-4-docs/references/docs/img/guides/adonis-white.react.svg": {
+    "mtime": 1783965368.6238723,
+    "ast_hash": "4ec1a318ead8a5e6a13784034be1ecde",
+    "semantic_hash": ""
+  }
+}
