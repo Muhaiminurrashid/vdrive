@@ -2,7 +2,7 @@
 
 ## What's Built
 
-- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. File upload/download/delete, access code sharing (6-char, 15 min TTL), marketing landing page. Drag-drop upload. File size display. Folder tree navigation with breadcrumb.
+- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. Google Drive-style UI: resizable sidebar with brand/[+ New]/storage/dark mode, list/grid view toggle, 3-dot context menu (always visible) per file, file info side panel, double-click preview (images/video/audio/PDF/text), account avatar dropdown. File upload/download/delete, access code sharing (6-char, 15 min TTL), drag-drop upload, folder tree navigation with breadcrumb.
 - **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder tree navigation with breadcrumb. File size display.
 - **Storage**: Backblaze B2 (private bucket `vdrive12`) via Cloudflare Worker proxy. Files stored on B2, metadata in Firestore.
 - **Web deployed**: Firebase Hosting → https://vdrive-64deb.web.app
@@ -11,9 +11,9 @@
 ## Architecture
 
 ```text
-Client → Cloudflare Worker (upload auth, signed download, delete, rate-limited) → Backblaze B2
+Client → Cloudflare Worker (upload auth, download proxy, delete, rate-limited) → Backblaze B2
 Client → Firestore (file metadata, access codes, users, folders)
-Client → B2 directly via signed URL (download, CORS-enabled)
+Client → Worker proxy for all downloads (B2 URL never reaches client)
 ```
 
 ## Completed
@@ -143,29 +143,64 @@ Client → B2 directly via signed URL (download, CORS-enabled)
 - **Drawer storage**: compact `DrawerStorageIndicator` (just bar + text, no icon/card, Google Drive-style)
 - **YAGNI cuts**: Trash placeholder, SharedPreferences for view mode, View Info on folders, separate component files, real thumbnails
 
-### Bugfixes
+### Phase 13 — Web Google Drive-style UI/UX Redesign
+- **Resizable sidebar**: drag handle (200-400px), width persisted in `localStorage`, css `col-resize` cursor. Brand header (folder SVG + "Virtual Pendrive"), "[+ New]" button → dropdown (Upload file / New folder), "My Files" nav item, compact storage bar, dark mode toggle.
+- **Top bar redesign**: breadcrumb left (clickable segments, `›` separator), view toggle (List/Grid icon buttons), account avatar circle → dropdown (email, Change password, Sign out).
+- **List view**: Drive-style columns: `[tinted file-type icon 20px] [name truncate] [size] [folder location] [⋮ 3-dot]`. 48px rows, hover highlight. Sub-folders rendered first (Drive convention).
+- **Grid view**: `auto-fill` responsive columns, 48px tinted file-type icon cards + name + size + 3-dot on hover. Card click opens info panel. Folder cards navigate on click.
+- **File-type SVG icons**: 7 inline SVGs per DESIGN.md palette — PDF (rust `#C27A5C`), PPT (amber), DOC (sage), Video (lava), ZIP (slate), folder (navy), generic (muted). No icon library.
+- **3-dot context menu**: `data-id` + `data-type` attributes → shared `handleDotClick()`. Items: File info, Download, Rename, Open with, Delete (red, with divider). Closes on outside click.
+- **File info side panel**: slides from right (360px, 0.2s transition, backdrop dim). Shows icon + name + metadata (Size, Type, Uploaded, Location) + action buttons (Download, Rename, Open with, Share, Delete). Folder info panel shows Rename.
+- **Dark mode**: CSS vars redefined under `.dark` class on `<html>`, toggle in sidebar, persisted in `localStorage`. Covers canvas, surfaces, ink, hairline, muted colors.
+- **Account dropdown**: top-right avatar circle (user email initial) → email display + Change password + Sign out.
+- **Mobile**: hamburger toggles sidebar overlay drawer with backdrop dim, `transition: left .2s`.
+- **Ponytail cuts**: no search bar, no trash/recycle bin, no sidebar nav depth, no checkbox multi-select, no right-click menu (replaced by 3-dot), no icon library (inline SVGs), no system `prefers-color-scheme` listener.
+- **1 file changed**: `web/public/dashboard.html` only (801 lines). Zero new files, zero new dependencies.
+- **CSS rebuilt**: `npm run css` regenerated `styles.css`.
+- **Deployed**: Firebase Hosting → https://vdrive-64deb.web.app
+
+### Bugfixes (Fixed)
 - **Delete folder permission denied (Firestore rules)**: batch update on children failed if any child lacked matching `userId` → split into folder delete first (ownership), then best-effort individual child updates with per-document try/catch
 - **graphify-out/ git tracking**: added `/graphify-out/` to `.gitignore`, removed from git index
+- **3-dot menu quote conflict**: `handleDotClick()` used double quotes inside `onclick="..."` — HTML parser closed attribute at inner `"`, all 6 actions silently broken. Fix: single quotes in cmd strings.
+- **Download opens instead of saving**: B2 responded with content-type inline, `download` attr on cross-origin `<a>` ignored. Fix: proxy through Worker with `Content-Disposition: attachment`.
+- **B2 signed URL exposed in DOM**: anyone with link could access file. Fix: Worker proxy fetch, B2 URL never reaches client.
+
+### Phase 14 — Download Proxy + Preview + UX Fixes
+- **Worker `/api/download` endpoint**: `POST` handler fetches file from B2 server-side (auth token), streams to client with `Content-Disposition: attachment` + CORS headers. B2 URL never reaches client DOM. Rate-limited 30/min.
+- **Web download via proxy**: `downloadFile()` POSTs to `/api/download`, gets blob response, triggers save via `URL.createObjectURL`. No direct B2 URLs.
+- **Access page download via proxy**: same approach — click handler fetches from proxy, blob + anchor click, no B2 URL exposed.
+- **3-dot menu always visible**: removed `display:none` + hover-only CSS on `.file-menu` and `.grid-card-menu`. Buttons always shown.
+- **Double-click file preview**: `previewFile()` fetches via proxy, renders inline by type:
+  - Images (jpg/png/gif/webp/svg/bmp): `<img>` in dark overlay
+  - Videos: `<video>` with controls
+  - Audio: `<audio>` with controls
+  - PDF: embedded `<embed>` viewer
+  - Text/code (40+ extensions): rendered in `<pre>`
+  - Others: falls back to info panel
+- **Removed "Open with"**: removed from 3-dot menu and info panel. Removed `openFile()` function. Dead code after download proxy replaced direct URL approach.
+- **Removed `/api/download-url` usage from web clients**: Android still uses it.
+- **Deployed**: Worker + Hosting
 
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms — use context menu instead
 - **Breadcrumb + button**: small `+` in breadcrumb bar removed — use FAB instead
 - **Share row removed**: generate code / share selected buttons removed from file list header (re-add later)
 - **CodeBottomSheet invocation**: removed (composable kept for later re-add)
+- **Right-click context menu (web)**: replaced by 3-dot click menu (Phase 13)
+- **Centered max-w-[680px] layout (web)**: replaced by sidebar + flex content layout (Phase 13)
+- **Top header email/password/sign-out row (web)**: replaced by account avatar dropdown (Phase 13)
+- **Checkbox multi-select + Share selected button (web)**: replaced by per-file Share in info panel (Phase 13)
+- **"Open with" button**: removed from 3-dot menu and info panel (Phase 14)
+- **`openFile()` function**: removed — dead code after download proxy replaced direct URL approach (Phase 14)
+- **Direct B2 download URL exposure**: replaced by Worker proxy download (Phase 14)
 
 ## Next Steps (Priority Order)
 
-### 1. Web UI/UX Polish (prompt TBD)
-- Awaiting user prompt for web redesign
-
-### 2. Folder Sidebar (Web)
-- Collapsible tree on left pane with expand/collapse icons
-- Shows nested folder structure, click to navigate
-
-### 3. Custom Domain
+### 1. Custom Domain
 - Firebase Hosting custom domain instead of `vdrive-64deb.web.app`
 
-### 4. CI / CD
+### 2. CI / CD
 - GitHub Actions: test on PR, deploy on merge
 
 ## What Was Tried & Failed

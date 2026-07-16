@@ -119,9 +119,7 @@ async function handleAccess() {
       if (!metaSnap.exists) return null
       const meta = metaSnap.data()
       if (!meta.b2FileName) return null
-      const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(meta.b2FileName)}`)
-      const { url } = await res.json()
-      return { name: meta.name, url, size: meta.size || 0 }
+      return { name: meta.name, b2FileName: meta.b2FileName, size: meta.size || 0 }
     }))
     const filtered = items.filter(Boolean)
     document.getElementById('displayCode').textContent = code
@@ -132,10 +130,21 @@ async function handleAccess() {
     } else {
       filtered.forEach(f => {
         const t = getFileType(f.name)
-        const el = document.createElement('a')
-        el.href = f.url
-        el.download = f.name
-        el.className = 'flex items-center justify-between bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 hover:shadow-sm'
+        const el = document.createElement('div')
+        el.className = 'flex items-center justify-between bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 hover:shadow-sm cursor-pointer'
+        el.onclick = async () => {
+          try {
+            const res = await fetch(`${B2_PROXY_URL}/api/download`, {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ fileName: f.b2FileName })
+            })
+            if (!res.ok) throw new Error()
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a'); a.href = url; a.download = f.name; a.click()
+            URL.revokeObjectURL(url)
+          } catch(e) { alert('Download failed') }
+        }
         el.innerHTML = `
           <div class="flex gap-3 min-w-0 items-center">
             <span class="text-xs font-semibold uppercase tracking-wider ${fileTypeColor(t)}">${t}</span>

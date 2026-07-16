@@ -3,79 +3,284 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Files — Virtual Pendrive</title>
+<title>Virtual Pendrive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=2">
+<style>
+html { --sidebar-w: 240px; }
+html.dark {
+  --color-canvas: #0f1117;
+  --color-surface-card: #1a1d27;
+  --color-surface-soft: #262933;
+  --color-surface-dark: #0a0c12;
+  --color-ink: #e8eaed;
+  --color-body: #bdc1c6;
+  --color-muted: #9aa0a6;
+  --color-muted-soft: #7a8088;
+  --color-hairline: #303440;
+  --color-on-dark: #e8eaed;
+  --color-on-dark-soft: #9aa0a6;
+  --color-primary-disabled: #2d3a5a;
+  --color-hairline-soft: #262933;
+}
+body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); color:var(--color-ink); }
+#app { display:flex; min-height:100vh; }
+#sidebar { width:var(--sidebar-w); min-width:200px; max-width:400px; background:var(--color-surface-card); border-right:1px solid var(--color-hairline); display:flex; flex-direction:column; flex-shrink:0; position:relative; }
+#resizeHandle { position:absolute; right:-3px; top:0; bottom:0; width:6px; cursor:col-resize; z-index:10; }
+#resizeHandle:hover,#resizeHandle.active { background:var(--color-primary); opacity:0.3; }
+#main { flex:1; display:flex; flex-direction:column; min-width:0; }
+#topbar { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:var(--color-surface-card); border-bottom:1px solid var(--color-hairline); flex-shrink:0; }
+#breadcrumb { display:flex; align-items:center; gap:2px; flex:1; min-width:0; overflow:hidden; }
+#breadcrumb .seg { font-size:13px; cursor:pointer; white-space:nowrap; }
+#breadcrumb .seg:hover:not(.active) { color:var(--color-primary); }
+#breadcrumb .seg.active { cursor:default; }
+.sep { color:var(--color-muted-soft); margin:0 2px; user-select:none; }
+#sidebarBrand { display:flex; align-items:center; gap:8px; padding:16px; font-size:15px; font-weight:600; color:var(--color-primary); border-bottom:1px solid var(--color-hairline); }
+#newBtn { margin:12px 16px; padding:0 16px; height:40px; background:var(--color-primary); color:var(--color-on-primary); border:none; border-radius:20px; font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap; }
+#newBtn:hover { background:var(--color-primary-active); }
+#navItems { padding:8px 12px; flex:1; }
+.navItem { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; font-size:13px; font-weight:500; color:var(--color-muted); cursor:default; }
+.navItem.active { background:var(--color-surface-soft); color:var(--color-primary); }
+#sidebarBottom { padding:12px 16px; border-top:1px solid var(--color-hairline); }
+#sidebarStorageBar { height:4px; background:var(--color-hairline); border-radius:2px; overflow:hidden; margin-bottom:4px; }
+#sidebarStorageFill { height:100%; background:var(--color-primary); border-radius:2px; transition:width .3s; }
+#sidebarStorageText { font-size:11px; color:var(--color-muted-soft); }
+#sidebarDarkToggle { display:flex; align-items:center; gap:8px; padding:8px 0; font-size:13px; color:var(--color-muted); cursor:pointer; }
+#sidebarDarkToggle:hover { color:var(--color-ink); }
+#topbarRight { display:flex; align-items:center; gap:8px; }
+#viewToggle { display:flex; border:1px solid var(--color-hairline); border-radius:6px; overflow:hidden; }
+#viewToggle button { padding:6px 8px; border:none; background:transparent; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; }
+#viewToggle button.active { background:var(--color-surface-soft); color:var(--color-primary); }
+#avatarBtn { width:32px; height:32px; border-radius:50%; background:var(--color-primary); color:var(--color-on-primary); border:none; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#content { flex:1; padding:20px 28px; overflow-y:auto; }
+#contentHeader { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+#fileCount { font-size:13px; color:var(--color-muted); margin:0; }
+#codeDisplay { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:10px; padding:16px; margin-bottom:20px; display:none; }
+#codeDisplay.show { display:block; }
+#codeDisplay .t { font-size:13px; font-weight:600; margin:0 0 2px; }
+#codeDisplay .s { font-size:12px; color:var(--color-muted); margin:0 0 12px; }
+#codeRow { display:flex; gap:8px; align-items:center; }
+#codeValue { font-family:JetBrains Mono,monospace; background:var(--color-surface-dark); color:var(--color-on-dark); padding:8px 16px; border-radius:6px; font-size:20px; font-weight:700; letter-spacing:.3em; }
+#copyBtn { padding:8px 16px; background:var(--color-primary); color:var(--color-on-primary); border:none; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; }
+#codeDisplay:not(.show) { display:none; }
+.hidden { display:none !important; }
+#codeDisplay.show { display:block !important; }
+/* File list */
+.file-row { display:flex; align-items:center; padding:0 16px; height:48px; border-radius:8px; cursor:default; gap:12px; }
+.file-row:hover { background:var(--color-surface-soft); }
+.file-row.isFolder { cursor:pointer; }
+.file-icon { width:20px; height:20px; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.file-icon svg { width:14px; height:14px; }
+.file-name { font-size:13px; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-size { font-size:12px; color:var(--color-muted); width:80px; text-align:right; flex-shrink:0; }
+.file-folder { font-size:12px; color:var(--color-muted-soft); width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
+.file-menu { width:32px; height:32px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.file-menu:hover { background:var(--color-surface-soft); color:var(--color-ink); }
+/* Grid */
+#grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
+.grid-card { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:10px; padding:16px 12px 12px; cursor:pointer; position:relative; }
+.grid-card:hover { border-color:var(--color-primary); }
+.grid-card-icon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+.grid-card-icon svg { width:26px; height:26px; }
+.grid-card-name { font-size:12px; font-weight:500; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.grid-card-size { font-size:11px; color:var(--color-muted); text-align:center; }
+.grid-card-menu { position:absolute; bottom:8px; right:8px; width:28px; height:28px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; }
+.grid-card-menu:hover { background:var(--color-surface-soft); }
+/* Dot menu */
+#dotMenu { position:fixed; background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:8px; padding:4px 0; min-width:160px; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,.12); }
+#dotMenu.hidden { display:none; }
+.dot-item { padding:8px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:10px; }
+.dot-item:hover { background:var(--color-surface-soft); }
+.dot-item.danger { color:var(--color-error); }
+.dot-divider { height:1px; background:var(--color-hairline); margin:4px 0; }
+/* Info panel */
+#panelOverlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:200; display:none; }
+#panelOverlay.show { display:block; }
+#previewOverlay { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:400; display:none; align-items:center; justify-content:center; }
+#previewOverlay.show { display:flex; }
+#previewBox { position:relative; max-width:90vw; max-height:90vh; background:var(--color-surface-card); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+#previewClose { position:absolute; top:12px; right:12px; width:36px; height:36px; border:none; background:rgba(0,0,0,.4); border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center; z-index:1; }
+#previewClose:hover { background:rgba(0,0,0,.6); }
+#previewContent { display:flex; align-items:center; justify-content:center; flex:1; overflow:auto; }
+#previewContent img { max-width:100%; max-height:85vh; object-fit:contain; }
+#previewContent video { max-width:100%; max-height:85vh; }
+#previewContent audio { width:80vw; max-width:500px; }
+#previewContent embed { width:90vw; height:85vh; border:none; }
+#previewContent pre { padding:24px; font-size:13px; overflow:auto; max-height:85vh; max-width:90vw; white-space:pre-wrap; word-break:break-all; }
+#previewFallback { padding:48px; text-align:center; color:var(--color-muted); }
+#infoPanel { position:fixed; right:0; top:0; bottom:0; width:360px; max-width:90vw; background:var(--color-surface-card); border-left:1px solid var(--color-hairline); z-index:201; transform:translateX(100%); transition:transform .2s; display:flex; flex-direction:column; }
+#infoPanel.open { transform:translateX(0); }
+#panelHeader { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--color-hairline); }
+#panelHeader h3 { font-size:15px; font-weight:600; margin:0; }
+#panelClose { width:32px; height:32px; border:none; background:transparent; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-muted); }
+#panelClose:hover { background:var(--color-surface-soft); }
+#panelBody { padding:24px 20px; flex:1; overflow-y:auto; }
+#panelIconWrap { width:56px; height:56px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+#panelIconWrap svg { width:30px; height:30px; }
+#panelName { font-size:16px; font-weight:600; margin:0 0 16px; word-break:break-word; }
+.panel-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--color-hairline); font-size:13px; }
+.panel-row .l { color:var(--color-muted); }
+.panel-row .v { font-weight:500; text-align:right; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#panelActions { display:flex; flex-direction:column; gap:6px; margin-top:20px; }
+#panelActions button { padding:10px 16px; border:1px solid var(--color-hairline); border-radius:8px; background:transparent; font-size:13px; font-weight:500; cursor:pointer; text-align:left; display:flex; align-items:center; gap:10px; color:var(--color-ink); }
+#panelActions button:hover { background:var(--color-surface-soft); }
+#panelActions button.danger { color:var(--color-error); }
+/* New dropdown */
+#newDropdown { position:fixed; z-index:100; background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:8px; padding:4px 0; min-width:180px; box-shadow:0 4px 12px rgba(0,0,0,.12); display:none; }
+#newDropdown.show { display:block; }
+.new-opt { padding:8px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:10px; }
+.new-opt:hover { background:var(--color-surface-soft); }
+/* Empty */
+.empty-state { text-align:center; padding:48px 24px; color:var(--color-muted-soft); }
+.empty-state svg { margin:0 auto 12px; }
+.empty-state p { margin:4px 0; font-size:14px; }
+.empty-state .p2 { font-size:13px; color:var(--color-muted); }
+/* Mobile */
+@media(max-width:768px) {
+  #sidebar { position:fixed; left:-100%; top:0; bottom:0; z-index:300; transition:left .2s; }
+  #sidebar.open { left:0; }
+  #sidebarOverlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:299; display:none; }
+  #sidebarOverlay.show { display:block; }
+  #topbar { padding:0 12px; }
+  #content { padding:12px; }
+  #grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+  .file-folder { display:none; }
+}
+#hamburger { display:none; width:32px; height:32px; border:none; background:transparent; cursor:pointer; align-items:center; justify-content:center; color:var(--color-muted); margin-right:4px; }
+#hamburger:hover { color:var(--color-ink); }
+</style>
 </head>
 <body>
 
-<header class="h-14 px-6 border-b border-hairline bg-surface-card flex items-center justify-between">
-  <a href="/" class="flex items-center gap-2 text-sm font-semibold text-primary tracking-tight">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <path d="M16 10a4 4 0 01-8 0"/>
-    </svg>
-    <span class="hidden sm:inline">Virtual Pendrive</span>
-  </a>
-  <div class="flex items-center gap-3">
-    <span id="userEmail" class="text-sm text-muted font-normal hidden sm:inline"></span>
-    <a href="#" onclick="handleChangePassword()" class="text-sm text-muted underline">Password</a>
-    <a href="#" onclick="handleLogout()" class="text-sm text-muted underline">Sign out</a>
-  </div>
-</header>
+<div id="app">
+  <aside id="sidebar">
+    <div id="sidebarBrand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Virtual Pendrive
+    </div>
+    <button id="newBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New
+    </button>
+    <div id="navItems">
+      <div class="navItem active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        My Files
+      </div>
+    </div>
+    <div id="sidebarBottom">
+      <div id="sidebarStorageBar"><div id="sidebarStorageFill" style="width:0%"></div></div>
+      <div id="sidebarStorageText">0 B / 1 GB</div>
+      <div id="sidebarDarkToggle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <span>Dark mode</span>
+      </div>
+    </div>
+    <div id="resizeHandle"></div>
+  </aside>
+  <div id="sidebarOverlay"></div>
 
-<main class="max-w-[680px] mx-auto px-6 py-8">
+  <div id="main">
+    <header id="topbar">
+      <div style="display:flex;align-items:center;flex:1;min-width:0">
+        <button id="hamburger">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div id="breadcrumb"></div>
+      </div>
+      <div id="topbarRight">
+        <div id="viewToggle">
+          <button id="viewListBtn" class="active" title="List">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+          <button id="viewGridBtn" title="Grid">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+        </div>
+        <button id="avatarBtn"></button>
+      </div>
+    </header>
 
-  <div class="flex gap-3 mb-7 flex-wrap">
-    <label class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center cursor-pointer">
-      <span id="uploadLabel">Upload file</span>
-      <input id="fileInput" type="file" class="hidden" onchange="handleUpload(this)">
-    </label>
-    <button id="shareBtn" class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft inline-flex items-center disabled:opacity-50 disabled:cursor-not-allowed" onclick="shareSelected()" disabled>Share selected</button>
-  </div>
+    <div id="content">
+      <div id="contentHeader">
+        <p id="fileCount"></p>
+      </div>
 
-  <div id="folderBar" class="flex gap-3 mb-3 flex-wrap items-center">
-    <div id="breadcrumb" class="flex gap-2 flex-1 items-center flex-wrap"></div>
-    <button class="bg-surface-card border border-hairline text-ink rounded-lg text-xs h-8.5 px-3.5 font-medium hover:bg-surface-soft inline-flex items-center" onclick="createFolder()">+ Folder</button>
-    <button id="deleteFolderBtn" class="hidden bg-transparent border-none text-xs text-error cursor-pointer px-1 py-1" onclick="deleteCurrentFolder()">Delete folder</button>
-  </div>
+      <div id="codeDisplay">
+        <p class="t">Classroom Access Code</p>
+        <p class="s">Share this code. Expires in 15 minutes.</p>
+        <div id="codeRow">
+          <span id="codeValue"></span>
+          <button id="copyBtn">Copy</button>
+        </div>
+      </div>
 
-  <div id="codeDisplay" class="bg-surface-card border border-hairline rounded-xl p-6 mb-7 hidden">
-    <p class="text-sm font-semibold text-ink mb-0.5">Classroom Access Code</p>
-    <p class="text-sm text-muted mb-3.5">Share this code. Expires in 15 minutes.</p>
-    <div class="flex gap-3">
-      <span id="codeValue" class="font-mono bg-surface-dark text-on-dark px-5 py-3 rounded-lg text-2xl font-bold tracking-[0.3em]"></span>
-      <button id="copyBtn" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center" onclick="copyCode()">Copy</button>
+      <div id="fileList"></div>
+      <div id="grid" class="hidden"></div>
+
+      <div id="emptyState" class="empty-state hidden">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <p>No files yet</p>
+        <p class="p2">Click <strong>+ New</strong> to upload or create a folder.</p>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- ponytail: storage bar, no separate query, computed from loaded files -->
-  <div class="bg-surface-card border border-hairline rounded-xl p-4 mb-7">
-    <div class="flex items-center justify-between mb-1.5">
-      <span class="text-sm font-semibold text-primary">Storage</span>
-      <span id="storageText" class="text-xs text-muted-soft">0 MB / 1 GB</span>
-    </div>
-    <div class="h-1.5 bg-hairline rounded-full overflow-hidden">
-      <div id="storageFill" class="h-full w-0 bg-primary rounded-full transition-[width] duration-300"></div>
-    </div>
+<div id="dotMenu" class="hidden"></div>
+
+<div id="panelOverlay"></div>
+<aside id="infoPanel">
+  <div id="panelHeader">
+    <h3>File info</h3>
+    <button id="panelClose">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>
-
-  <p id="fileCount" class="text-sm text-muted mb-3.5"></p>
-
-  <div id="fileList"></div>
-
-  <!-- ponytail: context menu for folders/files -->
-  <div id="contextMenu" class="hidden fixed bg-surface-card border border-hairline rounded-xl shadow-lg py-1 z-50 min-w-[140px]"></div>
-
-  <div id="emptyState" class="border-2 border-dashed border-hairline rounded-xl p-12 text-center hidden">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted-soft mx-auto mb-3"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-    <p class="font-serif font-normal text-lg text-primary mb-1">No files yet</p>
-    <p class="text-sm text-muted">Upload your first lecture material to get started.</p>
+  <div id="panelBody">
+    <div id="panelIconWrap"></div>
+    <p id="panelName"></p>
+    <div id="panelMeta"></div>
+    <div id="panelActions"></div>
   </div>
-</main>
+</aside>
+
+<div id="previewOverlay" onclick="if(event.target===this)closePreview()">
+  <div id="previewBox">
+    <button id="previewClose" onclick="closePreview()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="previewContent"></div>
+  </div>
+</div>
+
+<div id="newDropdown">
+  <div class="new-opt" id="newUploadOpt">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Upload file
+  </div>
+  <div class="new-opt" id="newFolderOpt">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    New folder
+  </div>
+</div>
+<input id="fileInput" type="file" class="hidden">
+
+<div id="avatarMenu" class="hidden" style="position:fixed;z-index:100;background:var(--color-surface-card);border:1px solid var(--color-hairline);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,.12)">
+  <div style="padding:8px 14px;font-size:12px;color:var(--color-muted);border-bottom:1px solid var(--color-hairline)" id="avatarEmail"></div>
+  <div class="dot-item" id="changePwdBtn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    Change password
+  </div>
+  <div class="dot-item danger" id="logoutBtn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Sign out
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
@@ -91,21 +296,29 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig)
 const auth = firebase.auth()
 const db = firebase.firestore()
-
-// ponytail: set B2_PROXY_URL after deploying Worker
 const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
+const $ = id => document.getElementById(id)
 
+// ponytail: view mode persisted in localStorage
+window.viewMode = localStorage.getItem('vdriveView') || 'list'
+window.currentUser = null
+window.currentFolderId = null
+window.folderPath = []
+window.folderNames = {}
+window.panelFiles = {}
+window.panelFolders = {}
+window.lastCode = null
+
+// --- Auth ---
 auth.onAuthStateChanged(user => {
   if (!user) { window.location.href = '/login.html'; return }
-  document.getElementById('userEmail').textContent = user.email
   window.currentUser = user
-  window.currentFolderId = null
-  window.folderPath = []
-  loadFolders().then(() => loadContents())
+  $('avatarBtn').textContent = (user.email?.[0] || '?').toUpperCase()
+  $('avatarEmail').textContent = user.email
+  renderBreadcrumb(); loadFolders().then(() => loadContents())
 })
 
-
-// ponytail: native drag-drop upload, drop anywhere on page
+// ponytail: native drag-drop, drop anywhere
 document.addEventListener('dragover', e => e.preventDefault())
 document.addEventListener('drop', e => {
   e.preventDefault()
@@ -113,343 +326,549 @@ document.addEventListener('drop', e => {
   if (file) handleUpload(file)
 })
 
-function handleLogout() { auth.signOut(); window.location.href = '/' }
+// --- Event wiring ---
+$('newBtn').onclick = toggleNewMenu
+$('newUploadOpt').onclick = () => { $('newDropdown').classList.remove('show'); $('fileInput').click() }
+$('newFolderOpt').onclick = () => { $('newDropdown').classList.remove('show'); createFolder() }
+$('fileInput').onchange = function() { handleUpload(this) }
+$('avatarBtn').onclick = toggleAvatarMenu
+$('changePwdBtn').onclick = handleChangePassword
+$('logoutBtn').onclick = handleLogout
+$('viewListBtn').onclick = () => toggleView('list')
+$('viewGridBtn').onclick = () => toggleView('grid')
+$('hamburger').onclick = toggleSidebar
+$('sidebarOverlay').onclick = toggleSidebar
+$('sidebarDarkToggle').onclick = toggleDark
+$('panelClose').onclick = closeInfoPanel
+$('panelOverlay').onclick = closeInfoPanel
+$('copyBtn').onclick = copyCode
 
-async function handleChangePassword() {
-  const newPass = prompt('Enter new password (min 6 characters):')
-  if (!newPass || newPass.length < 6) return
-  try {
-    await window.currentUser.updatePassword(newPass)
-    alert('Password changed successfully!')
-  } catch (e) { alert(e.message) }
+// ponytail: click outside closes dropdowns
+document.addEventListener('click', e => {
+  if (!e.target.closest('#dotMenu')) $('dotMenu').classList.add('hidden')
+  if (!e.target.closest('#newDropdown') && !e.target.closest('#newBtn')) $('newDropdown').classList.remove('show')
+  if (!e.target.closest('#avatarMenu') && !e.target.closest('#avatarBtn')) $('avatarMenu').classList.add('hidden')
+})
+
+// --- View toggle ---
+function toggleView(v) {
+  window.viewMode = v
+  localStorage.setItem('vdriveView', v)
+  $('viewListBtn').classList.toggle('active', v === 'list')
+  $('viewGridBtn').classList.toggle('active', v === 'grid')
+  loadContents()
 }
 
+// --- Sidebar ---
+function toggleSidebar() {
+  $('sidebar').classList.toggle('open')
+  $('sidebarOverlay').classList.toggle('show')
+}
+// ponytail: resize handle, persist width
+(function(){
+  const s = $('sidebar'), h = $('resizeHandle')
+  let startX, startW
+  h.addEventListener('mousedown', e => { startX = e.clientX; startW = s.offsetWidth; h.classList.add('active'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none' })
+  document.addEventListener('mousemove', e => { if (startX == null) return; const w = Math.min(400, Math.max(200, startW + e.clientX - startX)); s.style.width = w + 'px'; document.documentElement.style.setProperty('--sidebar-w', w + 'px') })
+  document.addEventListener('mouseup', () => { if (startX == null) return; const w = s.offsetWidth; localStorage.setItem('vdriveSidebarW', w); startX = null; h.classList.remove('active'); document.body.style.cursor = ''; document.body.style.userSelect = '' })
+  const saved = localStorage.getItem('vdriveSidebarW')
+  if (saved) { s.style.width = saved + 'px'; document.documentElement.style.setProperty('--sidebar-w', saved + 'px') }
+})()
+
+function toggleNewMenu() {
+  const el = $('newDropdown')
+  el.classList.toggle('show')
+  const r = $('newBtn').getBoundingClientRect()
+  el.style.left = r.left + 'px'
+  el.style.top = (r.bottom + 4) + 'px'
+}
+
+function toggleAvatarMenu() {
+  const el = $('avatarMenu')
+  el.classList.toggle('hidden')
+  const r = $('avatarBtn').getBoundingClientRect()
+  el.style.left = (r.left - 60) + 'px'
+  el.style.top = (r.bottom + 4) + 'px'
+}
+
+// --- Dark mode ---
+// ponytail: class toggle + localStorage
+function toggleDark() {
+  document.documentElement.classList.toggle('dark')
+  localStorage.setItem('vdriveDark', document.documentElement.classList.contains('dark') ? '1' : '')
+}
+if (localStorage.getItem('vdriveDark')) document.documentElement.classList.add('dark')
+
+// --- Helpers ---
 function formatBytes(bytes) {
+  if (!bytes) return '0 B'
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / 1048576).toFixed(1) + ' MB'
 }
 
-window.folderNames = {}
+function getFileType(name) {
+  const map = { pdf:'PDF', pptx:'PPT', ppt:'PPT', docx:'DOC', doc:'DOC', mp4:'Video', xlsx:'XLS', zip:'ZIP' }
+  return map[name.split('.').pop().toLowerCase()] || 'FILE'
+}
 
-// ponytail: loads all folders once, filtered in-memory for current context
+function fileIconData(name) {
+  const ext = name.split('.').pop().toLowerCase()
+  const map = {
+    pdf: { bg:'#C27A5C', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    ppt: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    pptx: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    doc: { bg:'#7EB89E', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    docx: { bg:'#7EB89E', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    mp4: { bg:'#9B7FC8', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>' },
+    xlsx: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    zip: { bg:'#6c6a64', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>' }
+  }
+  return map[ext] || { bg:'#8e8b82', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' }
+}
+
+// --- Folder ops ---
 async function loadFolders() {
   if (!window.currentUser) return
   const snap = await db.collection('folders').where('userId', '==', window.currentUser.uid).get()
   window.folderNames = {}
+  window.panelFolders = {}
   snap.docs.forEach(doc => {
     window.folderNames[doc.id] = doc.data().name
+    window.panelFolders[doc.id] = { id: doc.id, name: doc.data().name }
   })
 }
 
 function renderBreadcrumb() {
-  const el = document.getElementById('breadcrumb')
   const parts = [{ id: null, name: 'My Files' }, ...window.folderPath]
-  el.innerHTML = parts.map((p, i) => {
+  $('breadcrumb').innerHTML = parts.map((p, i) => {
     const last = i === parts.length - 1
-    if (last) {
-      return `<span class="text-sm text-ink">${p.name}</span>`
-    }
-    return `<span class="text-sm text-primary cursor-pointer" onclick="navigateToBreadcrumb(${i})">${p.name}</span><span class="text-xs text-muted-soft mx-1">›</span>`
+    return (i > 0 ? '<span class="sep">›</span>' : '') +
+      `<span class="seg${last ? ' active' : ''}" onclick="${last ? '' : `navigateToBreadcrumb(${i})`}">${escapeHtml(p.name)}</span>`
   }).join('')
-  document.getElementById('deleteFolderBtn').classList.toggle('hidden', !window.currentFolderId)
 }
+
+function escapeHtml(s) { return (s+'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]) }
 
 function navigateToFolder(id) {
   const folder = window.folderNames[id]
   if (!folder) return
   window.currentFolderId = id
   window.folderPath.push({ id, name: folder })
-  renderBreadcrumb()
-  loadContents()
+  renderBreadcrumb(); loadContents()
 }
 
 function navigateUp() {
-  if (window.folderPath.length === 0) return
+  if (!window.folderPath.length) return
   window.folderPath.pop()
-  window.currentFolderId = window.folderPath.length > 0 ? window.folderPath[window.folderPath.length - 1].id : null
-  renderBreadcrumb()
-  loadContents()
+  window.currentFolderId = window.folderPath.length ? window.folderPath[window.folderPath.length-1].id : null
+  renderBreadcrumb(); loadContents()
 }
 
 function navigateToBreadcrumb(index) {
   if (index >= window.folderPath.length + 1) return
   window.folderPath = window.folderPath.slice(0, index)
-  window.currentFolderId = index === 0 ? null : window.folderPath[index - 1].id
-  renderBreadcrumb()
-  loadContents()
+  window.currentFolderId = index === 0 ? null : window.folderPath[index-1].id
+  renderBreadcrumb(); loadContents()
 }
 
 async function createFolder() {
   const name = prompt('Folder name:')
   if (!name) return
   await db.collection('folders').add({
-    name,
-    userId: window.currentUser.uid,
-    parentId: window.currentFolderId || null,
+    name, userId: window.currentUser.uid, parentId: window.currentFolderId || null,
     createdAt: firebase.firestore.Timestamp.now()
   })
-  await loadFolders()
-  loadContents()
+  await loadFolders(); loadContents()
 }
 
-async function deleteCurrentFolder() {
-  const folderId = window.currentFolderId
-  if (!folderId || !confirm('Delete this folder? Files and sub-folders will be detached.')) return
-  await deleteFolderById(folderId)
-  navigateUp()
-}
-
-// ponytail: shared helper, used by both delete btn and context menu
 async function deleteFolderById(folderId) {
   await db.collection('folders').doc(folderId).delete()
   // ponytail: silent child cleanup
   Promise.allSettled([
-    db.collection('files').where('folderId', '==', folderId).get().then(snap =>
-      Promise.allSettled(snap.docs.map(d => d.ref.update({ folderId: null }).catch(() => {})))
-    ).catch(() => {}),
-    db.collection('folders').where('parentId', '==', folderId).get().then(snap =>
-      Promise.allSettled(snap.docs.map(d => d.ref.update({ parentId: null }).catch(() => {})))
-    ).catch(() => {})
+    db.collection('files').where('folderId','==',folderId).get().then(snap =>
+      Promise.allSettled(snap.docs.map(d => d.ref.update({folderId:null}).catch(()=>{})))
+    ).catch(()=>{}),
+    db.collection('folders').where('parentId','==',folderId).get().then(snap =>
+      Promise.allSettled(snap.docs.map(d => d.ref.update({parentId:null}).catch(()=>{})))
+    ).catch(()=>{})
   ])
 }
 
-function getFileType(name) {
-  const map = { pdf: 'PDF', pptx: 'PPT', ppt: 'PPT', docx: 'DOC', doc: 'DOC', mp4: 'Video', xlsx: 'XLS', zip: 'ZIP' }
-  const ext = name.split('.').pop().toLowerCase()
-  return map[ext] || ext.toUpperCase()
+async function renameFolder(id) {
+  const n = prompt('Rename folder:', window.panelFolders[id]?.name)
+  if (!n || n === window.panelFolders[id]?.name) return
+  await db.collection('folders').doc(id).update({ name: n })
+  await loadFolders(); loadContents()
 }
 
-const fileTypeColors = {
-  PDF: 'text-file-pdf', PPT: 'text-file-ppt', DOC: 'text-file-doc',
-  Video: 'text-file-video', XLS: 'text-file-ppt', ZIP: 'text-file-zip'
+async function moveFileToFolder(fileId) {
+  const folders = Object.entries(window.folderNames).map(([id, name]) => ({ id, name }))
+  const c = ['My Files (root)', ...folders.map(f => f.name)]
+  const choice = prompt('Move to folder:\n' + c.map((c,i) => `${i}. ${c}`).join('\n') + '\n\nEnter number:')
+  if (choice === null) return
+  const idx = parseInt(choice)
+  if (isNaN(idx) || idx < 0 || idx > folders.length) return
+  await db.collection('files').doc(fileId).update({ folderId: idx === 0 ? null : folders[idx-1].id })
+  loadContents()
 }
 
-function fileTypeColor(type) {
-  return fileTypeColors[type] || 'text-muted-soft'
-}
-
-// ponytail: loads both sub-folders + files for current folder context, filters in-memory
-async function loadContents() {
-  const user = window.currentUser
-  if (!user) return
-  const [fileSnap, folderSnap] = await Promise.all([
-    db.collection('files').where('userId', '==', user.uid).get(),
-    db.collection('folders').where('userId', '==', user.uid).get()
-  ])
-
-  const folderId = window.currentFolderId
-  const files = []
-  fileSnap.forEach(doc => {
-    const d = doc.data()
-    if ((d.folderId || null) === folderId) files.push({ id: doc.id, ...d })
-  })
-  const subFolders = []
-  folderSnap.forEach(doc => {
-    const d = doc.data()
-    if ((d.parentId || null) === folderId) subFolders.push({ id: doc.id, name: d.name })
-  })
-
-  const list = document.getElementById('fileList')
-  const empty = document.getElementById('emptyState')
-  list.innerHTML = ''
-
-  const totalBytes = fileSnap.docs.reduce((sum, d) => sum + (d.data().size || 0), 0)
-  const maxBytes = 1_000_000_000
-  document.getElementById('storageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
-  document.getElementById('storageFill').style.width = Math.min(100, (totalBytes / maxBytes) * 100) + '%'
-
-  const fileCount = files.length
-  const folderCount = subFolders.length
-  let countText = fileCount + ' file' + (fileCount !== 1 ? 's' : '')
-  if (folderCount) countText += ' · ' + folderCount + ' folder' + (folderCount !== 1 ? 's' : '')
-  document.getElementById('fileCount').textContent = countText
-
-  if (files.length === 0 && subFolders.length === 0) {
-    empty.classList.remove('hidden')
-    return
-  }
-  empty.classList.add('hidden')
-
-  // ponytail: sub-folders rendered first (Google Drive convention), then files
-  subFolders.forEach(folder => {
-    const el = document.createElement('div')
-    el.className = 'flex items-center justify-between bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 cursor-pointer hover:shadow-sm'
-    el.onclick = () => navigateToFolder(folder.id)
-    el.oncontextmenu = (e) => showContextMenu(e, [
-      { label: 'Rename', onclick: `renameFolder('${folder.id}', '${folder.name.replace(/'/g, "\\'")}')` },
-      { label: 'Delete', danger: true, onclick: `if(confirm('Delete this folder? Files and sub-folders will be detached.')){deleteFolderById('${folder.id}').then(()=>loadFolders().then(()=>loadContents()))}` }
-    ])
-    el.innerHTML = `<div class="flex gap-3 flex-1 items-center py-1">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary shrink-0"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-      <span class="text-sm text-ink font-medium">${folder.name}</span>
-    </div>`
-    list.appendChild(el)
-  })
-
-  files.forEach(f => {
-    const t = getFileType(f.name)
-    const el = document.createElement('div')
-    el.className = 'flex items-center bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 hover:shadow-sm'
-
-    const cb = document.createElement('input')
-    cb.type = 'checkbox'
-    cb.className = 'accent-primary size-4 cursor-pointer shrink-0 mr-3'
-    cb.dataset.id = f.id
-    cb.onchange = updateShareBtn
-
-    const nameLink = document.createElement('a')
-    nameLink.href = '#'
-    nameLink.className = 'flex gap-3 min-w-0 items-center flex-1'
-    nameLink.innerHTML = `<span class="text-xs font-semibold uppercase tracking-wider ${fileTypeColor(t)} shrink-0">${t}</span><span class="truncate text-sm text-ink">${f.name}</span><span class="text-xs text-muted shrink-0 ml-2">${formatBytes(f.size)}</span>`
-    nameLink.onclick = async (e) => {
-      e.preventDefault()
-      if (!f.b2FileName) return
-      try {
-        const res = await fetch(`${B2_PROXY_URL}/api/download-url?fileName=${encodeURIComponent(f.b2FileName)}`)
-        if (!res.ok) throw new Error('Download service unavailable')
-        const { url } = await res.json()
-        const a = document.createElement('a')
-        a.href = url; a.download = f.name; a.click()
-      } catch (e) { alert('Download failed: ' + e.message) }
-    }
-    nameLink.oncontextmenu = (e) => showContextMenu(e, [
-      { label: 'Move to', onclick: `moveFileToFolder('${f.id}')` },
-      { label: 'Delete', danger: true, onclick: `if(confirm('Delete file?')){document.querySelector('[data-id="${f.id}"]').closest('div').querySelector('button').click()}` }
-    ])
-
-    const delBtn = document.createElement('button')
-    delBtn.textContent = 'Delete'
-    delBtn.className = 'bg-transparent border-none text-xs text-muted-soft cursor-pointer ml-3 shrink-0 hover:text-error'
-    delBtn.onclick = async () => {
-      delBtn.textContent = 'Deleting...'
-      delBtn.disabled = true
-      try {
-        if (f.b2FileId && f.b2FileName) {
-          const res = await fetch(`${B2_PROXY_URL}/api/delete`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileId: f.b2FileId, fileName: f.b2FileName })
-          })
-          if (!res.ok) throw new Error('Delete failed')
-        }
-        await db.collection('files').doc(f.id).delete()
-        loadContents()
-      } catch (e) { alert('Delete failed: ' + e.message); loadContents() }
-    }
-
-    el.appendChild(cb)
-    el.appendChild(nameLink)
-    el.appendChild(delBtn)
-    list.appendChild(el)
-  })
-}
-
-// ponytail: accepts <input> or raw File (from drag-drop)
+// --- Upload ---
 async function handleUpload(inputOrFile) {
   const file = inputOrFile.files ? inputOrFile.files[0] : inputOrFile
   if (!file || !window.currentUser) return
-  // ponytail: 100 MB limit, B2 has no real cap but keeps free tier sane
-  if (file.size > 100 * 1024 * 1024) { alert('File too large (max 100 MB)'); return }
-  document.getElementById('uploadLabel').textContent = 'Uploading...'
+  if (file.size > 100*1024*1024) { alert('File too large (max 100 MB)'); return }
+  $('newBtn').innerHTML = 'Uploading...'
   try {
     const { uploadUrl, authToken } = await fetch(`${B2_PROXY_URL}/api/upload-url`).then(r => r.json())
-    // ponytail: prefix with userId+timestamp to avoid collisions in public bucket
     const b2FileName = `${window.currentUser.uid}_${Date.now()}_${file.name}`
     const b2Res = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
-        Authorization: authToken,
-        'X-Bz-File-Name': encodeURIComponent(b2FileName),
-        'Content-Type': file.type || 'application/octet-stream',
-        'X-Bz-Content-Sha1': 'do_not_verify'
+        Authorization: authToken, 'X-Bz-File-Name': encodeURIComponent(b2FileName),
+        'Content-Type': file.type || 'application/octet-stream', 'X-Bz-Content-Sha1': 'do_not_verify'
       },
       body: file
     })
     if (!b2Res.ok) throw new Error(await b2Res.text())
     const b2Result = await b2Res.json()
     await db.collection('files').add({
-      name: file.name, size: file.size, type: file.type,
-      userId: window.currentUser.uid,
-      b2FileId: b2Result.fileId,
-      b2FileName: b2FileName,
-      folderId: window.currentFolderId || null,
+      name: file.name, size: file.size, type: file.type, userId: window.currentUser.uid,
+      b2FileId: b2Result.fileId, b2FileName, folderId: window.currentFolderId || null,
       createdAt: firebase.firestore.Timestamp.now(),
     })
-  } catch (e) { alert('Upload failed: ' + e.message) }
-  document.getElementById('uploadLabel').textContent = 'Upload file'
+  } catch(e) { alert('Upload failed: ' + e.message) }
+  $('newBtn').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New'
   if (inputOrFile.files) inputOrFile.value = ''
   loadContents()
 }
 
-function updateShareBtn() {
-  const checked = document.querySelectorAll('#fileList input[type="checkbox"]:checked').length
-  document.getElementById('shareBtn').disabled = checked === 0
+// --- Download / Open / Share ---
+async function downloadFile(f) {
+  if (!f?.b2FileName) return
+  try {
+    const res = await fetch(`${B2_PROXY_URL}/api/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: f.b2FileName })
+    })
+    if (!res.ok) throw new Error('Download service unavailable')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = f.name; a.click()
+    URL.revokeObjectURL(url)
+  } catch(e) { alert('Download failed: ' + e.message) }
 }
 
-async function shareSelected() {
+async function deleteFile(f) {
+  if (!f || !confirm('Delete "' + f.name + '"?')) return
+  try {
+    if (f.b2FileId && f.b2FileName) {
+      const res = await fetch(`${B2_PROXY_URL}/api/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: f.b2FileId, fileName: f.b2FileName })
+      })
+      if (!res.ok) throw new Error('Delete failed')
+    }
+    await db.collection('files').doc(f.id).delete()
+    closeInfoPanel(); loadContents()
+  } catch(e) { alert('Delete failed: ' + e.message); loadContents() }
+}
+
+async function shareFile(fileId) {
   const user = window.currentUser
-  if (!user) return
-  const checks = document.querySelectorAll('#fileList input[type="checkbox"]:checked')
-  const fileIds = Array.from(checks).map(c => c.dataset.id)
-  if (fileIds.length === 0) return
+  if (!user || !fileId) return
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+  const code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('')
   await db.collection('accessCodes').add({
-    code, userId: user.uid, fileIds,
-    expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+    code, userId: user.uid, fileIds: [fileId],
+    expiresAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 15*60*1000)),
     createdAt: firebase.firestore.Timestamp.now(),
   })
-  document.getElementById('codeValue').textContent = code
-  document.getElementById('codeDisplay').classList.remove('hidden')
+  $('codeValue').textContent = code
+  $('codeDisplay').classList.add('show')
   window.lastCode = code
-  checks.forEach(c => c.checked = false)
-  updateShareBtn()
+  closeInfoPanel()
 }
 
 function copyCode() {
-  if (window.lastCode) {
-    navigator.clipboard.writeText(window.lastCode)
-    document.getElementById('copyBtn').textContent = 'Copied!'
-    setTimeout(() => { document.getElementById('copyBtn').textContent = 'Copy' }, 2000)
+  if (!window.lastCode) return
+  navigator.clipboard.writeText(window.lastCode)
+  $('copyBtn').textContent = 'Copied!'
+  setTimeout(() => { $('copyBtn').textContent = 'Copy' }, 2000)
+}
+
+function handleLogout() { auth.signOut(); window.location.href = '/' }
+
+async function handleChangePassword() {
+  const n = prompt('Enter new password (min 6 characters):')
+  if (!n || n.length < 6) return
+  try { await window.currentUser.updatePassword(n); alert('Password changed successfully!') } catch(e) { alert(e.message) }
+}
+
+// --- 3-dot menu ---
+// ponytail: uses data-id + data-type attributes, no string escaping
+function handleDotClick(e) {
+  e.stopPropagation()
+  const btn = e.currentTarget
+  const id = btn.dataset.id, type = btn.dataset.type
+  const items = type === 'folder' ? [
+    { label:'File info', cmd:"showInfoPanel('folder','" + id + "')" },
+    { label:'Rename', cmd:"renameFolder('" + id + "')" },
+    { label:'', divider: true },
+    { label:'Delete', danger:true, cmd:"deleteFolderConfirm('" + id + "')" }
+  ] : [
+    { label:'File info', cmd:"showInfoPanel('file','" + id + "')" },
+    { label:'Download', cmd:"downloadFile(panelFiles['" + id + "'])" },
+    { label:'Rename', cmd:"renameFile('" + id + "')" },
+    { label:'', divider: true },
+    { label:'Delete', danger:true, cmd:"deleteFile(panelFiles['" + id + "'])" }
+  ]
+  const menu = $('dotMenu')
+  menu.innerHTML = items.map(item =>
+    item.divider ? '<div class="dot-divider"></div>' :
+    `<div class="dot-item${item.danger?' danger':''}" onclick="${item.cmd};$('dotMenu').classList.add('hidden')">${item.label}</div>`
+  ).join('')
+  menu.classList.remove('hidden')
+  const r = btn.getBoundingClientRect()
+  menu.style.left = Math.min(r.left, window.innerWidth - 180) + 'px'
+  menu.style.top = r.bottom + 'px'
+}
+
+async function deleteFolderConfirm(id) {
+  if (confirm('Delete this folder? Files and sub-folders will be detached.')) {
+    await deleteFolderById(id)
+    await loadFolders(); loadContents()
   }
 }
 
-// ponytail: context menu for folders and files — prompt-based rename/move, no inline edit or drag-drop
-function showContextMenu(e, items) {
-  e.preventDefault()
-  const menu = document.getElementById('contextMenu')
-  menu.innerHTML = items.map(item =>
-    `<div class="px-4 py-2 text-sm cursor-pointer hover:bg-surface-soft ${item.danger ? 'text-error' : 'text-ink'}" onclick="${item.onclick}">${item.label}</div>`
-  ).join('')
-  menu.style.left = e.clientX + 'px'
-  menu.style.top = e.clientY + 'px'
-  menu.classList.remove('hidden')
+function renameFile(id) {
+  const f = window.panelFiles[id]
+  if (!f) return
+  const n = prompt('Rename file:', f.name)
+  if (!n || n === f.name) return
+  db.collection('files').doc(id).update({ name: n }).then(loadContents)
 }
 
-document.addEventListener('click', () => {
-  document.getElementById('contextMenu').classList.add('hidden')
-})
+// --- Info panel ---
+function showInfoPanel(type, id) {
+  const f = type === 'folder' ? window.panelFolders[id] : window.panelFiles[id]
+  if (!f) return
+  const isFolder = type === 'folder'
+  const icon = isFolder
+    ? { bg: '#3B5C9A', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' }
+    : fileIconData(f.name)
+  $('panelIconWrap').style.background = icon.bg
+  $('panelIconWrap').innerHTML = icon.svg
+  $('panelName').textContent = f.name
 
-async function renameFolder(id, oldName) {
-  const newName = prompt('Rename folder:', oldName)
-  if (!newName || newName === oldName) return
-  await db.collection('folders').doc(id).update({ name: newName })
-  await loadFolders()
-  loadContents()
+  let meta = ''
+  if (f.size != null) meta += `<div class="panel-row"><span class="l">Size</span><span class="v">${formatBytes(f.size)}</span></div>`
+  if (f.type) meta += `<div class="panel-row"><span class="l">Type</span><span class="v">${getFileType(f.name)}</span></div>`
+  if (f.createdAt) {
+    const d = f.createdAt.toDate ? f.createdAt.toDate() : new Date(f.createdAt)
+    if (!isNaN(d)) meta += `<div class="panel-row"><span class="l">Uploaded</span><span class="v">${d.toLocaleDateString()}</span></div>`
+  }
+  const fn = f.folderId ? (window.folderNames[f.folderId] || 'Unknown') : 'My Files'
+  meta += `<div class="panel-row"><span class="l">Location</span><span class="v">${escapeHtml(fn)}</span></div>`
+  $('panelMeta').innerHTML = meta
+
+  let actions = ''
+  if (!isFolder) {
+    actions += `<button onclick="downloadFile(panelFiles['${f.id}']);closeInfoPanel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download
+    </button>`
+    actions += `<button onclick="renameFile('${f.id}');closeInfoPanel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename
+    </button>`
+    actions += `<button onclick="shareFile('${f.id}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share
+    </button>`
+    actions += `<button class="danger" onclick="deleteFile(panelFiles['${f.id}'])">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete
+    </button>`
+  } else {
+    actions += `<button onclick="renameFolder('${f.id}');closeInfoPanel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename
+    </button>`
+  }
+  $('panelActions').innerHTML = actions
+  $('panelOverlay').classList.add('show')
+  $('infoPanel').classList.add('open')
 }
 
-async function moveFileToFolder(fileId) {
-  const folders = Object.entries(window.folderNames).map(([id, name]) => ({ id, name }))
-  const choices = ['My Files (root)', ...folders.map(f => f.name)]
-  const choice = prompt('Move to folder:\n' + choices.map((c, i) => `${i}. ${c}`).join('\n') + '\n\nEnter number:')
-  if (choice === null) return
-  const idx = parseInt(choice)
-  if (isNaN(idx) || idx < 0 || idx > folders.length) return
-  const targetFolderId = idx === 0 ? null : folders[idx - 1].id
-  await db.collection('files').doc(fileId).update({ folderId: targetFolderId })
-  loadContents()
+function closeInfoPanel() {
+  $('panelOverlay').classList.remove('show')
+  $('infoPanel').classList.remove('open')
+}
+
+// --- Preview ---
+// ponytail: fetches via proxy, shows inline by type
+const previewTypes = {
+  jpg:1,jpeg:1,png:1,gif:1,webp:1,svg:1,bmp:1,
+  mp4:1,webm:1,mov:1,avi:1,mkv:1,
+  mp3:1,wav:1,ogg:1,m4a:1,
+  pdf:1,
+  txt:1,md:1,json:1,xml:1,csv:1,log:1,
+  js:1,ts:1,py:1,java:1,kt:1,cpp:1,c:1,h:1,rs:1,go:1,rb:1,php:1,swift:1,yaml:1,yml:1,toml:1,ini:1,cfg:1,sql:1,sh:1,bat:1,ps1:1,html:1,css:1,scss:1,less:1
+}
+async function previewFile(f) {
+  if (!f?.b2FileName) return
+  const ext = f.name.split('.').pop().toLowerCase()
+  if (!previewTypes[ext]) { showInfoPanel('file', f.id); return }
+
+  const c = $('previewContent')
+  c.innerHTML = '<div style="padding:48px;color:var(--color-muted)">Loading...</div>'
+  $('previewOverlay').classList.add('show')
+
+  try {
+    const res = await fetch(`${B2_PROXY_URL}/api/download`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ fileName: f.b2FileName })
+    })
+    if (!res.ok) throw new Error()
+
+    if (ext === 'pdf') {
+      const blob = await res.blob()
+      c.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf">`
+      return
+    }
+
+    if (['mp4','webm','mov','avi','mkv'].includes(ext)) {
+      const blob = await res.blob()
+      c.innerHTML = `<video src="${URL.createObjectURL(blob)}" controls autoplay></video>`
+      return
+    }
+
+    if (['mp3','wav','ogg','m4a'].includes(ext)) {
+      const blob = await res.blob()
+      c.innerHTML = `<audio src="${URL.createObjectURL(blob)}" controls autoplay></audio>`
+      return
+    }
+
+    if (['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) {
+      const blob = await res.blob()
+      c.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${escapeHtml(f.name)}">`
+      return
+    }
+
+    const text = await res.text()
+    c.innerHTML = `<pre>${escapeHtml(text)}</pre>`
+  } catch(e) {
+    c.innerHTML = '<div id="previewFallback">Preview unavailable</div>'
+  }
+}
+function closePreview() {
+  $('previewOverlay').classList.remove('show')
+  $('previewContent').innerHTML = ''
+}
+
+// --- Main render ---
+async function loadContents() {
+  const user = window.currentUser
+  if (!user) return
+  const [fileSnap, folderSnap] = await Promise.all([
+    db.collection('files').where('userId','==',user.uid).get(),
+    db.collection('folders').where('userId','==',user.uid).get()
+  ])
+
+  const fid = window.currentFolderId
+  const files = []
+  fileSnap.forEach(doc => {
+    const d = doc.data()
+    if ((d.folderId||null) === fid) files.push({ id: doc.id, ...d })
+    window.panelFiles[doc.id] = { id: doc.id, ...d }
+  })
+  const subFolders = []
+  folderSnap.forEach(doc => {
+    const d = doc.data()
+    if ((d.parentId||null) === fid) subFolders.push({ id: doc.id, name: d.name })
+    window.panelFolders[doc.id] = { id: doc.id, ...d }
+  })
+
+  // Storage bar (global)
+  const totalBytes = fileSnap.docs.reduce((s, d) => s + (d.data().size||0), 0)
+  const pct = Math.min(100, (totalBytes / 1_000_000_000) * 100)
+  $('sidebarStorageFill').style.width = pct + '%'
+  $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
+
+  const list = $('fileList'), grid = $('grid'), empty = $('emptyState')
+  list.innerHTML = ''; grid.innerHTML = ''
+
+  const fc = files.length, foc = subFolders.length
+  let ct = fc + ' file' + (fc !== 1 ? 's' : '')
+  if (foc) ct += ' · ' + foc + ' folder' + (foc !== 1 ? 's' : '')
+  $('fileCount').textContent = ct
+
+  if (!fc && !foc) { empty.classList.remove('hidden'); list.classList.add('hidden'); grid.classList.add('hidden'); return }
+  empty.classList.add('hidden')
+
+  if (window.viewMode === 'grid') {
+    list.classList.add('hidden'); grid.classList.remove('hidden')
+    renderGrid(grid, subFolders, files)
+  } else {
+    list.classList.remove('hidden'); grid.classList.add('hidden')
+    renderList(list, subFolders, files)
+  }
+}
+
+// ponytail: list view, Drive column layout
+function renderList(container, folders, files) {
+  folders.forEach(f => {
+    const row = document.createElement('div')
+    row.className = 'file-row isFolder'
+    row.onclick = () => navigateToFolder(f.id)
+    row.innerHTML = `<div class="file-icon" style="background:#3B5C9A"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+      <span class="file-name">${escapeHtml(f.name)}</span>
+      <span class="file-size"></span>
+      <span class="file-folder"></span>
+      <button class="file-menu" data-id="${f.id}" data-type="folder"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
+    row.querySelector('.file-menu').onclick = handleDotClick
+    container.appendChild(row)
+  })
+  files.forEach(f => {
+    const icon = fileIconData(f.name)
+    const row = document.createElement('div')
+    row.className = 'file-row'
+    row.ondblclick = () => previewFile(f)
+    row.innerHTML = `<div class="file-icon" style="background:${icon.bg}">${icon.svg}</div>
+      <span class="file-name">${escapeHtml(f.name)}</span>
+      <span class="file-size">${formatBytes(f.size)}</span>
+      <span class="file-folder">${f.folderId ? escapeHtml(window.folderNames[f.folderId]||'') : ''}</span>
+      <button class="file-menu" data-id="${f.id}" data-type="file"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
+    row.querySelector('.file-menu').onclick = handleDotClick
+    container.appendChild(row)
+  })
+}
+
+// ponytail: grid view, tinted icon cards
+function renderGrid(container, folders, files) {
+  folders.forEach(f => {
+    const card = document.createElement('div')
+    card.className = 'grid-card'
+    card.onclick = () => navigateToFolder(f.id)
+    card.innerHTML = `<div class="grid-card-icon" style="background:#3B5C9A">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+      <div class="grid-card-name">${escapeHtml(f.name)}</div>
+      <div class="grid-card-size"></div>
+      <button class="grid-card-menu" data-id="${f.id}" data-type="folder"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
+    card.querySelector('.grid-card-menu').onclick = handleDotClick
+    container.appendChild(card)
+  })
+  files.forEach(f => {
+    const icon = fileIconData(f.name)
+    const card = document.createElement('div')
+    card.className = 'grid-card'
+    card.onclick = () => showInfoPanel('file', f.id)
+    card.ondblclick = () => previewFile(f)
+    card.innerHTML = `<div class="grid-card-icon" style="background:${icon.bg}">${icon.svg}</div>
+      <div class="grid-card-name">${escapeHtml(f.name)}</div>
+      <div class="grid-card-size">${formatBytes(f.size)}</div>
+      <button class="grid-card-menu" data-id="${f.id}" data-type="file"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
+    card.querySelector('.grid-card-menu').onclick = handleDotClick
+    container.appendChild(card)
+  })
 }
 </script>
 </body>

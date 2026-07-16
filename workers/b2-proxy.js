@@ -15,6 +15,7 @@ const RATE_WINDOW = 60000
 const RATE_LIMITS = {
   '/api/upload-url': 10,
   '/api/download-url': 30,
+  '/api/download': 30,
   '/api/delete': 20,
 }
 const RATE_DEFAULT = 60
@@ -48,6 +49,7 @@ export default {
     try {
       if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(env)
       if (url.pathname === '/api/download-url' && request.method === 'GET') return await handleDownloadUrl(request, env)
+      if (url.pathname === '/api/download' && request.method === 'POST') return await handleDownload(request, env)
       if (url.pathname === '/api/delete' && request.method === 'DELETE') return await handleDelete(request, env)
       if (url.pathname === '/api/set-cors' && request.method === 'POST') return await handleSetCors(env)
       if (url.pathname === '/api/set-lifecycle' && request.method === 'POST') return await handleSetLifecycle(env)
@@ -112,6 +114,31 @@ async function handleDownloadUrl(request, env) {
   return new Response(JSON.stringify({ url: signedUrl }), {
     headers: { 'Content-Type': 'application/json', ...corsHeaders }
   })
+}
+
+async function handleDownload(request, env) {
+  const { fileName } = await request.json()
+  if (!fileName) return new Response('fileName required', { status: 400, headers: corsHeaders })
+
+  const auth = await b2Authorize(env)
+  const downloadUrl = auth.apiInfo?.storageApi?.downloadUrl
+  const authToken = auth.authorizationToken
+  if (!downloadUrl) throw new Error('B2 auth: missing downloadUrl')
+
+  const b2Res = await fetch(`${downloadUrl}/file/${env.B2_BUCKET_NAME}/${encodeURIComponent(fileName)}`, {
+    headers: { Authorization: authToken }
+  })
+
+  const respHeaders = new Headers({
+    'Content-Disposition': 'attachment',
+    'Access-Control-Allow-Origin': '*',
+  })
+  const ct = b2Res.headers.get('Content-Type')
+  if (ct) respHeaders.set('Content-Type', ct)
+  const cl = b2Res.headers.get('Content-Length')
+  if (cl) respHeaders.set('Content-Length', cl)
+
+  return new Response(b2Res.body, { status: b2Res.status, headers: respHeaders })
 }
 
 async function handleDelete(request, env) {
