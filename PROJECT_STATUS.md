@@ -182,6 +182,15 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Removed `/api/download-url` usage from web clients**: Android still uses it.
 - **Deployed**: Worker + Hosting
 
+### Phase 15 — CI/CD Pipeline
+- **GitHub repo created**: `Muhaiminurrashid/vdrive` (private)
+- **Workflow file**: `.github/workflows/deploy.yml` — two jobs:
+  - `test`: runs on every PR + push to `main` — Android unit tests (`./gradlew app:testDebugUnitTest`) + CSS build (`npm run css`)
+  - `deploy`: runs after `test` on `main` pushes only — deploys Firebase Hosting + Cloudflare Worker
+- **GitHub secrets set**: `FIREBASE_TOKEN` (CI refresh token) + `CLOUDFLARE_API_TOKEN` (Workers edit scope)
+- **Worker secrets persist across deploys** — `wrangler deploy` uploads code only, existing `B2_APP_KEY_ID`/`B2_APP_KEY` stay intact
+- **No Android release build in CI** — keystore stays local; CI runs unit tests only
+
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms — use context menu instead
 - **Breadcrumb + button**: small `+` in breadcrumb bar removed — use FAB instead
@@ -200,8 +209,52 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 ### 1. Custom Domain
 - Firebase Hosting custom domain instead of `vdrive-64deb.web.app`
 
-### 2. CI / CD
-- GitHub Actions: test on PR, deploy on merge
+### 2. (done) CI / CD
+- GitHub Actions: test on PR, deploy on merge — **deployed**
+
+## Future Ideas (Unprioritized)
+
+### Search
+- File/folder search bar in top bar or sidebar. Filter client-side from loaded files, or Firestore query for larger sets.
+
+### Trash / Recycle Bin
+- Soft-delete files to a `trashed` state. 30-day auto-purge. Restore from trash UI.
+
+### Multi-file Operations
+- Checkbox selection mode → bulk download (zip), bulk delete, bulk move.
+
+### Drag-drop Reorder / Move
+- Drag files to folder in sidebar or breadcrumb to move them.
+
+### Share Improvements
+- Share multiple files in one code (already works), but add share via email link, QR code generation.
+- Code expiry picker (custom TTL instead of fixed 15 min).
+
+### Student Upload
+- Allow code recipients to upload files too (homework submission flow).
+
+### Web Push Notifications
+- FCM push when someone accesses your shared code.
+
+### Activity Log
+- Track file views, downloads, code accesses per file.
+
+### Offline / PWA
+- Service worker for offline file list. Cache downloaded files for offline access.
+
+### Android Parity Gaps
+- Download proxy: Android still uses `/api/download-url` directly (B2 URL exposed).
+- File preview: no double-click preview on Android.
+- Always-visible 3-dot menu: Android uses long-press context menu, no persistent 3-dot.
+
+### Performance
+- Pagination/lazy loading for large file lists (Firestore `limit` + `startAfter`).
+- Virtual scrolling for 1000+ files.
+
+### Security
+- Production Firestore rules (current rules expire Aug 2026).
+- Rate-limit by user UID in addition to IP.
+- File upload virus scanning.
 
 ## What Was Tried & Failed
 
