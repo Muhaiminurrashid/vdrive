@@ -14,6 +14,7 @@ android/.externalNativeBuild/
 # Workers
 workers/node_modules/
 workers/.wrangler/
+.wrangler/
 
 # OS
 .DS_Store
