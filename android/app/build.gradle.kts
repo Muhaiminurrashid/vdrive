@@ -19,17 +19,19 @@ android {
     }
 
     signingConfigs {
-        val props = file("../keystore.properties").readLines()
-            .filter { it.contains("=") && !it.startsWith("#") }
-            .associate {
-                val (k, v) = it.split("=", limit = 2)
-                k.trim() to v.trim()
+        if (file("../keystore.properties").exists()) {
+            val props = file("../keystore.properties").readLines()
+                .filter { it.contains("=") && !it.startsWith("#") }
+                .associate {
+                    val (k, v) = it.split("=", limit = 2)
+                    k.trim() to v.trim()
+                }
+            create("release") {
+                storeFile = file(props["storeFile"] ?: error("missing storeFile"))
+                storePassword = props["storePassword"] ?: error("missing storePassword")
+                keyAlias = props["keyAlias"] ?: error("missing keyAlias")
+                keyPassword = props["keyPassword"] ?: error("missing keyPassword")
             }
-        create("release") {
-            storeFile = file(props["storeFile"] ?: error("missing storeFile"))
-            storePassword = props["storePassword"] ?: error("missing storePassword")
-            keyAlias = props["keyAlias"] ?: error("missing keyAlias")
-            keyPassword = props["keyPassword"] ?: error("missing keyPassword")
         }
     }
 
