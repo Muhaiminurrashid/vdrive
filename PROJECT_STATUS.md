@@ -204,13 +204,13 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **`openFile()` function**: removed — dead code after download proxy replaced direct URL approach (Phase 14)
 - **Direct B2 download URL exposure**: replaced by Worker proxy download (Phase 14)
 
-## Next Steps (Priority Order)
+## Next Steps
 
-### 1. Custom Domain
-- Firebase Hosting custom domain instead of `vdrive-64deb.web.app`
-
-### 2. (done) CI / CD
+### (done) CI / CD
 - GitHub Actions: test on PR, deploy on merge — **deployed**
+
+### (postponed) Custom Domain
+- Firebase Hosting custom domain — postponed, no domain purchased.
 
 ## Future Ideas (Unprioritized)
 

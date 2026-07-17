@@ -1,10 +1,13 @@
 package com.vdrive.app.ui.files
 
 import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import androidx.core.content.FileProvider
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -277,20 +280,35 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val b2FileName = file.b2FileName ?: return@launch
-                val signedUrlRes = withContext(Dispatchers.IO) {
-                    URL("$B2_PROXY_URL/api/download-url?fileName=${java.net.URLEncoder.encode(b2FileName, "UTF-8")}")
-                        .readText()
+                val bytes = withContext(Dispatchers.IO) {
+                    val body = JSONObject().put("fileName", b2FileName).toString()
+                    val conn = URL("$B2_PROXY_URL/api/download").openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.outputStream.write(body.toByteArray())
+                    conn.inputStream.readBytes()
                 }
-                val url = JSONObject(signedUrlRes).getString("url")
-                val bytes = withContext(Dispatchers.IO) { URL(url).openStream().readBytes() }
-                val cacheFile = java.io.File(context.cacheDir, file.name)
-                cacheFile.writeBytes(bytes)
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, file.mimeType)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                withContext(Dispatchers.IO) {
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+                            put(MediaStore.Downloads.MIME_TYPE, file.mimeType)
+                            put(MediaStore.Downloads.IS_PENDING, 1)
+                        }
+                        val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                        uri?.let {
+                            context.contentResolver.openOutputStream(it)?.use { out -> out.write(bytes) }
+                            values.clear()
+                            values.put(MediaStore.Downloads.IS_PENDING, 0)
+                            context.contentResolver.update(it, values, null, null)
+                        }
+                    } else {
+                        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        java.io.File(dir, file.name).writeBytes(bytes)
+                    }
                 }
-                context.startActivity(intent)
+                withContext(Dispatchers.Main) { Toast.makeText(context, "Saved to Downloads", Toast.LENGTH_SHORT).show() }
             } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
         }
     }
