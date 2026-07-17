@@ -135,8 +135,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Navigation drawer**: `ModalNavigationDrawer` with Virtual Pendrive header, compact storage bar, dark mode toggle, sign out (300dp width, Google Drive-style)
 - **Top bar**: `TopAppBar` with hamburger (back in subfolder), "My Files" title, view mode toggle, account icon (dropdown with email/password/sign-out)
 - **Grid/list toggle**: `LazyVerticalGrid`/`LazyColumn` switch via `ViewMode` enum, toggle icon in top bar
-- **File detail bottom sheet**: metadata (name, size, type, folder, upload date) + Download/Rename/Share/Delete buttons
-- **File 3-dot menu**: Download, Rename, Move to, Delete (was Move/Delete only)
+- **File 3-dot menu**: Download, Rename, Move to, Delete (only way to access file actions — tap opens/downloads file directly)
 - **File rename**: `renameFile()` in ViewModel + `RenameFileDialog`
 - **Dark theme**: `darkColorScheme` in Theme.kt, `isDarkTheme` state hoisted in MainActivity, drawer toggle
 - **Grid cards**: `FolderGridCard` + `FileGridCard` with compact icon+name layout
@@ -179,10 +178,21 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
   - Text/code (40+ extensions): rendered in `<pre>`
   - Others: falls back to info panel
 - **Removed "Open with"**: removed from 3-dot menu and info panel. Removed `openFile()` function. Dead code after download proxy replaced direct URL approach.
-- **Removed `/api/download-url` usage from web clients**: Android still uses it.
+- **Removed `/api/download-url` usage from web clients**: Android migrated to `/api/download` in Phase 15.
 - **Deployed**: Worker + Hosting
 
-### Phase 15 — CI/CD Pipeline
+### Phase 15 — Android Parity Gaps Resolved
+- **Download proxy**: Android switched from `GET /api/download-url` (exposed signed B2 URL) to `POST /api/download` (Worker streams blob server-side). Same proxy pattern as web. B2 URL never reaches client.
+- **FileGridCard 3-dot menu**: added persistent `MoreVert` + `DropdownMenu` (was the only card missing it).
+- **Download saves to device**: 3-dot "Download" saves to Downloads folder (not just open):
+  - API 29+: `MediaStore.Downloads` (persists, shows system notification)
+  - API 26-28: direct write to `DIRECTORY_DOWNLOADS`
+  - Shows "Saved to Downloads" toast
+- **Removed**: `FileDetailBottomSheet` (metadata popup on tap — was redundant with 3-dot menu + tap-to-open)
+- **Zero new dependencies**: stdlib `HttpURLConnection` + `JSONObject` only
+- **Changed files**: `DashboardViewModel.kt`, `DashboardScreen.kt`
+
+### Phase 16 — CI/CD Pipeline
 - **GitHub repo created**: `Muhaiminurrashid/vdrive` (private)
 - **Workflow file**: `.github/workflows/deploy.yml` — two jobs:
   - `test`: runs on every PR + push to `main` — Android unit tests (`./gradlew app:testDebugUnitTest`) + CSS build (`npm run css`)
@@ -203,8 +213,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **"Open with" button**: removed from 3-dot menu and info panel (Phase 14)
 - **`openFile()` function**: removed — dead code after download proxy replaced direct URL approach (Phase 14)
 - **Direct B2 download URL exposure**: replaced by Worker proxy download (Phase 14)
+- **Download cache + intent open**: replaced by persistent save to Downloads folder (Phase 15)
+- **FileDetailBottomSheet**: removed (Phase 15) — tap action now uses simple `downloadFile()` instead of metadata popup
 
 ## Next Steps
+
+### (next) Split Tap vs 3-dot Download Behavior
+- Currently tap calls same `downloadFile()` as 3-dot "Download" — both save to Downloads folder
+- Need: tap on file → open in system viewer (cache + intent, no persistent save)
+- 3-dot "Download" → save to Downloads folder (current behavior, keep it)
+- Fix: revert `downloadFile()` to cache + intent, add `saveToDownloads()` for 3-dot
 
 ### (done) CI / CD
 - GitHub Actions: test on PR, deploy on merge — **deployed**
@@ -242,10 +260,12 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 ### Offline / PWA
 - Service worker for offline file list. Cache downloaded files for offline access.
 
-### Android Parity Gaps
-- Download proxy: Android still uses `/api/download-url` directly (B2 URL exposed).
-- File preview: no double-click preview on Android.
-- Always-visible 3-dot menu: Android uses long-press context menu, no persistent 3-dot.
+### Android
+- Split tap-to-open vs 3-dot download (tap opens file, 3-dot saves to Downloads)
+- File preview dialog (double-tap to preview images/text inline, like web)
+- Image viewer zoom/pan
+- Pull-to-refresh for file list
+- Upload progress indicator
 
 ### Performance
 - Pagination/lazy loading for large file lists (Firestore `limit` + `startAfter`).

@@ -33,25 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vdrive.app.domain.model.Folder
 import com.vdrive.app.ui.theme.*
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
-
-private const val B2_PROXY_URL = "https://b2-proxy.muhaiminurrashid99.workers.dev"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,8 +51,6 @@ fun DashboardScreen(
     var showMoveFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
     var showRenameFolderDialog by remember { mutableStateOf<Folder?>(null) }
     var showRenameFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
-    var showFileDetail by remember { mutableStateOf<FileUiItem?>(null) }
-    var previewFile by remember { mutableStateOf<FileUiItem?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
     var fabExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -345,13 +326,7 @@ fun DashboardScreen(
                         items(state.files, key = { it.id }) { file ->
                             FileGridCard(
                                 file = file,
-                                onClick = { showFileDetail = file },
-                                onDoubleClick = {
-                                    if (file.mimeType.startsWith("image/") || file.mimeType.startsWith("text/") || isCodeFile(file.name))
-                                        previewFile = file
-                                    else
-                                        viewModel.downloadFile(file, context)
-                                },
+                                onClick = { viewModel.previewFile(file, context) },
                                 onDownload = { viewModel.downloadFile(file, context) },
                                 onDelete = { viewModel.deleteFile(file) },
                                 onRename = { showRenameFileDialog = file },
@@ -382,13 +357,7 @@ fun DashboardScreen(
                                 file = file,
                                 isSelected = file.id in state.selectedIds,
                                 onToggleSelect = { viewModel.toggleSelection(file.id) },
-                                onClick = { showFileDetail = file },
-                                onDoubleClick = {
-                                    if (file.mimeType.startsWith("image/") || file.mimeType.startsWith("text/") || isCodeFile(file.name))
-                                        previewFile = file
-                                    else
-                                        viewModel.downloadFile(file, context)
-                                },
+                                onClick = { viewModel.previewFile(file, context) },
                                 onDownload = { viewModel.downloadFile(file, context) },
                                 onDelete = { viewModel.deleteFile(file) },
                                 onMove = { showMoveFileDialog = file },
@@ -400,37 +369,6 @@ fun DashboardScreen(
                 }
             }
         }
-    }
-
-    showFileDetail?.let { file ->
-        FileDetailBottomSheet(
-            file = file,
-            context = context,
-            isDarkTheme = isDarkTheme,
-            onDismiss = { showFileDetail = null },
-            onDownload = { viewModel.downloadFile(file, context) },
-            onRename = {
-                showFileDetail = null
-                showRenameFileDialog = file
-            },
-            onShareCode = {
-                showFileDetail = null
-                viewModel.toggleSelection(file.id)
-                viewModel.generateCode()
-            },
-            onDelete = {
-                showFileDetail = null
-                viewModel.deleteFile(file)
-            }
-        )
-    }
-
-    previewFile?.let { file ->
-        FilePreviewDialog(
-            file = file,
-            onDismiss = { previewFile = null },
-            onDownload = { viewModel.downloadFile(file, context) }
-        )
     }
 
 }
@@ -597,7 +535,6 @@ private fun FolderGridCard(
 private fun FileGridCard(
     file: FileUiItem,
     onClick: () -> Unit,
-    onDoubleClick: () -> Unit = {},
     onDownload: () -> Unit = {},
     onDelete: () -> Unit = {},
     onRename: () -> Unit = {},
@@ -609,12 +546,7 @@ private fun FileGridCard(
         shape = RoundedCornerShape(14.dp),
         color = bg,
         tonalElevation = 0.dp,
-        modifier = Modifier.pointerInput(Unit) {
-            detectTapGestures(
-                onTap = { onClick() },
-                onDoubleTap = { onDoubleClick() }
-            )
-        }
+        modifier = Modifier.clickable(onClick = onClick)
     ) {
         Box {
             Column(
@@ -947,7 +879,6 @@ private fun FileCard(
     isSelected: Boolean = false,
     onToggleSelect: () -> Unit = {},
     onClick: () -> Unit,
-    onDoubleClick: () -> Unit = {},
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onMove: () -> Unit,
@@ -966,12 +897,7 @@ private fun FileCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { onClick() },
-                        onDoubleTap = { onDoubleClick() }
-                    )
-                }
+                .clickable(onClick = onClick)
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1019,86 +945,6 @@ private fun FileCard(
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FileDetailBottomSheet(
-    file: FileUiItem,
-    context: Context,
-    isDarkTheme: Boolean,
-    onDismiss: () -> Unit,
-    onDownload: () -> Unit,
-    onRename: () -> Unit,
-    onShareCode: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()) }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = if (isDarkTheme) DarkSurfaceElevated else SurfaceCard,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (isDarkTheme) DarkHairline else Hairline) }
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Surface(shape = RoundedCornerShape(16.dp), color = Primary.copy(alpha = 0.1f)) {
-                Icon(getFileIcon(file.typeLabel), contentDescription = null, tint = Primary, modifier = Modifier.padding(20.dp))
-            }
-            Spacer(Modifier.height(16.dp))
-            Text(text = file.name, style = MaterialTheme.typography.titleLarge, color = if (isDarkTheme) DarkInk else Ink, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider(color = if (isDarkTheme) DarkHairline else Hairline)
-            DetailRow("Type", file.typeLabel, isDarkTheme)
-            DetailRow("Size", file.sizeBytes.formatBytes(), isDarkTheme)
-            DetailRow("Folder", file.folderName ?: "My Files", isDarkTheme)
-            if (file.createdAt > 0L) {
-                DetailRow("Uploaded", dateFormat.format(Date(file.createdAt)), isDarkTheme)
-            }
-            HorizontalDivider(color = if (isDarkTheme) DarkHairline else Hairline)
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = { onDownload(); onDismiss() }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
-                Icon(Icons.Default.Download, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Download")
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onRename(); onDismiss() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Rename")
-                }
-                OutlinedButton(onClick = { onShareCode(); onDismiss() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
-                    Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Share")
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            TextButton(onClick = { onDelete(); onDismiss() }) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Delete", color = ErrorRed)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DetailRow(label: String, value: String, isDarkTheme: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = if (isDarkTheme) DarkMuted else Muted)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = if (isDarkTheme) DarkInk else Ink)
     }
 }
 
@@ -1166,98 +1012,3 @@ internal fun Long.formatBytes(): String = when {
     else -> "%.1f MB".format(this / 1048576f)
 }
 
-private fun isCodeFile(name: String): Boolean {
-    val ext = name.substringAfterLast('.', "").lowercase()
-    return ext in setOf("txt", "md", "log", "json", "xml", "html", "css", "js", "ts", "py", "java", "kt", "kts", "sh", "yaml", "yml", "toml", "ini", "cfg", "env", "gradle", "sql", "csv")
-}
-
-@Composable
-private fun FilePreviewDialog(
-    file: FileUiItem,
-    onDismiss: () -> Unit,
-    onDownload: () -> Unit,
-) {
-    var bytes by remember { mutableStateOf<ByteArray?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var loadError by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(file.b2FileName) {
-        try {
-            val b2FileName = file.b2FileName ?: return@LaunchedEffect
-            val body = JSONObject().put("fileName", b2FileName).toString()
-            val conn = withContext(Dispatchers.IO) {
-                URL("$B2_PROXY_URL/api/download").openConnection() as java.net.HttpURLConnection
-            }
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.doOutput = true
-            conn.outputStream.write(body.toByteArray())
-            bytes = conn.inputStream.readBytes()
-            isLoading = false
-        } catch (e: Exception) {
-            loadError = e.message
-            isLoading = false
-        }
-    }
-
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.92f))) {
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-        }
-
-        when {
-            isLoading -> CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color.White
-            )
-            loadError != null -> Text(
-                text = loadError!!, color = Color.White,
-                modifier = Modifier.align(Alignment.Center)
-            )
-            bytes != null -> {
-                when {
-                    file.mimeType.startsWith("image/") -> {
-                        val bitmap = remember(bytes) { BitmapFactory.decodeByteArray(bytes, 0, bytes!!.size) }
-                        val imageBitmap = remember(bitmap) { bitmap?.asImageBitmap() }
-                        if (imageBitmap != null) {
-                            Image(
-                                bitmap = imageBitmap,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize().padding(48.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
-                            Text("Failed to decode image", color = Color.White, modifier = Modifier.align(Alignment.Center))
-                        }
-                    }
-                    file.mimeType.startsWith("text/") || isCodeFile(file.name) -> {
-                        val text = remember(bytes) { String(bytes!!, Charsets.UTF_8) }
-                        SelectionContainer(modifier = Modifier.fillMaxSize().padding(48.dp).verticalScroll(rememberScrollState())) {
-                            Text(
-                                text = text,
-                                color = Color.White,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                    else -> {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("Preview not available", color = Color.Gray)
-                            Spacer(Modifier.height(16.dp))
-                            Button(onClick = { onDownload(); onDismiss() }) {
-                                Text("Download")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

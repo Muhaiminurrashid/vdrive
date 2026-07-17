@@ -3,11 +3,13 @@ package com.vdrive.app.ui.files
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -309,6 +311,31 @@ class DashboardViewModel @Inject constructor(
                     }
                 }
                 withContext(Dispatchers.Main) { Toast.makeText(context, "Saved to Downloads", Toast.LENGTH_SHORT).show() }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+        }
+    }
+
+    fun previewFile(file: FileUiItem, context: Context) {
+        viewModelScope.launch {
+            try {
+                val b2FileName = file.b2FileName ?: return@launch
+                val bytes = withContext(Dispatchers.IO) {
+                    val body = JSONObject().put("fileName", b2FileName).toString()
+                    val conn = URL("$B2_PROXY_URL/api/download").openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.outputStream.write(body.toByteArray())
+                    conn.inputStream.readBytes()
+                }
+                val cacheFile = withContext(Dispatchers.IO) {
+                    java.io.File(context.cacheDir, file.name).also { it.writeBytes(bytes) }
+                }
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
+                context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, file.mimeType)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                })
             } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
         }
     }
