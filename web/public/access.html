@@ -73,6 +73,13 @@ firebase.initializeApp(firebaseConfig)
 const db = firebase.firestore()
 const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
 
+function userErrorMessage(e) {
+  const m = e.message || ''
+  if (m.includes('permission') || m.includes('Permission')) return 'Permission denied'
+  if (m.includes('unavailable') || m.includes('network') || m.includes('Failed to fetch')) return 'Service unavailable. Try again.'
+  return 'Something went wrong'
+}
+
 function showError(msg) {
   const el = document.getElementById('errorBox')
   if (msg) { el.textContent = msg; el.classList.remove('hidden'); }
@@ -161,7 +168,7 @@ async function handleAccess() {
     }
     document.getElementById('codeEntry').classList.add('hidden')
     document.getElementById('fileView').classList.remove('hidden')
-  } catch (e) { showError(e.message) }
+  } catch (e) { showError(userErrorMessage(e)) }
   document.getElementById('accessBtn').disabled = false
   document.getElementById('accessBtn').textContent = 'Access files'
 }

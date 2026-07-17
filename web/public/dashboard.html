@@ -387,7 +387,7 @@ function toggleAvatarMenu() {
   const el = $('avatarMenu')
   el.classList.toggle('hidden')
   const r = $('avatarBtn').getBoundingClientRect()
-  el.style.left = (r.left - 60) + 'px'
+  el.style.right = (window.innerWidth - r.right) + 'px'
   el.style.top = (r.bottom + 4) + 'px'
 }
 
@@ -537,7 +537,7 @@ async function handleUpload(inputOrFile) {
       b2FileId: b2Result.fileId, b2FileName, folderId: window.currentFolderId || null,
       createdAt: firebase.firestore.Timestamp.now(),
     })
-  } catch(e) { alert('Upload failed: ' + e.message) }
+  } catch(e) { alert(userErrorMessage(e)) }
   $('newBtn').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New'
   if (inputOrFile.files) inputOrFile.value = ''
   loadContents()
@@ -557,7 +557,7 @@ async function downloadFile(f) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = f.name; a.click()
     URL.revokeObjectURL(url)
-  } catch(e) { alert('Download failed: ' + e.message) }
+  } catch(e) { alert(userErrorMessage(e)) }
 }
 
 async function deleteFile(f) {
@@ -573,7 +573,7 @@ async function deleteFile(f) {
     }
     await db.collection('files').doc(f.id).delete()
     closeInfoPanel(); loadContents()
-  } catch(e) { alert('Delete failed: ' + e.message); loadContents() }
+  } catch(e) { alert(userErrorMessage(e)); loadContents() }
 }
 
 async function shareFile(fileId) {
@@ -601,10 +601,29 @@ function copyCode() {
 
 function handleLogout() { auth.signOut(); window.location.href = '/' }
 
+// ponytail: maps Firebase auth error codes to user-friendly messages
+function authErrorMessage(e) {
+  const m = { 'invalid-credential':'Incorrect email or password', 'user-not-found':'Incorrect email or password', 'wrong-password':'Incorrect email or password', 'email-already-in-use':'An account with this email already exists', 'weak-password':'Password must be at least 6 characters', 'invalid-email':'Invalid email address', 'too-many-requests':'Too many attempts. Try again later.', 'network-request-failed':'Network error. Check your connection.', 'popup-closed-by-user':'Sign-in was cancelled' }
+  const c = e.code || ''
+  for (const k in m) { if (c.includes(k)) return m[k] }
+  return 'Something went wrong'
+}
+
+// ponytail: maps general errors to user-friendly messages
+function userErrorMessage(e) {
+  const m = (e.message || '').toLowerCase()
+  if (m.includes('permission')) return 'Permission denied'
+  if (m.includes('unavailable') || m.includes('unauthenticated')) return 'Service unavailable. Try again.'
+  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return 'Network error. Check your connection.'
+  if (m.includes('too large')) return 'File too large (max 100 MB)'
+  if (m.includes('delete failed')) return 'Delete failed'
+  return 'Something went wrong'
+}
+
 async function handleChangePassword() {
   const n = prompt('Enter new password (min 6 characters):')
   if (!n || n.length < 6) return
-  try { await window.currentUser.updatePassword(n); alert('Password changed successfully!') } catch(e) { alert(e.message) }
+  try { await window.currentUser.updatePassword(n); alert('Password changed successfully!') } catch(e) { alert(authErrorMessage ? authErrorMessage(e) : 'Something went wrong') }
 }
 
 // --- 3-dot menu ---

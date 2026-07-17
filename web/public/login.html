@@ -84,12 +84,19 @@ firebase.initializeApp(firebaseConfig)
 const auth = firebase.auth()
 let isRegister = false
 
+function authErrorMessage(e) {
+  const m = { 'invalid-credential':'Incorrect email or password', 'user-not-found':'Incorrect email or password', 'wrong-password':'Incorrect email or password', 'email-already-in-use':'An account with this email already exists', 'weak-password':'Password must be at least 6 characters', 'invalid-email':'Invalid email address', 'too-many-requests':'Too many attempts. Try again later.', 'network-request-failed':'Network error. Check your connection.', 'popup-closed-by-user':'Sign-in was cancelled' }
+  const c = e.code || ''
+  for (const k in m) { if (c.includes(k)) return m[k] }
+  return 'Something went wrong'
+}
+
 function handleReset() {
   const email = document.getElementById('emailInput').value
   if (!email) { showError('Enter your email first'); return }
   auth.sendPasswordResetEmail(email)
     .then(() => showError('Password reset email sent! Check your inbox.'))
-    .catch(e => showError(e.message))
+    .catch(e => showError(authErrorMessage(e)))
 }
 
 function toggleMode() {
@@ -116,7 +123,7 @@ async function handleAuth() {
     if (isRegister) await auth.createUserWithEmailAndPassword(email, password)
     else await auth.signInWithEmailAndPassword(email, password)
     window.location.href = '/dashboard.html'
-  } catch (e) { showError(e.message) }
+  } catch (e) { showError(authErrorMessage(e)) }
 }
 
 async function handleGoogle() {
@@ -124,7 +131,7 @@ async function handleGoogle() {
   try {
     await auth.signInWithPopup(provider)
     window.location.href = '/dashboard.html'
-  } catch (e) { showError(e.message) }
+  } catch (e) { showError(authErrorMessage(e)) }
 }
 
 auth.onAuthStateChanged(user => { if (user) window.location.href = '/dashboard.html' })

@@ -12,9 +12,11 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.vdrive.app.data.repository.FileRepository
 import com.vdrive.app.domain.model.Folder
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -140,7 +142,7 @@ class DashboardViewModel @Inject constructor(
                     isLoading = false
                 )
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = e.message)
+                _state.value = _state.value.copy(isLoading = false, error = userMessage(e))
             }
         }
     }
@@ -162,7 +164,7 @@ class DashboardViewModel @Inject constructor(
                 }
                 _state.value = _state.value.copy(folders = folders)
                 loadContents()
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -209,7 +211,7 @@ class DashboardViewModel @Inject constructor(
                     "createdAt" to FieldValue.serverTimestamp()
                 )).await()
                 loadFolders()
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -225,7 +227,7 @@ class DashboardViewModel @Inject constructor(
                     firestore.collection("folders").whereEqualTo("parentId", folderId).get().await()
                         .documents.forEach { runCatching { it.reference.update("parentId", null).await() } }
                 }
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -235,7 +237,7 @@ class DashboardViewModel @Inject constructor(
                 firestore.collection("files").document(fileId)
                     .update("name", newName).await()
                 loadContents()
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -251,7 +253,7 @@ class DashboardViewModel @Inject constructor(
                 firestore.collection("folders").document(folderId)
                     .update("name", newName).await()
                 loadFolders()
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -261,7 +263,7 @@ class DashboardViewModel @Inject constructor(
                 firestore.collection("files").document(file.id)
                     .update("folderId", targetFolderId).await()
                 loadContents()
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -273,7 +275,7 @@ class DashboardViewModel @Inject constructor(
                 fileRepository.uploadFile(user.uid, uri, contentResolver, folderId)
                 loadContents()
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = e.message)
+                _state.value = _state.value.copy(isLoading = false, error = userMessage(e))
             }
         }
     }
@@ -311,7 +313,7 @@ class DashboardViewModel @Inject constructor(
                     }
                 }
                 withContext(Dispatchers.Main) { Toast.makeText(context, "Saved to Downloads", Toast.LENGTH_SHORT).show() }
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -336,7 +338,7 @@ class DashboardViewModel @Inject constructor(
                     setDataAndType(uri, file.mimeType)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 })
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -346,7 +348,7 @@ class DashboardViewModel @Inject constructor(
                 fileRepository.deleteFile(file.id, file.b2FileId, file.b2FileName)
                 loadContents()
             } catch (e: Exception) {
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = userMessage(e))
                 loadContents()
             }
         }
@@ -377,7 +379,7 @@ class DashboardViewModel @Inject constructor(
                 )).await()
 
                 _state.value = _state.value.copy(generatedCode = code, selectedIds = emptySet())
-            } catch (e: Exception) { _state.value = _state.value.copy(error = e.message) }
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
 
@@ -387,7 +389,7 @@ class DashboardViewModel @Inject constructor(
                 auth.currentUser?.updatePassword(newPassword)?.await()
                 onResult(null)
             } catch (e: Exception) {
-                onResult(e.message)
+                onResult(userMessage(e))
             }
         }
     }
@@ -398,6 +400,24 @@ class DashboardViewModel @Inject constructor(
 
     fun signOut() {
         auth.signOut()
+    }
+
+    // ponytail: maps exception to user-friendly message
+    private fun userMessage(e: Exception): String {
+        val msg = e.message ?: return "Something went wrong"
+        if (msg == "File too large (max 100 MB)") return msg
+        if (e is FirebaseFirestoreException) {
+            return when (e.code) {
+                FirebaseFirestoreException.Code.PERMISSION_DENIED -> "Permission denied"
+                FirebaseFirestoreException.Code.UNAVAILABLE -> "Service unavailable. Try again."
+                FirebaseFirestoreException.Code.NOT_FOUND -> "Not found"
+                FirebaseFirestoreException.Code.UNAUTHENTICATED -> "Please sign in again"
+                else -> "Something went wrong"
+            }
+        }
+        if (e is java.net.ConnectException || e is java.net.SocketTimeoutException || e is java.net.UnknownHostException)
+            return "Network error. Check your connection."
+        return "Something went wrong"
     }
 
     private fun getFileType(name: String): String {

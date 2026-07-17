@@ -3,7 +3,7 @@
 ## What's Built
 
 - **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. Google Drive-style UI: resizable sidebar with brand/[+ New]/storage/dark mode, list/grid view toggle, 3-dot context menu (always visible) per file, file info side panel, double-click preview (images/video/audio/PDF/text), account avatar dropdown. File upload/download/delete, access code sharing (6-char, 15 min TTL), drag-drop upload, folder tree navigation with breadcrumb.
-- **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder tree navigation with breadcrumb. File size display.
+- **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder tree navigation with breadcrumb. File size display. Tap opens file in system viewer, 3-dot saves to Downloads.
 - **Storage**: Backblaze B2 (private bucket `vdrive12`) via Cloudflare Worker proxy. Files stored on B2, metadata in Firestore.
 - **Web deployed**: Firebase Hosting → https://vdrive-64deb.web.app
 - **Worker deployed**: `b2-proxy` at `https://b2-proxy.muhaiminurrashid99.workers.dev`
@@ -192,6 +192,20 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Zero new dependencies**: stdlib `HttpURLConnection` + `JSONObject` only
 - **Changed files**: `DashboardViewModel.kt`, `DashboardScreen.kt`
 
+### Phase 17 — Android Tap-to-Open vs 3-dot Download
+- **Tap opens file**: added `previewFile()` in DashboardViewModel — fetches bytes from Worker proxy, writes to `context.cacheDir`, opens with `Intent.ACTION_VIEW` via existing `FileProvider` (cache-path). No persistent save.
+- **3-dot unchanged**: `downloadFile()` still saves to Downloads folder (MediaStore API 29+ / direct write older). No changes to 3-dot behavior.
+- **Zero new dependencies**: uses stdlib `HttpURLConnection`, `Intent`, existing `FileProvider` config.
+- **Changed files**: `DashboardViewModel.kt` (added `previewFile`), `DashboardScreen.kt` (onClick → `previewFile`)
+
+### Phase 18 — User-Friendly Auth Error Messages
+- **Android AuthViewModel**: added `authError()` helper mapping `FirebaseAuthException` error codes to user-friendly strings (e.g. "Incorrect email or password" for invalid-credential/user-not-found/wrong-password). Applied to login, register, resetPassword, signInWithGoogle catch blocks.
+- **Web login.html**: added `authErrorMessage()` JS function with same mapping. Applied to handleAuth, handleGoogle, handleReset catch blocks.
+- **Web dashboard.html**: added `authErrorMessage()` JS function, applied to handleChangePassword catch block.
+- **All errors fallback**: unknown errors show "Something went wrong" instead of raw Firebase exception text.
+- **Zero new dependencies**: stdlib only.
+- **Changed files**: `AuthViewModel.kt`, `login.html`, `dashboard.html`
+
 ### Phase 16 — CI/CD Pipeline
 - **GitHub repo created**: `Muhaiminurrashid/vdrive` (private)
 - **Workflow file**: `.github/workflows/deploy.yml` — two jobs:
@@ -218,14 +232,18 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 ## Next Steps
 
-### (next) Split Tap vs 3-dot Download Behavior
-- Currently tap calls same `downloadFile()` as 3-dot "Download" — both save to Downloads folder
-- Need: tap on file → open in system viewer (cache + intent, no persistent save)
-- 3-dot "Download" → save to Downloads folder (current behavior, keep it)
-- Fix: revert `downloadFile()` to cache + intent, add `saveToDownloads()` for 3-dot
+### (done) Split Tap vs 3-dot Download Behavior
+- Tap opens file via cache + intent (`previewFile()`), 3-dot saves to Downloads (`downloadFile()`)
 
 ### (done) CI / CD
 - GitHub Actions: test on PR, deploy on merge — **deployed**
+
+### (done) User-Friendly Error Messages Across All Operations
+- Android DashboardViewModel: added `userMessage()` helper mapping `FirebaseFirestoreException` codes (PERMISSION_DENIED → "Permission denied", UNAVAILABLE → "Service unavailable", etc.), network exceptions → "Network error. Check your connection.", "File too large" passed through. Applied to all 13 catch blocks + changePassword callback.
+- Web dashboard.html: added `userErrorMessage()` JS function covering network/Firestore/B2 errors. Replaced raw `e.message` in upload, download, delete catch blocks.
+- Web access.html: added `userErrorMessage()` JS function. Applied to code entry Firestore catch block.
+- Web reset-password.html: added `authErrorMessage()` JS function (with expired/invalid action code). Applied to both handleReset and sendResetEmail catch blocks.
+- All errors fallback to "Something went wrong" instead of raw exception text.
 
 ### (postponed) Custom Domain
 - Firebase Hosting custom domain — postponed, no domain purchased.
@@ -261,7 +279,6 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - Service worker for offline file list. Cache downloaded files for offline access.
 
 ### Android
-- Split tap-to-open vs 3-dot download (tap opens file, 3-dot saves to Downloads)
 - File preview dialog (double-tap to preview images/text inline, like web)
 - Image viewer zoom/pan
 - Pull-to-refresh for file list
