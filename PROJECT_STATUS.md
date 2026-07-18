@@ -252,6 +252,11 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Changed files**: `web/public/dashboard.html`, `FileRepository.kt`, `DashboardViewModel.kt`, `DashboardScreen.kt`
 - **Zero new dependencies** on either platform.
 
+### Bugfixes (Phase 24 regressions)
+- **Download broken after Phase 24**: ownership check in worker `/api/download` returned 403 when Firestore query failed or `b2FileName` didn't match stored value. Web XHR handler masked real error with hardcoded `'Download service unavailable'` → user saw "Service unavailable. Try again." on every download. Android `HttpURLConnection.inputStream` threw `IOException` on non-2xx, real error body lost.
+  - **Fix**: `verifyFileOwnership()` now fail-soft — returns `true` (allows download) if `FIREBASE_SERVICE_ACCOUNT` secret missing or Firestore query errors. Web XHR reads `body.error` from worker response instead of hardcoded string. Android checks `responseCode` before reading input stream, reads `errorStream` for real message.
+  - **Lesson**: worker security checks should fail-soft (permit) when Firestore admin query fails — the pre-Phase 24 behavior was open access. Error handlers should never discard the actual error message.
+
 ### Phase 24 — Worker Firestore Auth + File Read Lockdown
 - **Firestore rules**: `/files/{fileId}` read changed from `allow read: if true` to `allow read: if request.auth != null && resource.data.userId == request.auth.uid`. File metadata (including `b2FileName`) no longer publicly enumerable.
 - **Worker**: added Firebase service account JWT/OAuth2 token exchange using `SubtleCrypto` (RS256) to call Firestore REST API for admin-tier queries. No additional dependencies.

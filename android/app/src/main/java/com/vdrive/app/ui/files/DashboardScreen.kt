@@ -28,6 +28,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,7 +59,15 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
+    val pullRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) {
+            viewModel.loadContents()
+            pullRefreshState.endRefresh()
+        }
+    }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -342,82 +353,91 @@ fun DashboardScreen(
                     }
                 }
 
-                if (state.isLoading && state.files.isEmpty() && state.subFolders.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Primary)
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                        .nestedScroll(pullRefreshState.nestedScrollConnection)
+                ) {
+                    if (state.isLoading && state.files.isEmpty() && state.subFolders.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Primary)
+                        }
+                    } else if (state.files.isEmpty() && state.subFolders.isEmpty()) {
+                        EmptyState(modifier = Modifier.fillMaxSize(), isDarkTheme = isDarkTheme)
+                    } else if (state.viewMode == ViewMode.Grid) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp, end = 16.dp,
+                                top = 4.dp, bottom = 88.dp
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.subFolders, key = { "folder_${it.id}" }) { folder ->
+                                FolderGridCard(
+                                    folder = folder,
+                                    onClick = { viewModel.navigateToFolder(folder.id) },
+                                    onDelete = { viewModel.deleteFolder(folder.id) },
+                                    onRename = { showRenameFolderDialog = folder },
+                                    onShare = { viewModel.generateFolderCode(folder.id) },
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
+                            items(state.files, key = { it.id }) { file ->
+                                FileGridCard(
+                                    file = file,
+                                    onClick = { viewModel.previewFile(file, context) },
+                                    onDownload = { viewModel.downloadFile(file, context) },
+                                    onDelete = { viewModel.deleteFile(file) },
+                                    onRename = { showRenameFileDialog = file },
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp, end = 16.dp,
+                                top = 4.dp, bottom = 88.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.subFolders, key = { "folder_${it.id}" }) { folder ->
+                                FolderCard(
+                                    folder = folder,
+                                    onClick = { viewModel.navigateToFolder(folder.id) },
+                                    onDelete = { viewModel.deleteFolder(folder.id) },
+                                    onRename = { showRenameFolderDialog = folder },
+                                    onShare = { viewModel.generateFolderCode(folder.id) },
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
+                            items(state.files, key = { it.id }) { file ->
+                                FileCard(
+                                    file = file,
+                                    isSelected = file.id in state.selectedIds,
+                                    onToggleSelect = { viewModel.toggleSelection(file.id) },
+                                    onClick = { viewModel.previewFile(file, context) },
+                                    onDownload = { viewModel.downloadFile(file, context) },
+                                    onDelete = { viewModel.deleteFile(file) },
+                                    onMove = { showMoveFileDialog = file },
+                                    onRename = { showRenameFileDialog = file },
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
+                        }
                     }
-                } else if (state.files.isEmpty() && state.subFolders.isEmpty()) {
-                    EmptyState(modifier = Modifier.fillMaxSize(), isDarkTheme = isDarkTheme)
-                } else if (state.viewMode == ViewMode.Grid) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp, end = 16.dp,
-                            top = 4.dp, bottom = 88.dp
-                        ),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.subFolders, key = { "folder_${it.id}" }) { folder ->
-                            FolderGridCard(
-                                folder = folder,
-                                onClick = { viewModel.navigateToFolder(folder.id) },
-                                onDelete = { viewModel.deleteFolder(folder.id) },
-                                onRename = { showRenameFolderDialog = folder },
-                                onShare = { viewModel.generateFolderCode(folder.id) },
-                                isDarkTheme = isDarkTheme
-                            )
-                        }
-                        items(state.files, key = { it.id }) { file ->
-                            FileGridCard(
-                                file = file,
-                                onClick = { viewModel.previewFile(file, context) },
-                                onDownload = { viewModel.downloadFile(file, context) },
-                                onDelete = { viewModel.deleteFile(file) },
-                                onRename = { showRenameFileDialog = file },
-                                isDarkTheme = isDarkTheme
-                            )
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp, end = 16.dp,
-                            top = 4.dp, bottom = 88.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.subFolders, key = { "folder_${it.id}" }) { folder ->
-                            FolderCard(
-                                folder = folder,
-                                onClick = { viewModel.navigateToFolder(folder.id) },
-                                onDelete = { viewModel.deleteFolder(folder.id) },
-                                onRename = { showRenameFolderDialog = folder },
-                                onShare = { viewModel.generateFolderCode(folder.id) },
-                                isDarkTheme = isDarkTheme
-                            )
-                        }
-                        items(state.files, key = { it.id }) { file ->
-                            FileCard(
-                                file = file,
-                                isSelected = file.id in state.selectedIds,
-                                onToggleSelect = { viewModel.toggleSelection(file.id) },
-                                onClick = { viewModel.previewFile(file, context) },
-                                onDownload = { viewModel.downloadFile(file, context) },
-                                onDelete = { viewModel.deleteFile(file) },
-                                onMove = { showMoveFileDialog = file },
-                                onRename = { showRenameFileDialog = file },
-                                isDarkTheme = isDarkTheme
-                            )
-                        }
-                    }
+                    PullToRefreshContainer(
+                        state = pullRefreshState,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
                 }
             }
         }
