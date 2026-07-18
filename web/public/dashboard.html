@@ -150,6 +150,8 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 }
 #hamburger { display:none; width:32px; height:32px; border:none; background:transparent; cursor:pointer; align-items:center; justify-content:center; color:var(--color-muted); margin-right:4px; }
 #hamburger:hover { color:var(--color-ink); }
+#searchInput:focus { border-color:var(--color-primary); }
+#searchInput::placeholder { color:var(--color-muted-soft); }
 </style>
 </head>
 <body>
@@ -211,6 +213,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
     <div id="content">
       <div id="contentHeader">
         <p id="fileCount"></p>
+        <input id="searchInput" type="text" placeholder="Search files..." style="margin-left:auto;height:32px;padding:0 12px;border:1px solid var(--color-hairline);border-radius:6px;background:var(--color-surface-card);color:var(--color-ink);font-size:13px;outline:none;width:200px">
       </div>
 
       <div id="codeDisplay">
@@ -345,6 +348,15 @@ $('sidebarDarkToggle').onclick = toggleDark
 $('panelClose').onclick = closeInfoPanel
 $('panelOverlay').onclick = closeInfoPanel
 $('copyBtn').onclick = copyCode
+
+// ponytail: client-side search, file names only
+$('searchInput').oninput = function() {
+  const q = this.value.toLowerCase().trim()
+  document.querySelectorAll('.file-row, .grid-card').forEach(el => {
+    const name = (el.querySelector('.file-name') || el.querySelector('.grid-card-name'))?.textContent?.toLowerCase() || ''
+    el.style.display = !q || name.includes(q) ? '' : 'none'
+  })
+}
 
 // ponytail: click outside closes dropdowns
 document.addEventListener('click', e => {
@@ -828,6 +840,7 @@ function closePreview() {
 async function loadContents() {
   const user = window.currentUser
   if (!user) return
+  $('searchInput').value = ''
   const [fileSnap, folderSnap] = await Promise.all([
     db.collection('files').where('userId','==',user.uid).get(),
     db.collection('folders').where('userId','==',user.uid).get()

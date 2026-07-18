@@ -223,6 +223,14 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Worker secrets persist across deploys** — `wrangler deploy` uploads code only, existing `B2_APP_KEY_ID`/`B2_APP_KEY` stay intact
 - **No Android release build in CI** — keystore stays local; CI runs unit tests only
 
+### Phase 20 — Access Page: Preview + Remove Code Display
+- **Preview overlay**: added dark overlay preview for images, PDFs, video, audio, text — same pattern as dashboard `previewFile()`. File row click triggers preview, Download button unchanged.
+- **Code display removed**: the big font-mono code + Copy button + "Enter different code" + expiry note removed. Teacher writes code on board, page shows only code input → file list.
+- **Dead code deleted**: `resetAccess()`, `copyAccessCode` onclick handler, `document.getElementById('displayCode')` line.
+- **Download error**: uses `userErrorMessage(e)` instead of raw `alert('Download failed')`.
+- **1 file changed**: `web/public/access.html`. Zero new dependencies.
+- **Deployed + pushed**: Firebase Hosting + GitHub main.
+
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms — use context menu instead
 - **Breadcrumb + button**: small `+` in breadcrumb bar removed — use FAB instead
@@ -239,10 +247,6 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **FileDetailBottomSheet**: removed (Phase 15) — tap action now uses simple `downloadFile()` instead of metadata popup
 
 ## Next Steps
-
-### Access Page — File Preview + Remove Code Display
-- Access page (`access.html`) currently download-only — no inline preview like dashboard (`previewFile`). Add preview overlay for images, PDFs, video, audio, text.
-- Code display should be removed from access page — teacher writes code on the board. Page should only have code input and file list after successful entry.
 
 ### (done) Split Tap vs 3-dot Download Behavior
 - Tap opens file via cache + intent (`previewFile()`), 3-dot saves to Downloads (`downloadFile()`)
