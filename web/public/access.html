@@ -8,6 +8,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=2">
+<style>
+@keyframes spin { to { transform: rotate(360deg) } }
+#codeEntry, #fileView { transition: opacity .25s, transform .25s; }
+#codeEntry.hidden, #fileView.hidden { opacity:0; transform:translateY(8px); pointer-events:none; }
+#previewOverlay { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:400; display:none; align-items:center; justify-content:center; }
+#previewOverlay.show { display:flex; }
+#previewBox { position:relative; max-width:90vw; max-height:90vh; background:var(--color-surface-card); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+#previewClose { position:absolute; top:12px; right:12px; width:36px; height:36px; border:none; background:rgba(0,0,0,.4); border-radius:50%; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center; z-index:1; }
+#previewClose:hover { background:rgba(0,0,0,.6); }
+#previewContent { display:flex; align-items:center; justify-content:center; flex:1; overflow:auto; }
+#previewContent img { max-width:100%; max-height:85vh; object-fit:contain; }
+#previewContent video { max-width:100%; max-height:85vh; }
+#previewContent audio { width:80vw; max-width:500px; }
+#previewContent embed { width:90vw; height:85vh; border:none; }
+#previewContent pre { padding:24px; font-size:13px; overflow:auto; max-height:85vh; max-width:90vw; white-space:pre-wrap; word-break:break-all; }
+#previewFallback { padding:48px; text-align:center; color:var(--color-muted); }
+</style>
 </head>
 <body>
 
@@ -47,14 +64,15 @@
   </div>
 
   <div id="fileView" class="w-full max-w-lg hidden">
-    <div class="text-center mb-8">
-      <h1 class="font-serif font-normal text-primary text-2xl tracking-tight mb-1">Files shared with you</h1>
-      <p class="text-sm text-muted">
-        Code <span id="displayCode" class="font-mono font-bold tracking-wider text-ink"></span> —
-        <button onclick="resetAccess()" class="bg-transparent border-none text-sm text-primary cursor-pointer">enter a different code</button>
-      </p>
-    </div>
     <div id="fileList"></div>
+  </div>
+  <div id="previewOverlay" onclick="if(event.target===this)closePreview()">
+    <div id="previewBox">
+      <button id="previewClose" onclick="closePreview()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div id="previewContent"></div>
+    </div>
   </div>
 </main>
 
@@ -107,6 +125,22 @@ function fileTypeColor(type) {
   return fileTypeColors[type] || 'text-muted-soft'
 }
 
+// ponytail: same icon map as dashboard
+function fileIconData(name) {
+  const ext = name.split('.').pop().toLowerCase()
+  const map = {
+    pdf: { bg:'#C27A5C', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    ppt: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    pptx: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    doc: { bg:'#7EB89E', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    docx: { bg:'#7EB89E', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    mp4: { bg:'#9B7FC8', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>' },
+    xlsx: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
+    zip: { bg:'#6c6a64', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>' }
+  }
+  return map[ext] || { bg:'#8e8b82', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' }
+}
+
 async function handleAccess() {
   const code = document.getElementById('codeInput').value.toUpperCase()
   if (code.length !== 6) return
@@ -120,49 +154,61 @@ async function handleAccess() {
     const exp = data.expiresAt
     const expired = typeof exp === 'number' ? exp < Date.now() : exp.toDate() < new Date()
     if (expired) { showError('Code expired'); return }
-    const fileIds = data.fileIds || []
-    const items = await Promise.all(fileIds.map(async id => {
-      const metaSnap = await db.collection('files').doc(id).get()
-      if (!metaSnap.exists) return null
-      const meta = metaSnap.data()
-      if (!meta.b2FileName) return null
-      return { name: meta.name, b2FileName: meta.b2FileName, size: meta.size || 0 }
-    }))
+    let items
+    if (data.folderId) {
+      const snap = await db.collection('files').where('folderId', '==', data.folderId).get()
+      items = snap.docs.map(d => { const m = d.data(); return m.b2FileName ? { name: m.name, b2FileName: m.b2FileName, size: m.size || 0 } : null })
+    } else {
+      const fileIds = data.fileIds || []
+      items = await Promise.all(fileIds.map(async id => {
+        const metaSnap = await db.collection('files').doc(id).get()
+        if (!metaSnap.exists) return null
+        const meta = metaSnap.data()
+        if (!meta.b2FileName) return null
+        return { name: meta.name, b2FileName: meta.b2FileName, size: meta.size || 0 }
+      }))
+    }
     const filtered = items.filter(Boolean)
-    document.getElementById('displayCode').textContent = code
     const list = document.getElementById('fileList')
     list.innerHTML = ''
     if (filtered.length === 0) {
       list.innerHTML = '<p class="text-center text-sm text-muted py-8">No files available for this code.</p>'
     } else {
       filtered.forEach(f => {
-        const t = getFileType(f.name)
+        const icon = fileIconData(f.name)
         const el = document.createElement('div')
-        el.className = 'flex items-center justify-between bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 hover:shadow-sm cursor-pointer'
-        el.onclick = async () => {
+        el.className = 'flex items-center gap-3 bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 hover:shadow-sm hover:border-primary/30 transition-all cursor-pointer'
+        el.onclick = function() { previewFile(f) }
+        el.innerHTML = `
+          <div class="file-icon" style="width:36px;height:36px;border-radius:8px;background:${icon.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon.svg}</div>
+          <div class="flex-1 min-w-0">
+            <div class="truncate text-sm text-ink font-medium">${f.name}</div>
+            <div class="text-xs text-muted">${formatBytes(f.size)}</div>
+          </div>
+          <button class="download-btn" data-b2="${f.b2FileName}" data-name="${f.name}" style="padding:6px 12px;border:1px solid var(--color-hairline);border-radius:8px;background:transparent;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;font-size:12px;color:var(--color-primary);font-weight:500">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </button>`
+        el.querySelector('.download-btn').onclick = async function(e) {
+          e.stopPropagation()
+          if (this.dataset.downloading) return
+          this.dataset.downloading = '1'
+          this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Downloading...'
           try {
             const res = await fetch(`${B2_PROXY_URL}/api/download`, {
               method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ fileName: f.b2FileName })
+              body: JSON.stringify({ fileName: this.dataset.b2 })
             })
             if (!res.ok) throw new Error()
             const blob = await res.blob()
             const url = URL.createObjectURL(blob)
-            const a = document.createElement('a'); a.href = url; a.download = f.name; a.click()
+            const a = document.createElement('a'); a.href = url; a.download = this.dataset.name; a.click()
             URL.revokeObjectURL(url)
-          } catch(e) { alert('Download failed') }
+            this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Done'
+            setTimeout(() => { this.innerHTML = '...' }, 2000)
+          } catch(e) { alert(userErrorMessage(e)); this.innerHTML = '...' }
+          setTimeout(() => { delete this.dataset.downloading; this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download' }, 3000)
         }
-        el.innerHTML = `
-          <div class="flex gap-3 min-w-0 items-center">
-            <span class="text-xs font-semibold uppercase tracking-wider ${fileTypeColor(t)}">${t}</span>
-            <span class="truncate text-sm text-ink">${f.name}</span>
-          </div>
-          <div class="flex items-center shrink-0 ml-3 gap-2.5">
-            <span class="text-xs text-muted">${formatBytes(f.size)}</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0 text-muted-soft">
-              <path d="M4 8h8M8 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>`
         list.appendChild(el)
       })
     }
@@ -173,10 +219,38 @@ async function handleAccess() {
   document.getElementById('accessBtn').textContent = 'Access files'
 }
 
-function resetAccess() {
-  document.getElementById('codeEntry').classList.remove('hidden')
-  document.getElementById('fileView').classList.add('hidden')
-  document.getElementById('codeInput').value = ''
+// ponytail: previewTypes + previewFile/closePreview from dashboard
+const previewTypes = {
+  jpg:1,jpeg:1,png:1,gif:1,webp:1,svg:1,bmp:1,
+  mp4:1,webm:1,mov:1,avi:1,mkv:1,
+  mp3:1,wav:1,ogg:1,m4a:1,
+  pdf:1,
+  txt:1,md:1,json:1,xml:1,csv:1,log:1,
+  js:1,ts:1,py:1,java:1,kt:1,cpp:1,c:1,h:1,rs:1,go:1,rb:1,php:1,swift:1,yaml:1,yml:1,toml:1,ini:1,cfg:1,sql:1,sh:1,bat:1,ps1:1,html:1,css:1,scss:1,less:1
+}
+async function previewFile(f) {
+  if (!f?.b2FileName) return
+  const ext = f.name.split('.').pop().toLowerCase()
+  if (!previewTypes[ext]) return
+  const c = document.getElementById('previewContent')
+  c.innerHTML = '<div style="padding:48px;color:var(--color-muted)">Loading...</div>'
+  document.getElementById('previewOverlay').classList.add('show')
+  try {
+    const res = await fetch(`${B2_PROXY_URL}/api/download`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ fileName: f.b2FileName })
+    })
+    if (!res.ok) throw new Error()
+    if (ext === 'pdf') { const blob = await res.blob(); c.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf">`; return }
+    if (['mp4','webm','mov','avi','mkv'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<video src="${URL.createObjectURL(blob)}" controls autoplay></video>`; return }
+    if (['mp3','wav','ogg','m4a'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<audio src="${URL.createObjectURL(blob)}" controls autoplay></audio>`; return }
+    if (['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${f.name}">`; return }
+    c.innerHTML = `<pre>${await res.text()}</pre>`
+  } catch(e) { c.innerHTML = '<div id="previewFallback">Preview unavailable</div>' }
+}
+function closePreview() {
+  document.getElementById('previewOverlay').classList.remove('show')
+  document.getElementById('previewContent').innerHTML = ''
 }
 </script>
 </body>

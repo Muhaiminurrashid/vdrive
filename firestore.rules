@@ -9,9 +9,12 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // ponytail: files metadata is public (name/size/type only, real content in B2)
+    // Access gated by 6-char code — without it, random doc IDs are unguessable
     match /files/{fileId} {
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
     // Student no auth needed for read — enters code to download shared files

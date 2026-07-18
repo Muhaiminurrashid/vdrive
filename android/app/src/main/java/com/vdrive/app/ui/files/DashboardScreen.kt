@@ -126,6 +126,15 @@ fun DashboardScreen(
         )
     }
 
+                    state.generatedCode?.let { code ->
+                        CodeBottomSheet(
+                            code = code,
+                            expiryLabel = state.codeExpiryLabel,
+                            context = context,
+                            onDismiss = { viewModel.clearGeneratedCode() }
+                        )
+                    }
+
     LaunchedEffect(state.error) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -198,6 +207,15 @@ fun DashboardScreen(
                         )
                     },
                     actions = {
+                        state.currentFolderId?.let { folderId ->
+                            IconButton(onClick = { viewModel.generateFolderCode(folderId) }) {
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = "Share folder",
+                                    tint = if (isDarkTheme) DarkInk else Ink
+                                )
+                            }
+                        }
                         IconButton(onClick = { viewModel.toggleViewMode() }) {
                             Icon(
                                 if (state.viewMode == ViewMode.List) Icons.Default.GridView else Icons.Default.ViewList,
@@ -320,6 +338,7 @@ fun DashboardScreen(
                                 onClick = { viewModel.navigateToFolder(folder.id) },
                                 onDelete = { viewModel.deleteFolder(folder.id) },
                                 onRename = { showRenameFolderDialog = folder },
+                                onShare = { viewModel.generateFolderCode(folder.id) },
                                 isDarkTheme = isDarkTheme
                             )
                         }
@@ -349,6 +368,7 @@ fun DashboardScreen(
                                 onClick = { viewModel.navigateToFolder(folder.id) },
                                 onDelete = { viewModel.deleteFolder(folder.id) },
                                 onRename = { showRenameFolderDialog = folder },
+                                onShare = { viewModel.generateFolderCode(folder.id) },
                                 isDarkTheme = isDarkTheme
                             )
                         }
@@ -416,6 +436,7 @@ private fun FolderCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onRename: () -> Unit,
+    onShare: () -> Unit = {},
     isDarkTheme: Boolean = false,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -467,6 +488,10 @@ private fun FolderCard(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
+                        text = { Text("Share") },
+                        onClick = { showMenu = false; onShare() }
+                    )
+                    DropdownMenuItem(
                         text = { Text("Rename") },
                         onClick = { showMenu = false; onRename() }
                     )
@@ -486,6 +511,7 @@ private fun FolderGridCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onRename: () -> Unit,
+    onShare: () -> Unit = {},
     isDarkTheme: Boolean = false,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -511,6 +537,7 @@ private fun FolderGridCard(
                     Icon(Icons.Default.MoreVert, contentDescription = "More", tint = if (isDarkTheme) DarkMutedSoft else MutedSoft, modifier = Modifier.size(16.dp))
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text("Share") }, onClick = { showMenu = false; onShare() })
                     DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
                     DropdownMenuItem(text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
                 }
@@ -952,6 +979,7 @@ private fun FileCard(
 @Composable
 private fun CodeBottomSheet(
     code: String,
+    expiryLabel: String = "1 hour",
     context: Context,
     onDismiss: () -> Unit,
 ) {
@@ -975,7 +1003,7 @@ private fun CodeBottomSheet(
                 Text(text = code, modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), fontFamily = FontFamily.Monospace, fontSize = 32.sp, color = OnDark, letterSpacing = 10.sp, textAlign = TextAlign.Center)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "Expires in 15 minutes", style = MaterialTheme.typography.bodySmall, color = MutedSoft)
+            Text(text = "Expires in $expiryLabel", style = MaterialTheme.typography.bodySmall, color = MutedSoft)
             Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = {

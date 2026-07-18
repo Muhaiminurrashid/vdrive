@@ -94,6 +94,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Missing FileProvider config**: created `res/xml/file_paths.xml` (needed by AndroidManifest FileProvider)
 - **Storage bar 0% on Android**: `(data["size"] as? Long)` failed on `Double` (web-uploaded files) → fixed with `Number?.toLong()`
 - **Folder filter not applying**: `Query.whereEqualTo()` returns new Query (immutable), result was discarded → fixed with `var` + reassignment
+- **CI build fails — missing keystore.properties**: signing config eagerly read `keystore.properties` at config time, failed CI where file doesn't exist → guarded with `if (file(...).exists())`, only configures release signing when file present
 
 ### Phase 9 — Web Design Overhaul (Tailwind v4 + DESIGN.md)
 - **DESIGN.md rewritten**: replaced Claude marketing components with dashboard-specific specs (file-row, folder-row, breadcrumb, storage-bar, access-code-card, auth-card, etc.)
@@ -192,6 +193,8 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Zero new dependencies**: stdlib `HttpURLConnection` + `JSONObject` only
 - **Changed files**: `DashboardViewModel.kt`, `DashboardScreen.kt`
 
+### Phase 16 — CI/CD Pipeline
+
 ### Phase 17 — Android Tap-to-Open vs 3-dot Download
 - **Tap opens file**: added `previewFile()` in DashboardViewModel — fetches bytes from Worker proxy, writes to `context.cacheDir`, opens with `Intent.ACTION_VIEW` via existing `FileProvider` (cache-path). No persistent save.
 - **3-dot unchanged**: `downloadFile()` still saves to Downloads folder (MediaStore API 29+ / direct write older). No changes to 3-dot behavior.
@@ -200,13 +203,18 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 ### Phase 18 — User-Friendly Auth Error Messages
 - **Android AuthViewModel**: added `authError()` helper mapping `FirebaseAuthException` error codes to user-friendly strings (e.g. "Incorrect email or password" for invalid-credential/user-not-found/wrong-password). Applied to login, register, resetPassword, signInWithGoogle catch blocks.
+- **Android DashboardViewModel**: added `userMessage()` helper mapping `FirebaseFirestoreException` codes + network exceptions. Applied to all 13 catch blocks + changePassword callback.
 - **Web login.html**: added `authErrorMessage()` JS function with same mapping. Applied to handleAuth, handleGoogle, handleReset catch blocks.
-- **Web dashboard.html**: added `authErrorMessage()` JS function, applied to handleChangePassword catch block.
-- **All errors fallback**: unknown errors show "Something went wrong" instead of raw Firebase exception text.
+- **Web dashboard.html**: added `authErrorMessage()` + `userErrorMessage()` JS functions. Applied to changePassword, upload, download, delete catch blocks.
+- **Web access.html**: added `userErrorMessage()` JS function. Applied to code entry Firestore catch block.
+- **Web reset-password.html**: added `authErrorMessage()` JS function (with expired/invalid action code). Applied to both handleReset and sendResetEmail catch blocks.
+- **All errors fallback**: unknown errors show "Something went wrong" instead of raw exception text.
 - **Zero new dependencies**: stdlib only.
-- **Changed files**: `AuthViewModel.kt`, `login.html`, `dashboard.html`
+- **Changed files**: `AuthViewModel.kt`, `DashboardViewModel.kt`, `login.html`, `dashboard.html`, `access.html`, `reset-password.html`
 
-### Phase 16 — CI/CD Pipeline
+### Phase 19 — Web UI Fixes
+- **Avatar dropdown**: right-aligned under avatar button (`right` instead of `left` positioning), prevents clipping off-screen.
+- **Changed files**: `dashboard.html`
 - **GitHub repo created**: `Muhaiminurrashid/vdrive` (private)
 - **Workflow file**: `.github/workflows/deploy.yml` — two jobs:
   - `test`: runs on every PR + push to `main` — Android unit tests (`./gradlew app:testDebugUnitTest`) + CSS build (`npm run css`)
@@ -231,6 +239,10 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **FileDetailBottomSheet**: removed (Phase 15) — tap action now uses simple `downloadFile()` instead of metadata popup
 
 ## Next Steps
+
+### Access Page — File Preview + Remove Code Display
+- Access page (`access.html`) currently download-only — no inline preview like dashboard (`previewFile`). Add preview overlay for images, PDFs, video, audio, text.
+- Code display should be removed from access page — teacher writes code on the board. Page should only have code input and file list after successful entry.
 
 ### (done) Split Tap vs 3-dot Download Behavior
 - Tap opens file via cache + intent (`previewFile()`), 3-dot saves to Downloads (`downloadFile()`)

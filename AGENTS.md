@@ -86,7 +86,8 @@ See DESIGN.md for full spec.
 - Android: Hilt DI, ViewModel + StateFlow, Navigation Compose sealed routes
 - Web: Firebase CDN SDK, vanilla JS global state, CSS custom properties
 - Commits: conventional commits (feat/fix/chore)
-- No unit tests yet — add with `testing-setup` skill
+- Unit tests exist (`./gradlew app:testDebugUnitTest`) — add more with `testing-setup` skill
+- Error messages: `userMessage(e)` / `authError(e)` helpers on Android, `authErrorMessage(e)` / `userErrorMessage(e)` on web — map exception codes to user-friendly strings. Add new mappings when adding new error sources.
 - Code review: `ponytail-review` for over-engineering audit
 
 ## graphify

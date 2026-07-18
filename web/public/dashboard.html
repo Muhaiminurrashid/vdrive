@@ -193,6 +193,9 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
         <div id="breadcrumb"></div>
       </div>
       <div id="topbarRight">
+        <button id="shareFolderBtn" class="hidden" onclick="shareFolder(window.currentFolderId)" title="Share folder" style="padding:6px;border:none;background:transparent;cursor:pointer;color:var(--color-muted-soft);display:flex;align-items:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
         <div id="viewToggle">
           <button id="viewListBtn" class="active" title="List">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -212,7 +215,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 
       <div id="codeDisplay">
         <p class="t">Classroom Access Code</p>
-        <p class="s">Share this code. Expires in 15 minutes.</p>
+        <p class="s">Share this code. Expires in 1 hour.</p>
         <div id="codeRow">
           <span id="codeValue"></span>
           <button id="copyBtn">Copy</button>
@@ -583,10 +586,44 @@ async function shareFile(fileId) {
   const code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('')
   await db.collection('accessCodes').add({
     code, userId: user.uid, fileIds: [fileId],
-    expiresAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 15*60*1000)),
+    expiresAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 60*60*1000)),
     createdAt: firebase.firestore.Timestamp.now(),
   })
   $('codeValue').textContent = code
+  document.querySelector('#codeDisplay .s').textContent = 'Share this code. Expires in 1 hour.'
+  $('codeDisplay').classList.add('show')
+  window.lastCode = code
+  closeInfoPanel()
+}
+
+async function shareFolder(folderId) {
+  const user = window.currentUser
+  if (!user || !folderId) return
+  // ponytail: reuse active unexpired code for this folder
+  const existing = await db.collection('accessCodes').where('folderId', '==', folderId).get()
+  const active = existing.docs.find(d => {
+    const data = d.data()
+    if (data.userId !== user.uid) return false
+    const exp = data.expiresAt
+    return typeof exp === 'number' ? exp >= Date.now() : exp.toDate() >= new Date()
+  })
+  if (active) {
+    $('codeValue').textContent = active.data().code
+    document.querySelector('#codeDisplay .s').textContent = 'Share this code. Expires in 1 hour.'
+    $('codeDisplay').classList.add('show')
+    window.lastCode = active.data().code
+    closeInfoPanel()
+    return
+  }
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('')
+  await db.collection('accessCodes').add({
+    code, userId: user.uid, folderId,
+    expiresAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 60*60*1000)),
+    createdAt: firebase.firestore.Timestamp.now(),
+  })
+  $('codeValue').textContent = code
+  document.querySelector('#codeDisplay .s').textContent = 'Share this code. Expires in 1 hour.'
   $('codeDisplay').classList.add('show')
   window.lastCode = code
   closeInfoPanel()
@@ -634,6 +671,7 @@ function handleDotClick(e) {
   const id = btn.dataset.id, type = btn.dataset.type
   const items = type === 'folder' ? [
     { label:'File info', cmd:"showInfoPanel('folder','" + id + "')" },
+    { label:'Share', cmd:"shareFolder('" + id + "')" },
     { label:'Rename', cmd:"renameFolder('" + id + "')" },
     { label:'', divider: true },
     { label:'Delete', danger:true, cmd:"deleteFolderConfirm('" + id + "')" }
@@ -708,6 +746,9 @@ function showInfoPanel(type, id) {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete
     </button>`
   } else {
+    actions += `<button onclick="shareFolder('${f.id}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share
+    </button>`
     actions += `<button onclick="renameFolder('${f.id}');closeInfoPanel()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename
     </button>`
@@ -811,6 +852,8 @@ async function loadContents() {
   const pct = Math.min(100, (totalBytes / 1_000_000_000) * 100)
   $('sidebarStorageFill').style.width = pct + '%'
   $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
+
+  $('shareFolderBtn').classList.toggle('hidden', !fid)
 
   const list = $('fileList'), grid = $('grid'), empty = $('emptyState')
   list.innerHTML = ''; grid.innerHTML = ''

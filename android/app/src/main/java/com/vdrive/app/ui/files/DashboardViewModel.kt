@@ -58,6 +58,7 @@ data class DashboardUiState(
     val isLoading: Boolean = false,
     val userEmail: String = "",
     val generatedCode: String? = null,
+    val codeExpiryLabel: String = "1 hour",
     val selectedIds: Set<String> = emptySet(),
     val viewMode: ViewMode = ViewMode.List,
     val error: String? = null,
@@ -367,7 +368,7 @@ class DashboardViewModel @Inject constructor(
             try {
                 val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
                 val code = (1..6).map { chars.random() }.joinToString("")
-                val expiresAt = System.currentTimeMillis() + 15 * 60 * 1000
+                val expiresAt = System.currentTimeMillis() + 60 * 60 * 1000
                 val fileIds = _state.value.selectedIds.toList()
 
                 firestore.collection("accessCodes").add(mapOf(
@@ -378,7 +379,42 @@ class DashboardViewModel @Inject constructor(
                     "createdAt" to FieldValue.serverTimestamp()
                 )).await()
 
-                _state.value = _state.value.copy(generatedCode = code, selectedIds = emptySet())
+                _state.value = _state.value.copy(generatedCode = code, selectedIds = emptySet(), codeExpiryLabel = "1 hour")
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
+        }
+    }
+
+    fun generateFolderCode(folderId: String) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val now = System.currentTimeMillis()
+                // ponytail: reuse active unexpired code for this folder
+                val existing = firestore.collection("accessCodes")
+                    .whereEqualTo("folderId", folderId)
+                    .get().await()
+                val active = existing.documents.firstOrNull { doc ->
+                    val data = doc.data ?: return@firstOrNull false
+                    data["userId"] == user.uid && (data["expiresAt"] as? Long ?: 0L) >= now
+                }
+                if (active != null) {
+                    _state.value = _state.value.copy(generatedCode = active.getString("code") ?: "", codeExpiryLabel = "1 hour")
+                    return@launch
+                }
+
+                val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+                val code = (1..6).map { chars.random() }.joinToString("")
+                val expiresAt = now + 60 * 60 * 1000
+
+                firestore.collection("accessCodes").add(mapOf(
+                    "code" to code,
+                    "userId" to user.uid,
+                    "folderId" to folderId,
+                    "expiresAt" to expiresAt,
+                    "createdAt" to FieldValue.serverTimestamp()
+                )).await()
+
+                _state.value = _state.value.copy(generatedCode = code, codeExpiryLabel = "1 hour")
             } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
@@ -396,6 +432,10 @@ class DashboardViewModel @Inject constructor(
 
     fun clearError() {
         _state.value = _state.value.copy(error = null)
+    }
+
+    fun clearGeneratedCode() {
+        _state.value = _state.value.copy(generatedCode = null)
     }
 
     fun signOut() {
