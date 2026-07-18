@@ -152,6 +152,9 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #hamburger:hover { color:var(--color-ink); }
 #searchInput:focus { border-color:var(--color-primary); }
 #searchInput::placeholder { color:var(--color-muted-soft); }
+#uploadProgress { background:var(--color-hairline); border-radius:2px; overflow:hidden; margin-bottom:16px; padding:8px; }
+#uploadStatus { font-size:13px; color:var(--color-muted); margin-bottom:4px; }
+#uploadProgressFill { height:4px; background:var(--color-primary); border-radius:2px; transition:width .15s; }
 </style>
 </head>
 <body>
@@ -215,6 +218,8 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
         <p id="fileCount"></p>
         <input id="searchInput" type="text" placeholder="Search files..." style="margin-left:auto;height:32px;padding:0 12px;border:1px solid var(--color-hairline);border-radius:6px;background:var(--color-surface-card);color:var(--color-ink);font-size:13px;outline:none;width:200px">
       </div>
+
+      <div id="uploadProgress" class="hidden"><div id="uploadStatus">Uploading...</div><div id="uploadProgressFill"></div></div>
 
       <div id="codeDisplay">
         <p class="t">Classroom Access Code</p>
@@ -304,6 +309,8 @@ const auth = firebase.auth()
 const db = firebase.firestore()
 const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
 const $ = id => document.getElementById(id)
+function showProgress(text) { $('uploadStatus').textContent = text; $('uploadProgress').classList.remove('hidden'); $('uploadProgressFill').style.width = '0%' }
+function hideProgress() { $('uploadProgress').classList.add('hidden'); $('uploadProgressFill').style.width = '0%' }
 
 // ponytail: view mode persisted in localStorage
 window.viewMode = localStorage.getItem('vdriveView') || 'list'
@@ -534,25 +541,29 @@ async function handleUpload(inputOrFile) {
   if (!file || !window.currentUser) return
   if (file.size > 100*1024*1024) { alert('File too large (max 100 MB)'); return }
   $('newBtn').innerHTML = 'Uploading...'
+  showProgress('Uploading...')
   try {
     const { uploadUrl, authToken } = await fetch(`${B2_PROXY_URL}/api/upload-url`).then(r => r.json())
     const b2FileName = `${window.currentUser.uid}_${Date.now()}_${file.name}`
-    const b2Res = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: authToken, 'X-Bz-File-Name': encodeURIComponent(b2FileName),
-        'Content-Type': file.type || 'application/octet-stream', 'X-Bz-Content-Sha1': 'do_not_verify'
-      },
-      body: file
+    const b2Result = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.upload.onprogress = e => { if (e.lengthComputable) $('uploadProgressFill').style.width = Math.round((e.loaded / e.total) * 100) + '%' }
+      xhr.onload = () => xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject(Error(xhr.responseText))
+      xhr.onerror = () => reject(Error('Upload failed'))
+      xhr.open('POST', uploadUrl)
+      xhr.setRequestHeader('Authorization', authToken)
+      xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(b2FileName))
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+      xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify')
+      xhr.send(file)
     })
-    if (!b2Res.ok) throw new Error(await b2Res.text())
-    const b2Result = await b2Res.json()
     await db.collection('files').add({
       name: file.name, size: file.size, type: file.type, userId: window.currentUser.uid,
       b2FileId: b2Result.fileId, b2FileName, folderId: window.currentFolderId || null,
       createdAt: firebase.firestore.Timestamp.now(),
     })
   } catch(e) { alert(userErrorMessage(e)) }
+  hideProgress()
   $('newBtn').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New'
   if (inputOrFile.files) inputOrFile.value = ''
   loadContents()
@@ -561,22 +572,28 @@ async function handleUpload(inputOrFile) {
 // --- Download / Open / Share ---
 async function downloadFile(f) {
   if (!f?.b2FileName) return
+  showProgress('Downloading ' + f.name + '...')
   try {
-    const res = await fetch(`${B2_PROXY_URL}/api/download`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: f.b2FileName })
+    const blob = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.responseType = 'blob'
+      xhr.onprogress = e => { if (e.lengthComputable) $('uploadProgressFill').style.width = Math.round((e.loaded / e.total) * 100) + '%' }
+      xhr.onload = () => xhr.status < 300 ? resolve(xhr.response) : reject(Error('Download service unavailable'))
+      xhr.onerror = () => reject(Error('Download failed'))
+      xhr.open('POST', `${B2_PROXY_URL}/api/download`)
+      xhr.setRequestHeader('Content-Type', 'application/json')
+      xhr.send(JSON.stringify({ fileName: f.b2FileName }))
     })
-    if (!res.ok) throw new Error('Download service unavailable')
-    const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = f.name; a.click()
     URL.revokeObjectURL(url)
   } catch(e) { alert(userErrorMessage(e)) }
+  hideProgress()
 }
 
 async function deleteFile(f) {
   if (!f || !confirm('Delete "' + f.name + '"?')) return
+  showProgress('Deleting ' + f.name + '...')
   try {
     if (f.b2FileId && f.b2FileName) {
       const res = await fetch(`${B2_PROXY_URL}/api/delete`, {
@@ -589,6 +606,7 @@ async function deleteFile(f) {
     await db.collection('files').doc(f.id).delete()
     closeInfoPanel(); loadContents()
   } catch(e) { alert(userErrorMessage(e)); loadContents() }
+  hideProgress()
 }
 
 async function shareFile(fileId) {

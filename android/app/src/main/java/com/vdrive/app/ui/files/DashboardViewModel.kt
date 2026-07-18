@@ -62,6 +62,8 @@ data class DashboardUiState(
     val selectedIds: Set<String> = emptySet(),
     val viewMode: ViewMode = ViewMode.List,
     val error: String? = null,
+    val uploadProgress: Float? = null,
+    val actionLabel: String? = null,
 )
 
 // ponytail: set after deploying Worker
@@ -271,18 +273,23 @@ class DashboardViewModel @Inject constructor(
     fun uploadFile(uri: Uri, contentResolver: ContentResolver, folderId: String? = null) {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            _state.value = _state.value.copy(isLoading = true, uploadProgress = 0f, actionLabel = "Uploading...")
             try {
-                fileRepository.uploadFile(user.uid, uri, contentResolver, folderId)
+                fileRepository.uploadFile(user.uid, uri, contentResolver, folderId) { progress ->
+                    _state.value = _state.value.copy(uploadProgress = progress)
+                }
                 loadContents()
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = userMessage(e))
+                _state.value = _state.value.copy(error = userMessage(e))
+            } finally {
+                _state.value = _state.value.copy(isLoading = false, uploadProgress = null, actionLabel = null)
             }
         }
     }
 
     fun downloadFile(file: FileUiItem, context: Context) {
         viewModelScope.launch {
+            _state.value = _state.value.copy(actionLabel = "Downloading ${file.name}...", uploadProgress = 0f)
             try {
                 val b2FileName = file.b2FileName ?: return@launch
                 val bytes = withContext(Dispatchers.IO) {
@@ -292,7 +299,26 @@ class DashboardViewModel @Inject constructor(
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.doOutput = true
                     conn.outputStream.write(body.toByteArray())
-                    conn.inputStream.readBytes()
+                    val total = conn.contentLength
+                    val input = conn.inputStream
+                    val buffer = ByteArray(8192)
+                    val out = java.io.ByteArrayOutputStream()
+                    var read: Int
+                    var totalRead = 0L
+                    var lastPct = -1
+                    while (input.read(buffer).also { read = it } != -1) {
+                        out.write(buffer, 0, read)
+                        totalRead += read
+                        if (total > 0) {
+                            val pct = (totalRead * 100 / total).toInt()
+                            if (pct != lastPct) {
+                                lastPct = pct
+                                _state.value = _state.value.copy(uploadProgress = pct / 100f)
+                            }
+                        }
+                    }
+                    input.close()
+                    out.toByteArray()
                 }
                 withContext(Dispatchers.IO) {
                     if (Build.VERSION.SDK_INT >= 29) {
@@ -314,7 +340,11 @@ class DashboardViewModel @Inject constructor(
                     }
                 }
                 withContext(Dispatchers.Main) { Toast.makeText(context, "Saved to Downloads", Toast.LENGTH_SHORT).show() }
-            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = userMessage(e))
+            } finally {
+                _state.value = _state.value.copy(uploadProgress = null, actionLabel = null)
+            }
         }
     }
 
@@ -345,12 +375,15 @@ class DashboardViewModel @Inject constructor(
 
     fun deleteFile(file: FileUiItem) {
         viewModelScope.launch {
+            _state.value = _state.value.copy(actionLabel = "Deleting...")
             try {
                 fileRepository.deleteFile(file.id, file.b2FileId, file.b2FileName)
                 loadContents()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(error = userMessage(e))
                 loadContents()
+            } finally {
+                _state.value = _state.value.copy(actionLabel = null)
             }
         }
     }

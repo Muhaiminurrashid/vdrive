@@ -231,6 +231,32 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **1 file changed**: `web/public/access.html`. Zero new dependencies.
 - **Deployed + pushed**: Firebase Hosting + GitHub main.
 
+### Phase 21 — Client-Side Search Bar (Web)
+- **Search input in `#contentHeader`**: text input with `200px` width in top bar area, between file count and code display. Placeholder "Search files...".
+- **Filter logic**: `oninput` handler iterates `.file-row` and `.grid-card` elements, matches `.file-name` / `.grid-card-name` text (case-insensitive), toggles `display:none`. Folder names also searched.
+- **Resets on navigation**: `$('searchInput').value = ''` at top of `loadContents()` — clears search when navigating folders or toggling view mode.
+- **Client-side only**: no Firestore queries, no indexes. Filters currently loaded files only. No debounce, no search icon, no cross-folder search.
+- **1 file changed**: `web/public/dashboard.html`. ~15 lines JS + 3 lines CSS + 1 line HTML. Zero new dependencies.
+- **Deployed + pushed**: Firebase Hosting + GitHub main.
+
+### Phase 22 — Upload/Download/Delete Progress (Web + Android)
+- **Web upload**: replaced `fetch` for B2 POST with `XMLHttpRequest` — only way to get `upload.onprogress` events. Progress bar (4px navy fill) below breadcrumb.
+- **Web download**: replaced `fetch` with `XMLHttpRequest` + `responseType: 'blob'`, same `onprogress` handler drives the same progress bar.
+- **Web delete**: no progress bar (fast operation), shows "Deleting filename..." status text.
+- **Web status text**: `#uploadStatus` label inside progress container shows "Uploading...", "Downloading filename...", "Deleting filename..." per operation.
+- **Web helpers**: `showProgress(text)` / `hideProgress()` functions centralize show/reset/hide logic.
+- **Android upload**: custom `okhttp3.RequestBody` writes 8KB chunks in `writeTo()`, fires `onProgress` lambda → `uploadProgress: Float?` state → `LinearProgressIndicator` with text label.
+- **Android download**: chunked `InputStream` read (8KB) via `HttpURLConnection`, 1% throttle, reuses `uploadProgress` bar + "Downloading..." text.
+- **Android delete**: status text only ("Deleting..."), no progress bar.
+- **Android action labels**: `actionLabel: String?` on `DashboardUiState` drives "Uploading...", "Downloading filename...", "Deleting..." text below breadcrumb. Cleared in `finally` on all 3 operations.
+- **Changed files**: `web/public/dashboard.html`, `FileRepository.kt`, `DashboardViewModel.kt`, `DashboardScreen.kt`
+- **Zero new dependencies** on either platform.
+
+### Phase 23 — Breadcrumb Size Increase (Google Drive-style)
+- **Web breadcrumb**: increase `#breadcrumb` text from `labelMedium` (Tailwind) to `titleLarge` or equivalent — "My Files › Folder › Subfolder" rendered at 20px+ weight to match Drive's prominent path display.
+- **Android breadcrumb**: `BreadcrumbBar` composable `labelMedium` → `titleMedium` or `titleLarge`, with increased icon size for chevrons.
+- **Both platforms**: ensure breadcrumb row height accommodates larger text without clipping. No layout breakage on long folder names (existing truncation/ellipsis).
+
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms — use context menu instead
 - **Breadcrumb + button**: small `+` in breadcrumb bar removed — use FAB instead
@@ -266,9 +292,6 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 ## Future Ideas (Unprioritized)
 
-### Search
-- File/folder search bar in top bar or sidebar. Filter client-side from loaded files, or Firestore query for larger sets.
-
 ### Trash / Recycle Bin
 - Soft-delete files to a `trashed` state. 30-day auto-purge. Restore from trash UI.
 
@@ -298,7 +321,6 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - File preview dialog (double-tap to preview images/text inline, like web)
 - Image viewer zoom/pan
 - Pull-to-refresh for file list
-- Upload progress indicator
 
 ### Performance
 - Pagination/lazy loading for large file lists (Firestore `limit` + `startAfter`).

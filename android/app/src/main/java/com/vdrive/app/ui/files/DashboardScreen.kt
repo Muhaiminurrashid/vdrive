@@ -310,6 +310,24 @@ fun DashboardScreen(
                     isDarkTheme = isDarkTheme
                 )
 
+                state.actionLabel?.let { label ->
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        Text(
+                            label, style = MaterialTheme.typography.labelSmall,
+                            color = if (isDarkTheme) DarkMuted else Muted,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        state.uploadProgress?.let { progress ->
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                                color = Primary,
+                                trackColor = if (isDarkTheme) DarkHairline else Hairline,
+                            )
+                        }
+                    }
+                }
+
                 if (state.isLoading && state.files.isEmpty() && state.subFolders.isEmpty()) {
                     Box(
                         modifier = Modifier

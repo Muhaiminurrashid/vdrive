@@ -26,8 +26,11 @@ class FileRepository @Inject constructor(
 ) {
     private val client = OkHttpClient()
 
-    suspend fun uploadFile(userId: String, uri: Uri, contentResolver: ContentResolver, folderId: String? = null): String? =
-        withContext(Dispatchers.IO) {
+    suspend fun uploadFile(
+        userId: String, uri: Uri, contentResolver: ContentResolver,
+        folderId: String? = null,
+        onProgress: ((Float) -> Unit)? = null
+    ): String? = withContext(Dispatchers.IO) {
             val name = getFileName(uri, contentResolver) ?: "file_${System.currentTimeMillis()}"
             val mimeType = contentResolver.getType(uri) ?: "application/octet-stream"
             val inputStream = contentResolver.openInputStream(uri) ?: return@withContext null
@@ -46,13 +49,27 @@ class FileRepository @Inject constructor(
 
             // Upload file directly to B2
             val b2FileName = "${userId}_${System.currentTimeMillis()}_$name"
+            // ponytail: custom RequestBody to track upload progress (parallel web XHR upload.onprogress)
+            val progressBody = object : okhttp3.RequestBody() {
+                override fun contentType() = mimeType.toMediaType()
+                override fun contentLength() = bytes.size.toLong()
+                override fun writeTo(sink: okio.BufferedSink) {
+                    var written = 0
+                    while (written < bytes.size) {
+                        val end = minOf(written + 8192, bytes.size)
+                        sink.write(bytes, written, end - written)
+                        written = end
+                        onProgress?.invoke(written.toFloat() / bytes.size)
+                    }
+                }
+            }
             val b2Res = client.newCall(
                 Request.Builder().url(b2UploadUrl)
                     .addHeader("Authorization", b2AuthToken)
                     .addHeader("X-Bz-File-Name", URLEncoder.encode(b2FileName, "UTF-8"))
                     .addHeader("Content-Type", mimeType)
                     .addHeader("X-Bz-Content-Sha1", "do_not_verify")
-                    .post(bytes.toRequestBody(mimeType.toMediaType()))
+                    .post(progressBody)
                     .build()
             ).execute()
             if (!b2Res.isSuccessful) return@withContext null
