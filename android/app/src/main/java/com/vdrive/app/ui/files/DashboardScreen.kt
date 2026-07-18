@@ -207,15 +207,6 @@ fun DashboardScreen(
                         )
                     },
                     actions = {
-                        state.currentFolderId?.let { folderId ->
-                            IconButton(onClick = { viewModel.generateFolderCode(folderId) }) {
-                                Icon(
-                                    Icons.Default.Share,
-                                    contentDescription = "Share folder",
-                                    tint = if (isDarkTheme) DarkInk else Ink
-                                )
-                            }
-                        }
                         IconButton(onClick = { viewModel.toggleViewMode() }) {
                             Icon(
                                 if (state.viewMode == ViewMode.List) Icons.Default.GridView else Icons.Default.ViewList,
@@ -306,9 +297,32 @@ fun DashboardScreen(
                     onNavigate = { index ->
                         viewModel.navigateToBreadcrumb(index)
                     },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                     isDarkTheme = isDarkTheme
                 )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val total = state.files.size + state.subFolders.size
+                    Text(
+                        text = "$total item${if (total != 1) "s" else ""}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isDarkTheme) DarkMuted else Muted,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { viewModel.generateFolderCode(state.currentFolderId) },
+                        shape = RoundedCornerShape(20.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Generate code", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
 
                 state.actionLabel?.let { label ->
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
@@ -431,7 +445,7 @@ private fun BreadcrumbBar(
             val last = i == parts.lastIndex
             Text(
                 text = name,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = if (last) (if (isDarkTheme) DarkInk else Ink) else Primary,
                 modifier = if (last) Modifier else Modifier.clickable { onNavigate(i) }
             )
@@ -440,7 +454,7 @@ private fun BreadcrumbBar(
                     Icons.Default.ChevronRight,
                     contentDescription = null,
                     tint = if (isDarkTheme) DarkMutedSoft else MutedSoft,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

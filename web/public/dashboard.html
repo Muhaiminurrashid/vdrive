@@ -33,10 +33,10 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #main { flex:1; display:flex; flex-direction:column; min-width:0; }
 #topbar { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:var(--color-surface-card); border-bottom:1px solid var(--color-hairline); flex-shrink:0; }
 #breadcrumb { display:flex; align-items:center; gap:2px; flex:1; min-width:0; overflow:hidden; }
-#breadcrumb .seg { font-size:13px; cursor:pointer; white-space:nowrap; }
+#breadcrumb .seg { font-size:20px; font-weight:500; cursor:pointer; white-space:nowrap; }
 #breadcrumb .seg:hover:not(.active) { color:var(--color-primary); }
 #breadcrumb .seg.active { cursor:default; }
-.sep { color:var(--color-muted-soft); margin:0 2px; user-select:none; }
+.sep { font-size:18px; color:var(--color-muted-soft); margin:0 2px; user-select:none; }
 #sidebarBrand { display:flex; align-items:center; gap:8px; padding:16px; font-size:15px; font-weight:600; color:var(--color-primary); border-bottom:1px solid var(--color-hairline); }
 #newBtn { margin:12px 16px; padding:0 16px; height:40px; background:var(--color-primary); color:var(--color-on-primary); border:none; border-radius:20px; font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap; }
 #newBtn:hover { background:var(--color-primary-active); }
@@ -152,6 +152,8 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #hamburger:hover { color:var(--color-ink); }
 #searchInput:focus { border-color:var(--color-primary); }
 #searchInput::placeholder { color:var(--color-muted-soft); }
+#genCodeBtn { margin-left:12px; height:32px; padding:0 14px; border:none; border-radius:20px; background:var(--color-primary); color:var(--color-on-primary); font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0; }
+#genCodeBtn:hover { background:var(--color-primary-active); }
 #uploadProgress { background:var(--color-hairline); border-radius:2px; overflow:hidden; margin-bottom:16px; padding:8px; }
 #uploadStatus { font-size:13px; color:var(--color-muted); margin-bottom:4px; }
 #uploadProgressFill { height:4px; background:var(--color-primary); border-radius:2px; transition:width .15s; }
@@ -198,9 +200,6 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
         <div id="breadcrumb"></div>
       </div>
       <div id="topbarRight">
-        <button id="shareFolderBtn" class="hidden" onclick="shareFolder(window.currentFolderId)" title="Share folder" style="padding:6px;border:none;background:transparent;cursor:pointer;color:var(--color-muted-soft);display:flex;align-items:center">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        </button>
         <div id="viewToggle">
           <button id="viewListBtn" class="active" title="List">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -216,6 +215,10 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
     <div id="content">
       <div id="contentHeader">
         <p id="fileCount"></p>
+        <button id="genCodeBtn" onclick="shareFolder(window.currentFolderId)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Generate code
+        </button>
         <input id="searchInput" type="text" placeholder="Search files..." style="margin-left:auto;height:32px;padding:0 12px;border:1px solid var(--color-hairline);border-radius:6px;background:var(--color-surface-card);color:var(--color-ink);font-size:13px;outline:none;width:200px">
       </div>
 
@@ -628,7 +631,7 @@ async function shareFile(fileId) {
 
 async function shareFolder(folderId) {
   const user = window.currentUser
-  if (!user || !folderId) return
+  if (!user) return
   // ponytail: reuse active unexpired code for this folder
   const existing = await db.collection('accessCodes').where('folderId', '==', folderId).get()
   const active = existing.docs.find(d => {
@@ -883,8 +886,6 @@ async function loadContents() {
   const pct = Math.min(100, (totalBytes / 1_000_000_000) * 100)
   $('sidebarStorageFill').style.width = pct + '%'
   $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
-
-  $('shareFolderBtn').classList.toggle('hidden', !fid)
 
   const list = $('fileList'), grid = $('grid'), empty = $('emptyState')
   list.innerHTML = ''; grid.innerHTML = ''

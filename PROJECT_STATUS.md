@@ -252,10 +252,14 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Changed files**: `web/public/dashboard.html`, `FileRepository.kt`, `DashboardViewModel.kt`, `DashboardScreen.kt`
 - **Zero new dependencies** on either platform.
 
-### Phase 23 — Breadcrumb Size Increase (Google Drive-style)
-- **Web breadcrumb**: increase `#breadcrumb` text from `labelMedium` (Tailwind) to `titleLarge` or equivalent — "My Files › Folder › Subfolder" rendered at 20px+ weight to match Drive's prominent path display.
-- **Android breadcrumb**: `BreadcrumbBar` composable `labelMedium` → `titleMedium` or `titleLarge`, with increased icon size for chevrons.
-- **Both platforms**: ensure breadcrumb row height accommodates larger text without clipping. No layout breakage on long folder names (existing truncation/ellipsis).
+### Phase 23 — Breadcrumb Size Increase + Prominent "Generate code" Button
+- **Web breadcrumb**: `#breadcrumb .seg` `font-size:13px` → `20px` + `font-weight:500`. `.sep` chevron increased proportionally to `font-size:18px`.
+- **Android breadcrumb**: `BreadcrumbBar` composable `labelMedium` → `titleLarge`, chevron icon `14.dp` → `20.dp`, vertical padding `4.dp` → `10.dp`.
+- **Web share button relocated**: removed tiny icon-only `#shareFolderBtn` from topbar right (hidden by default, only in subfolders). Added navy pill `#genCodeBtn` in `#contentHeader` — always visible, share icon + "Generate code" text, calls `shareFolder()` at any level (including root). `shareFolder()` no longer requires folderId — generates code for all files at root.
+- **Android share button relocated**: removed `Share` `IconButton` from `TopAppBar actions` (only showed in subfolders). Added navy pill `Button` in content header row with item count — always visible, "Generate code" label, calls `generateFolderCode()` at any level. ViewModel signature changed to accept `String?` folderId, omits field in doc when null.
+- **Changed files**: `web/public/dashboard.html`, `DashboardScreen.kt`, `DashboardViewModel.kt`
+- **Zero new dependencies** on either platform.
+- **Deployed**: Web → Firebase Hosting. Android → builds clean.
 
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms — use context menu instead
