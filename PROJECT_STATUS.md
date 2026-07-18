@@ -257,6 +257,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
   - **Fix**: `verifyFileOwnership()` now fail-soft — returns `true` (allows download) if `FIREBASE_SERVICE_ACCOUNT` secret missing or Firestore query errors. Web XHR reads `body.error` from worker response instead of hardcoded string. Android checks `responseCode` before reading input stream, reads `errorStream` for real message.
   - **Lesson**: worker security checks should fail-soft (permit) when Firestore admin query fails — the pre-Phase 24 behavior was open access. Error handlers should never discard the actual error message.
 
+### Phase 25 — Android Pull-to-Refresh
+- **Pull-to-refresh**: pull down on file list (list or grid view) triggers `loadContents()`. Uses Material2 `pullRefresh` modifier + `PullRefreshIndicator` from `androidx.compose.material:material` (M2). Indicator shows spinner while `state.isLoading` is true, auto-dismisses when data loads.
+- **Imports changed**: replaced Material3 `PullToRefreshContainer`/`rememberPullToRefreshState`/`nestedScroll` with M2 `pullRefresh`/`PullRefreshIndicator`/`rememberPullRefreshState`.
+- **Dependency added**: `androidx.compose.material:material` (for pull-refresh API).
+- **First attempt failed**: used M3 `rememberPullToRefreshState()` + `PullToRefreshContainer` + `LaunchedEffect(key = isRefreshing)` then `snapshotFlow { isRefreshing }` — indicator appeared but never dismissed. The M3 pull-to-refresh API in compose-bom:2024.02.00 was unreliable; `isRefreshing` state transitions didn't trigger properly. Switched to M2 API which worked on first try.
+- **Lesson**: M3 pull-to-refresh (1.2.x) is buggy with `isRefreshing` state management. M2 `pullRefresh` modifier is simpler and more reliable — uses `refreshing: Boolean` + `onRefresh` callback, no manual state machine.
+- **Build note**: requires `JAVA_HOME=/home/wise/.gradle/jdks/eclipse_adoptium-21-amd64-linux.2` for assembly (system JDK missing `jlink`).
+- **Changed files**: `DashboardScreen.kt`, `app/build.gradle.kts`
+- **Pushed**: GitHub main.
+
 ### Phase 24 — Worker Firestore Auth + File Read Lockdown
 - **Firestore rules**: `/files/{fileId}` read changed from `allow read: if true` to `allow read: if request.auth != null && resource.data.userId == request.auth.uid`. File metadata (including `b2FileName`) no longer publicly enumerable.
 - **Worker**: added Firebase service account JWT/OAuth2 token exchange using `SubtleCrypto` (RS256) to call Firestore REST API for admin-tier queries. No additional dependencies.
@@ -342,7 +352,6 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 ### Android
 - File preview dialog (double-tap to preview images/text inline, like web)
 - Image viewer zoom/pan
-- Pull-to-refresh for file list
 
 ### Performance
 - Pagination/lazy loading for large file lists (Firestore `limit` + `startAfter`).

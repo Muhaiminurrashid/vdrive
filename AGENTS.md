@@ -83,6 +83,7 @@ See DESIGN.md for full spec.
 
 ## Conventions
 
+- **No commit/push without asking first.** Stage changes, show diff, wait for approval.
 - Android: Hilt DI, ViewModel + StateFlow, Navigation Compose sealed routes
 - Web: Firebase CDN SDK, vanilla JS global state, CSS custom properties
 - Commits: conventional commits (feat/fix/chore)

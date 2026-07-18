@@ -28,9 +28,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -39,7 +40,7 @@ import com.vdrive.app.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun DashboardScreen(
     isDarkTheme: Boolean,
@@ -59,15 +60,11 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
-    val pullRefreshState = rememberPullToRefreshState()
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoading,
+        onRefresh = { viewModel.loadContents() }
+    )
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(pullRefreshState.isRefreshing) {
-        if (pullRefreshState.isRefreshing) {
-            viewModel.loadContents()
-            pullRefreshState.endRefresh()
-        }
-    }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -355,7 +352,7 @@ fun DashboardScreen(
 
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth()
-                        .nestedScroll(pullRefreshState.nestedScrollConnection)
+                        .pullRefresh(pullRefreshState)
                 ) {
                     if (state.isLoading && state.files.isEmpty() && state.subFolders.isEmpty()) {
                         Box(
@@ -434,9 +431,12 @@ fun DashboardScreen(
                             }
                         }
                     }
-                    PullToRefreshContainer(
+                    PullRefreshIndicator(
+                        refreshing = state.isLoading,
                         state = pullRefreshState,
-                        modifier = Modifier.align(Alignment.TopCenter)
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        backgroundColor = if (isDarkTheme) DarkSurface else SurfaceCard,
+                        contentColor = Primary,
                     )
                 }
             }
