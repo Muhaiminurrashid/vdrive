@@ -252,6 +252,19 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Changed files**: `web/public/dashboard.html`, `FileRepository.kt`, `DashboardViewModel.kt`, `DashboardScreen.kt`
 - **Zero new dependencies** on either platform.
 
+### Phase 24 — Worker Firestore Auth + File Read Lockdown
+- **Firestore rules**: `/files/{fileId}` read changed from `allow read: if true` to `allow read: if request.auth != null && resource.data.userId == request.auth.uid`. File metadata (including `b2FileName`) no longer publicly enumerable.
+- **Worker**: added Firebase service account JWT/OAuth2 token exchange using `SubtleCrypto` (RS256) to call Firestore REST API for admin-tier queries. No additional dependencies.
+- **Worker `/api/download`**: accepts optional `userId` parameter — when provided, queries Firestore to verify file ownership before streaming from B2. Returns 403 if caller doesn't own the file.
+- **Worker `/api/delete`**: requires `userId` — verifies ownership before deleting from B2. Returns 403 if not owner.
+- **Worker `/api/code-files`** (new): accepts `{ code }`, validates access code + expiry via Firestore admin query, returns file metadata (name, b2FileName, size) for the code's files. Used by access page instead of direct Firestore reads.
+- **Web dashboard**: passes `window.currentUser?.uid` in download (`dashboard.html`) and delete request bodies.
+- **Web access.html**: removed Firebase Firestore SDK entirely — `handleAccess()` now calls `/api/code-files` for code validation + file metadata lookup. Download calls `/api/download` (no userId — already validated by code).
+- **Android dashboard**: passes `auth.currentUser?.uid` in `downloadFile()`, `previewFile()`, and `FileRepository.deleteFile()` request bodies.
+- **Service account created**: `worker-firestore@vdrive-64deb.iam.gserviceaccount.com` with `roles/datastore.user`. Private key stored as Worker secret `FIREBASE_SERVICE_ACCOUNT`.
+- **Changed files**: `workers/b2-proxy.js`, `firestore.rules`, `web/public/dashboard.html`, `web/public/access.html`, `DashboardViewModel.kt`, `FileRepository.kt`
+- **Deployed**: Worker → Cloudflare. Firestore rules → Firebase. Web → Firebase Hosting.
+
 ### Phase 23 — Breadcrumb Size Increase + Prominent "Generate code" Button
 - **Web breadcrumb**: `#breadcrumb .seg` `font-size:13px` → `20px` + `font-weight:500`. `.sep` chevron increased proportionally to `font-size:18px`.
 - **Android breadcrumb**: `BreadcrumbBar` composable `labelMedium` → `titleLarge`, chevron icon `14.dp` → `20.dp`, vertical padding `4.dp` → `10.dp`.

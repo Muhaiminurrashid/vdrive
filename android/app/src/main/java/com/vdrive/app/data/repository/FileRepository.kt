@@ -3,6 +3,7 @@ package com.vdrive.app.data.repository
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -97,6 +98,7 @@ class FileRepository @Inject constructor(
                 val body = JSONObject().apply {
                     put("fileId", b2FileId)
                     put("fileName", b2FileName)
+                    put("userId", FirebaseAuth.getInstance().currentUser?.uid)
                 }.toString().toRequestBody("application/json".toMediaType())
                 client.newCall(
                     Request.Builder().url("$B2_PROXY_URL/api/delete")

@@ -76,19 +76,7 @@
   </div>
 </main>
 
-<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyC4LhzNvivwitunV6qJp3-Pb6UjyDXPoLU",
-  authDomain: "vdrive-64deb.firebaseapp.com",
-  projectId: "vdrive-64deb",
-  storageBucket: "vdrive-64deb.firebasestorage.app",
-  messagingSenderId: "541773803308",
-  appId: "1:541773803308:web:f2c49d374a13abb8920689",
-}
-firebase.initializeApp(firebaseConfig)
-const db = firebase.firestore()
 const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
 
 function userErrorMessage(e) {
@@ -148,27 +136,14 @@ async function handleAccess() {
   document.getElementById('accessBtn').disabled = true
   document.getElementById('accessBtn').textContent = 'Checking...'
   try {
-    const snap = await db.collection('accessCodes').where('code', '==', code).get()
-    if (snap.empty) { showError('Invalid code'); return }
-    const data = snap.docs[0].data()
-    const exp = data.expiresAt
-    const expired = typeof exp === 'number' ? exp < Date.now() : exp.toDate() < new Date()
-    if (expired) { showError('Code expired'); return }
-    let items
-    if (data.folderId) {
-      const snap = await db.collection('files').where('folderId', '==', data.folderId).get()
-      items = snap.docs.map(d => { const m = d.data(); return m.b2FileName ? { name: m.name, b2FileName: m.b2FileName, size: m.size || 0 } : null })
-    } else {
-      const fileIds = data.fileIds || []
-      items = await Promise.all(fileIds.map(async id => {
-        const metaSnap = await db.collection('files').doc(id).get()
-        if (!metaSnap.exists) return null
-        const meta = metaSnap.data()
-        if (!meta.b2FileName) return null
-        return { name: meta.name, b2FileName: meta.b2FileName, size: meta.size || 0 }
-      }))
-    }
-    const filtered = items.filter(Boolean)
+    const res = await fetch(`${B2_PROXY_URL}/api/code-files`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+    if (res.status === 410) { showError('Code expired'); return }
+    if (!res.ok) { showError('Invalid code'); return }
+    const data = await res.json()
+    const filtered = data.files || []
     const list = document.getElementById('fileList')
     list.innerHTML = ''
     if (filtered.length === 0) {

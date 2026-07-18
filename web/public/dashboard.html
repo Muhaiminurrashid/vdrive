@@ -585,7 +585,7 @@ async function downloadFile(f) {
       xhr.onerror = () => reject(Error('Download failed'))
       xhr.open('POST', `${B2_PROXY_URL}/api/download`)
       xhr.setRequestHeader('Content-Type', 'application/json')
-      xhr.send(JSON.stringify({ fileName: f.b2FileName }))
+      xhr.send(JSON.stringify({ fileName: f.b2FileName, userId: window.currentUser?.uid }))
     })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = f.name; a.click()
@@ -602,7 +602,7 @@ async function deleteFile(f) {
       const res = await fetch(`${B2_PROXY_URL}/api/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: f.b2FileId, fileName: f.b2FileName })
+        body: JSON.stringify({ fileId: f.b2FileId, fileName: f.b2FileName, userId: window.currentUser?.uid })
       })
       if (!res.ok) throw new Error('Delete failed')
     }
@@ -818,7 +818,7 @@ async function previewFile(f) {
   try {
     const res = await fetch(`${B2_PROXY_URL}/api/download`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ fileName: f.b2FileName })
+      body: JSON.stringify({ fileName: f.b2FileName, userId: window.currentUser?.uid })
     })
     if (!res.ok) throw new Error()
 

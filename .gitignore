@@ -34,5 +34,8 @@ Thumbs.db
 *.suo
 *.user
 
+# Secrets
+service-account.json
+
 # Graphify
 /graphify-out/

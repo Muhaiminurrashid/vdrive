@@ -293,7 +293,10 @@ class DashboardViewModel @Inject constructor(
             try {
                 val b2FileName = file.b2FileName ?: return@launch
                 val bytes = withContext(Dispatchers.IO) {
-                    val body = JSONObject().put("fileName", b2FileName).toString()
+                    val body = JSONObject().apply {
+                        put("fileName", b2FileName)
+                        put("userId", auth.currentUser?.uid)
+                    }.toString()
                     val conn = URL("$B2_PROXY_URL/api/download").openConnection() as java.net.HttpURLConnection
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("Content-Type", "application/json")
@@ -353,7 +356,10 @@ class DashboardViewModel @Inject constructor(
             try {
                 val b2FileName = file.b2FileName ?: return@launch
                 val bytes = withContext(Dispatchers.IO) {
-                    val body = JSONObject().put("fileName", b2FileName).toString()
+                    val body = JSONObject().apply {
+                        put("fileName", b2FileName)
+                        put("userId", auth.currentUser?.uid)
+                    }.toString()
                     val conn = URL("$B2_PROXY_URL/api/download").openConnection() as java.net.HttpURLConnection
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("Content-Type", "application/json")
