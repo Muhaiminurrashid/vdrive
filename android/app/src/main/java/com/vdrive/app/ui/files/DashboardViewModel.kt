@@ -302,6 +302,11 @@ class DashboardViewModel @Inject constructor(
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.doOutput = true
                     conn.outputStream.write(body.toByteArray())
+                    if (conn.responseCode >= 300) {
+                        val errBody = conn.errorStream?.bufferedReader()?.readText() ?: "{}"
+                        val errMsg = JSONObject(errBody).optString("error", "Download failed")
+                        throw Exception(errMsg)
+                    }
                     val total = conn.contentLength
                     val input = conn.inputStream
                     val buffer = ByteArray(8192)
@@ -365,6 +370,11 @@ class DashboardViewModel @Inject constructor(
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.doOutput = true
                     conn.outputStream.write(body.toByteArray())
+                    if (conn.responseCode >= 300) {
+                        val errBody = conn.errorStream?.bufferedReader()?.readText() ?: "{}"
+                        val errMsg = JSONObject(errBody).optString("error", "Download failed")
+                        throw Exception(errMsg)
+                    }
                     conn.inputStream.readBytes()
                 }
                 val cacheFile = withContext(Dispatchers.IO) {

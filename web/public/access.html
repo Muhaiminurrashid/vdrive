@@ -174,7 +174,7 @@ async function handleAccess() {
               method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ fileName: this.dataset.b2 })
             })
-            if (!res.ok) throw new Error()
+            if (!res.ok) { const body = await res.json().catch(()=>{}); throw new Error(body?.error || 'Download failed') }
             const blob = await res.blob()
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a'); a.href = url; a.download = this.dataset.name; a.click()
@@ -215,7 +215,7 @@ async function previewFile(f) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ fileName: f.b2FileName })
     })
-    if (!res.ok) throw new Error()
+    if (!res.ok) { const body = await res.json().catch(()=>{}); throw new Error(body?.error || 'Preview failed') }
     if (ext === 'pdf') { const blob = await res.blob(); c.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf">`; return }
     if (['mp4','webm','mov','avi','mkv'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<video src="${URL.createObjectURL(blob)}" controls autoplay></video>`; return }
     if (['mp3','wav','ogg','m4a'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<audio src="${URL.createObjectURL(blob)}" controls autoplay></audio>`; return }

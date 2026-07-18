@@ -581,8 +581,12 @@ async function downloadFile(f) {
       const xhr = new XMLHttpRequest()
       xhr.responseType = 'blob'
       xhr.onprogress = e => { if (e.lengthComputable) $('uploadProgressFill').style.width = Math.round((e.loaded / e.total) * 100) + '%' }
-      xhr.onload = () => xhr.status < 300 ? resolve(xhr.response) : reject(Error('Download service unavailable'))
-      xhr.onerror = () => reject(Error('Download failed'))
+      xhr.onload = () => {
+        if (xhr.status < 300) return resolve(xhr.response)
+        try { const body = JSON.parse(xhr.responseText); reject(Error(body.error || 'Download failed')) }
+        catch(e) { reject(Error('Download failed')) }
+      }
+      xhr.onerror = () => reject(Error('Network error'))
       xhr.open('POST', `${B2_PROXY_URL}/api/download`)
       xhr.setRequestHeader('Content-Type', 'application/json')
       xhr.send(JSON.stringify({ fileName: f.b2FileName, userId: window.currentUser?.uid }))
@@ -820,7 +824,7 @@ async function previewFile(f) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ fileName: f.b2FileName, userId: window.currentUser?.uid })
     })
-    if (!res.ok) throw new Error()
+    if (!res.ok) { const body = await res.json().catch(()=>{}); throw new Error(body?.error || 'Download failed') }
 
     if (ext === 'pdf') {
       const blob = await res.blob()

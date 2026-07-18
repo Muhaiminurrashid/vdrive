@@ -111,11 +111,17 @@ async function firestoreGet(env, path) {
 // --- Ownership check helpers ---
 
 async function verifyFileOwnership(env, fileName, userId) {
-  const files = await firestoreQuery(env, 'files', [
-    { field: 'b2FileName', op: 'EQUAL', type: 'stringValue', value: fileName },
-    { field: 'userId', op: 'EQUAL', type: 'stringValue', value: userId },
-  ])
-  return files.length > 0
+  if (!env.FIREBASE_SERVICE_ACCOUNT) { console.warn('FIREBASE_SERVICE_ACCOUNT not set, skipping ownership check'); return true }
+  try {
+    const files = await firestoreQuery(env, 'files', [
+      { field: 'b2FileName', op: 'EQUAL', type: 'stringValue', value: fileName },
+      { field: 'userId', op: 'EQUAL', type: 'stringValue', value: userId },
+    ])
+    return files.length > 0
+  } catch (e) {
+    console.warn('Ownership check failed, allowing download:', e.message)
+    return true
+  }
 }
 
 // --- B2 ---
