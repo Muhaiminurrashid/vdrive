@@ -403,32 +403,129 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 6. ❌ **`service-account.json` on disk** — file exists but not git-tracked. Delete it: `rm service-account.json`
 7. ✅ **Worker Firestore 403** — service account lacked `roles/datastore.user`. Granted via `setIamPolicy`. No code change needed.
 
-## Next Steps (Prioritized)
+### Phase 29 — bKash Subscription (Manual Payment)
 
-### P0 — Security Hardening
-- [x] Revoke leaked Cloudflare token + create new one with IP restriction
-- [ ] Delete `service-account.json` from disk (`rm service-account.json`) — already in `.gitignore`, stored as Worker secret
-- [x] Move Cloudflare API token to `.env` file
-- [x] Grant `roles/datastore.user` to `worker-firestore@vdrive-64deb.iam.gserviceaccount.com` — was created with key but never given IAM role
-- [ ] Audit all secrets: no API keys, tokens, or private keys in source files
-- [ ] Create `/users/{userId}` doc on signup (web + Android) — enables proper user existence checks consistently
+#### Data Model
 
-### P1 — Classroom-Ready Features
-- [ ] **Access code expiry picker**: let teacher choose 5/15/30/60 min instead of fixed 15
-- [ ] **Student upload via code**: homework submission flow — code recipients can upload files
-- [ ] **QR code for access code**: show QR on dashboard when code is generated, students scan → open code page
+```
+/subscriptions/{userId} — {
+  plan: "premium",
+  status: "active" | "pending" | "expired" | "cancelled",
+  txId: "bKash TX ID",       // manual verification ref
+  txNumber: "bkash number",   // where user sent money
+  txAmount: 150,               // amount in BDT
+  verifiedBy: "admin uid",    // admin who confirmed payment
+  verifiedAt: Timestamp,
+  expiresAt: Timestamp,        // 30 days from verification
+  createdAt: Timestamp
+}
+```
 
-### P2 — UX Parity & Polish
-- [ ] **Android file preview dialog**: double-tap to preview images/text inline (like web has)
-- [ ] **Multi-file select + bulk download (zip)**: checkbox mode, server-side zip via Worker
-- [ ] **Offline / PWA**: service worker for offline file list, cache downloaded files
+- No new collection — `subscriptions/{userId}` doc per user
+- Admin verifies: reads Firestore doc, marks `status: "active"`, sets `expiresAt`
+- Firestore rules: user read self, admin write
 
-### P3 — Nice-to-Have
-- [ ] **Trash / Recycle Bin**: soft-delete, 30-day auto-purge, restore UI
-- [ ] **Activity log**: track file views, downloads, code accesses
-- [ ] **Web push notifications**: FCM when someone accesses your shared code
-- [ ] **Custom domain**: Firebase Hosting custom domain (need to purchase domain first)
-- [ ] **Virus scanning**: ClamAV or VirusTotal API — add when users upload malware
+#### Storage Limit Logic
+
+| Tier | Per-file max | Total storage |
+|------|-------------|---------------|
+| Free | 100 MB | 1 GB |
+| Premium | 500 MB | 10 GB |
+
+- **Worker `/api/upload-url`**: reads `subscriptions/{userId}` doc before returning URL. Free users get `contentLength ≤ 100 MB`. Premium users get `≤ 500 MB`.
+- **Client upload check**: same limit enforced in web `handleUpload()` + Android `FileRepository.uploadFile()`.
+- **Storage bar**: premium users see `"X MB / 10 GB"` instead of `"X MB / 1 GB"`.
+
+#### bKash Payment Flow
+
+1. User clicks "Upgrade" in sidebar → subscription page
+2. Page shows bKash merchant number + "Send money" instructions
+3. User sends money to bKash number, gets TX ID
+4. User enters TX ID + amount in form
+5. Form writes `/subscriptions/{userId}` doc with `status: "pending"`, `txId`, `txNumber`, `txAmount`
+6. Admin checks bKash app → verifies TX ID → updates doc to `status: "active"`, sets `expiresAt`
+7. On next upload/refresh, Work picks up subscription status and applies limits
+
+#### Web
+
+- **Subscription page** (`subscribe.html` or modal in `dashboard.html`):
+  - Current plan badge (Free / Premium)
+  - Pricing card: "Premium — 150 BDT/month"
+  - bKash number display + instructions
+  - Form: bKash sender number, TX ID, amount
+  - Status: pending/active/expired display
+- **Dashboard sidebar**: "Free" / "Premium" badge below storage bar
+- **Storage bar**: `"X MB / 10 GB"` for premium users
+- **`loadStorageBar()`**: fetches `/subscriptions/{userId}` doc, adjusts display
+- **`handleUpload()`**: checks subscription before allowing >100 MB file
+
+#### Android
+
+- **Subscription screen**: same flow — pricing card, bKash info, TX form
+- **Sidebar**: plan badge
+- **Storage bar**: 10 GB cap for premium
+- **`uploadFile()`**: checks subscription before uploading >100 MB
+
+#### Worker
+
+- **`/api/upload-url`**: reads `/subscriptions/{userId}` doc from Firestore.
+  - No doc or `status != "active"` or expired → free tier cap (100 MB)
+  - Active premium → 500 MB cap
+- Uses existing `firestoreGet()` helper — no new deps.
+
+#### Cuts (YAGNI)
+
+- No auto-recurring billing (manual every month)
+- No Stripe/SSLCommerz integration — bKash only
+- No webhook — admin manually verifies via Firestore console
+- No refund flow
+- No trial period
+- No usage metering beyond storage bar
+
+#### Files Changed (estimate)
+
+| File | Change |
+|------|--------|
+| `workers/b2-proxy.js` | Read subscription doc in `/api/upload-url`, adjust file size cap |
+| `web/public/dashboard.html` | Plan badge, storage bar cap, upload limit check |
+| `web/public/subscribe.html` | New page: pricing, bKash info, TX form |
+| `DashboardViewModel.kt` | Plan-aware storage bar, upload cap |
+| `DashboardScreen.kt` | Plan badge in sidebar |
+| `FileRepository.kt` | Subscription check before upload |
+| `firestore.rules` | `/subscriptions/{userId}` — user read, admin write |
+| `firestore.indexes.json` | No new indexes needed |
+
+### Phase 30 — Access Page Redesign (Classroom Unlock)
+
+**OTP-style code entry**: Replaced single code input with 6 individual square boxes, large JetBrains Mono, auto-advance on keypress. Paste support (parses 6-char string). Enter or auto-submit when 6th char typed.
+
+**Dark mode**: CSS vars on `<html>` `.dark` class, toggle icon in nav, persisted in `localStorage`. Same palette as dashboard dark (`#1a1f2e` surfaces, `#212638` soft, `#f4f5f6` on-dark). Dark overlay for preview already works.
+
+**Visual overhaul:**
+- Code entry: centered hero layout, 6 OTP boxes with gap, navy border + subtle ring on focus, "Enter code" instruction above
+- File view: richer cards — 40px tinted file-type icons, larger name, size + download button, hover lift. Staggered fade-in on reveal
+- Transition: code entry fades out + slides up, file list slides in from bottom (CSS only, no JS animation lib)
+- "Enter a different code" link at bottom of file view
+- Background: subtle grid dots pattern via CSS radial-gradient on canvas
+- Preview overlay unchanged (works fine)
+
+**No changes to**: Worker endpoint `/api/code-files`, download proxy, preview logic. JS logic unchanged — only HTML structure + CSS.
+
+**Cuts (YAGNI):**
+- No teacher name / class name from code doc
+- No Android access page redesign
+- No new Worker endpoints
+
+**Files changed:**
+- `web/public/access.html` — full HTML restructure + dark mode + OTP boxes
+- `web/public/styles.css` — rebuilt via `npm run css`
+
+### Post-Subscription — Remaining Features
+
+- [ ] **Access code expiry picker**: 5/15/30/60 min TTL
+- [ ] **Student upload via code**: homework submission
+- [ ] **QR code for codes**: scan → open access page
+- [ ] **Android file preview**: double-tap inline preview
 
 ## What Was Tried & Failed
 

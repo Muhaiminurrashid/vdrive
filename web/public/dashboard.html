@@ -19,12 +19,15 @@ html.dark {
   --color-body: #bdc1c6;
   --color-muted: #9aa0a6;
   --color-muted-soft: #7a8088;
+  --color-primary: #7BA3D4;
+  --color-primary-active: #5A82B4;
   --color-hairline: #303440;
   --color-on-dark: #e8eaed;
   --color-on-dark-soft: #9aa0a6;
   --color-primary-disabled: #2d3a5a;
   --color-hairline-soft: #262933;
 }
+
 body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); color:var(--color-ink); }
 #app { display:flex; min-height:100vh; }
 #sidebar { width:var(--sidebar-w); min-width:200px; max-width:400px; background:var(--color-surface-card); border-right:1px solid var(--color-hairline); display:flex; flex-direction:column; flex-shrink:0; position:relative; }
@@ -772,7 +775,7 @@ function showInfoPanel(type, id) {
   if (!f) return
   const isFolder = type === 'folder'
   const icon = isFolder
-    ? { bg: '#3B5C9A', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' }
+    ? { bg: 'var(--color-primary)', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' }
     : fileIconData(f.name)
   $('panelIconWrap').style.background = icon.bg
   $('panelIconWrap').innerHTML = icon.svg
@@ -958,7 +961,7 @@ function renderList(container, folders, files) {
     const row = document.createElement('div')
     row.className = 'file-row isFolder'
     row.onclick = () => navigateToFolder(f.id)
-    row.innerHTML = `<div class="file-icon" style="background:#3B5C9A"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+    row.innerHTML = `<div class="file-icon" style="background:var(--color-primary)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
       <span class="file-name">${escapeHtml(f.name)}</span>
       <span class="file-size"></span>
       <span class="file-folder"></span>
@@ -996,7 +999,7 @@ function renderGrid(container, folders, files) {
     const card = document.createElement('div')
     card.className = 'grid-card'
     card.onclick = () => navigateToFolder(f.id)
-    card.innerHTML = `<div class="grid-card-icon" style="background:#3B5C9A">
+    card.innerHTML = `<div class="grid-card-icon" style="background:var(--color-primary)">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
       <div class="grid-card-name">${escapeHtml(f.name)}</div>
       <div class="grid-card-size"></div>

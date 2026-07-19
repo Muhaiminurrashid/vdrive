@@ -6,12 +6,52 @@
 <title>Classroom Access — Virtual Pendrive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=2">
 <style>
 @keyframes spin { to { transform: rotate(360deg) } }
-#codeEntry, #fileView { transition: opacity .25s, transform .25s; }
-#codeEntry.hidden, #fileView.hidden { opacity:0; transform:translateY(8px); pointer-events:none; }
+@keyframes fadeSlideUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+html.dark {
+  --color-canvas: #0f1117;
+  --color-surface-card: #1a1d27;
+  --color-surface-soft: #262933;
+  --color-surface-dark: #0a0c12;
+  --color-ink: #e8eaed;
+  --color-body: #bdc1c6;
+  --color-muted: #9aa0a6;
+  --color-muted-soft: #7a8088;
+  --color-primary: #7BA3D4;
+  --color-primary-active: #5A82B4;
+  --color-hairline: #303440;
+  --color-on-dark: #e8eaed;
+  --color-on-dark-soft: #9aa0a6;
+  --color-primary-disabled: #2d3a5a;
+  --color-hairline-soft: #262933;
+}
+
+.otp-wrap { display:flex; gap:8px; justify-content:center; }
+.otp-input {
+  width:44px; height:52px; text-align:center; font-family:"JetBrains Mono",monospace;
+  font-size:24px; font-weight:700; text-transform:uppercase;
+  border:1.5px solid var(--color-hairline); border-radius:8px;
+  background:var(--color-surface-card); color:var(--color-ink);
+  outline:none; transition:border-color .15s,box-shadow .15s;
+}
+.otp-input:focus { border-color:var(--color-primary); box-shadow:0 0 0 3px rgba(59,92,154,.15); }
+.otp-input.filled { border-color:var(--color-primary); background:rgba(59,92,154,.04); }
+#codeEntry, #fileView { transition:opacity .25s,transform .3s; }
+#codeEntry.hidden, #fileView.hidden { opacity:0; transform:translateY(12px); pointer-events:none; position:absolute; }
+#fileView:not(.hidden) .file-card { animation:fadeSlideUp .35s ease backwards; }
+#fileView:not(.hidden) .file-card:nth-child(1) { animation-delay:0s; }
+#fileView:not(.hidden) .file-card:nth-child(2) { animation-delay:.06s; }
+#fileView:not(.hidden) .file-card:nth-child(3) { animation-delay:.12s; }
+#fileView:not(.hidden) .file-card:nth-child(4) { animation-delay:.18s; }
+#fileView:not(.hidden) .file-card:nth-child(5) { animation-delay:.24s; }
+#fileView:not(.hidden) .file-card:nth-child(6) { animation-delay:.3s; }
+#fileView:not(.hidden) .file-card:nth-child(n+7) { animation-delay:.36s; }
+.file-card { transition:box-shadow .2s,transform .2s; cursor:pointer; }
+.file-card:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(20,20,19,.08); }
+html.dark .file-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.25); }
 #previewOverlay { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:400; display:none; align-items:center; justify-content:center; }
 #previewOverlay.show { display:flex; }
 #previewBox { position:relative; max-width:90vw; max-height:90vh; background:var(--color-surface-card); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
@@ -24,12 +64,13 @@
 #previewContent embed { width:90vw; height:85vh; border:none; }
 #previewContent pre { padding:24px; font-size:13px; overflow:auto; max-height:85vh; max-width:90vw; white-space:pre-wrap; word-break:break-all; }
 #previewFallback { padding:48px; text-align:center; color:var(--color-muted); }
+.grid-dots { background-image:radial-gradient(circle, var(--color-hairline) 1px, transparent 1px); background-size:24px 24px; }
 </style>
 </head>
-<body>
+<body class="grid-dots" style="background-color:var(--color-canvas);min-height:100vh;font-family:Inter,sans-serif;margin:0">
 
-<nav class="h-14 px-6 border-b border-hairline bg-surface-card flex items-center justify-between">
-  <a href="/" class="flex items-center gap-2 text-sm font-semibold text-primary tracking-tight">
+<nav style="height:56px;padding:0 24px;border-bottom:1px solid var(--color-hairline);background:var(--color-surface-card);display:flex;align-items:center;justify-content:space-between">
+  <a href="/" style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--color-primary);text-decoration:none;letter-spacing:-.01em">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
       <line x1="3" y1="6" x2="21" y2="6"/>
@@ -37,35 +78,52 @@
     </svg>
     Virtual Pendrive
   </a>
+  <button id="darkToggle" style="width:32px;height:32px;border:none;background:transparent;color:var(--color-muted);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center" onclick="toggleDark()">
+    <svg id="moonIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
 </nav>
 
-<main class="min-h-[calc(100vh-56px)] flex items-center justify-center p-6">
-  <div id="codeEntry" class="w-full max-w-sm">
-    <div class="text-center mb-8">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary mx-auto mb-3"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <h1 class="font-serif font-normal text-primary text-3xl tracking-tight mb-1">Classroom Access</h1>
-      <p class="text-sm text-muted">Enter the code your teacher shared</p>
-    </div>
+<main style="max-width:460px;margin:0 auto;padding:48px 24px;position:relative">
 
-    <div class="bg-surface-card border border-hairline rounded-2xl overflow-hidden">
-      <div class="h-1 bg-primary"></div>
-      <div class="p-6">
-        <div id="errorBox" class="bg-error/8 text-error px-4 py-2 rounded-lg text-sm mb-4 hidden"></div>
-        <div class="flex flex-col gap-4">
-          <input id="codeInput" type="text" placeholder="Enter code" maxlength="6" class="w-full h-13 px-3.5 rounded-lg border border-hairline bg-surface-card text-ink font-mono text-2xl font-bold text-center tracking-[0.3em] outline-none focus:border-primary focus:ring-3 focus:ring-primary/12 uppercase" oninput="this.value=this.value.toUpperCase()">
-          <button id="accessBtn" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active w-full justify-center h-11 inline-flex items-center" onclick="handleAccess()">Access files</button>
+  <div id="codeEntry">
+    <div style="background:var(--color-surface-card);border:1px solid var(--color-hairline);border-radius:16px;overflow:hidden">
+      <div style="height:4px;background:var(--color-primary)"></div>
+      <div style="padding:32px 28px 28px">
+        <div style="text-align:center;margin-bottom:28px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style="font-size:14px;font-weight:500;color:var(--color-ink)">Enter code</div>
+          <div style="font-size:13px;color:var(--color-muted);margin-top:4px">6 characters from your teacher</div>
+        </div>
+        <div id="errorBox" style="display:none;background:rgba(198,69,69,.08);color:var(--color-error);padding:8px 16px;border-radius:8px;font-size:13px;margin-bottom:20px"></div>
+        <div class="otp-wrap" id="otpContainer">
+          <input class="otp-input" maxlength="1" type="text" inputmode="text" autocomplete="off" autofocus>
+          <input class="otp-input" maxlength="1" type="text" inputmode="text" autocomplete="off">
+          <input class="otp-input" maxlength="1" type="text" inputmode="text" autocomplete="off">
+          <input class="otp-input" maxlength="1" type="text" inputmode="text" autocomplete="off">
+          <input class="otp-input" maxlength="1" type="text" inputmode="text" autocomplete="off">
+          <input class="otp-input" maxlength="1" type="text" inputmode="text" autocomplete="off">
         </div>
       </div>
     </div>
-
-    <p class="text-center text-xs mt-5 text-muted-soft">
-      <a href="/" class="text-muted-soft underline hover:text-primary">Back to home</a>
-    </p>
+    <div style="text-align:center;margin-top:20px">
+      <a href="/" style="font-size:12px;color:var(--color-muted-soft);text-decoration:underline">Back to home</a>
+    </div>
   </div>
 
-  <div id="fileView" class="w-full max-w-lg hidden">
+  <div id="fileView" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:16px;font-weight:500;color:var(--color-ink)">Shared files</div>
+        <div id="fileCount" style="font-size:13px;color:var(--color-muted);margin-top:2px"></div>
+      </div>
+      <button onclick="showCodeEntry()" style="border:none;background:transparent;color:var(--color-primary);font-size:13px;font-weight:500;cursor:pointer;padding:6px 10px;border-radius:6px">Enter a different code</button>
+    </div>
     <div id="fileList"></div>
+    <div style="text-align:center;margin-top:24px">
+      <a href="/" style="font-size:12px;color:var(--color-muted-soft);text-decoration:underline">Back to home</a>
+    </div>
   </div>
+
   <div id="previewOverlay" onclick="if(event.target===this)closePreview()">
     <div id="previewBox">
       <button id="previewClose" onclick="closePreview()">
@@ -79,6 +137,12 @@
 <script>
 const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
 
+function toggleDark() {
+  document.documentElement.classList.toggle('dark')
+  localStorage.setItem('vdriveDark', document.documentElement.classList.contains('dark') ? '1' : '')
+}
+if (localStorage.getItem('vdriveDark')) document.documentElement.classList.add('dark')
+
 function userErrorMessage(e) {
   const m = e.message || ''
   if (m.includes('permission') || m.includes('Permission')) return 'Permission denied'
@@ -88,8 +152,8 @@ function userErrorMessage(e) {
 
 function showError(msg) {
   const el = document.getElementById('errorBox')
-  if (msg) { el.textContent = msg; el.classList.remove('hidden'); }
-  else { el.classList.add('hidden'); }
+  if (msg) { el.textContent = msg; el.style.display = ''; }
+  else { el.style.display = 'none'; }
 }
 
 function formatBytes(bytes) {
@@ -98,22 +162,20 @@ function formatBytes(bytes) {
   return (bytes / 1048576).toFixed(1) + ' MB'
 }
 
-function getFileType(name) {
-  const map = { pdf: 'PDF', pptx: 'PPT', ppt: 'PPT', docx: 'DOC', doc: 'DOC', mp4: 'Video', xlsx: 'XLS', zip: 'ZIP' }
-  const ext = name.split('.').pop().toLowerCase()
-  return map[ext] || ext.toUpperCase()
+function getCode() {
+  let code = ''
+  document.querySelectorAll('.otp-input').forEach(i => code += i.value.toUpperCase())
+  return code
 }
 
-const fileTypeColors = {
-  PDF: 'text-file-pdf', PPT: 'text-file-ppt', DOC: 'text-file-doc',
-  Video: 'text-file-video', XLS: 'text-file-ppt', ZIP: 'text-file-zip'
+function showCodeEntry() {
+  document.getElementById('fileView').classList.add('hidden')
+  document.getElementById('codeEntry').style.position = ''
+  document.getElementById('codeEntry').classList.remove('hidden')
+  showError('')
+  document.querySelectorAll('.otp-input').forEach((i, idx) => { i.value = ''; i.classList.remove('filled'); if (idx === 0) i.focus() })
 }
 
-function fileTypeColor(type) {
-  return fileTypeColors[type] || 'text-muted-soft'
-}
-
-// ponytail: same icon map as dashboard
 function fileIconData(name) {
   const ext = name.split('.').pop().toLowerCase()
   const map = {
@@ -129,12 +191,45 @@ function fileIconData(name) {
   return map[ext] || { bg:'#8e8b82', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' }
 }
 
+// ponytail: OTP auto-advance, backspace, paste, auto-submit
+function setupOtpInputs() {
+  const inputs = document.querySelectorAll('.otp-input')
+  inputs.forEach((input, idx) => {
+    input.addEventListener('input', function() {
+      const val = this.value.toUpperCase()
+      if (val) this.classList.add('filled')
+      else this.classList.remove('filled')
+      if (val && idx < inputs.length - 1) inputs[idx + 1].focus()
+      if (getCode().length === 6) handleAccess()
+    })
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !this.value && idx > 0) {
+        inputs[idx - 1].focus()
+        inputs[idx - 1].value = ''
+        inputs[idx - 1].classList.remove('filled')
+        e.preventDefault()
+      }
+    })
+    input.addEventListener('paste', function(e) {
+      e.preventDefault()
+      const data = (e.clipboardData || window.clipboardData).getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+      if (!data) return
+      inputs.forEach((inp, i) => {
+        inp.value = data[i] || ''
+        if (data[i]) inp.classList.add('filled'); else inp.classList.remove('filled')
+      })
+      const nextEmpty = data.length < 6 ? data.length : 5
+      inputs[nextEmpty].focus()
+      if (data.length === 6) handleAccess()
+    })
+  })
+}
+setupOtpInputs()
+
 async function handleAccess() {
-  const code = document.getElementById('codeInput').value.toUpperCase()
+  const code = getCode()
   if (code.length !== 6) return
   showError('')
-  document.getElementById('accessBtn').disabled = true
-  document.getElementById('accessBtn').textContent = 'Checking...'
   try {
     const res = await fetch(`${B2_PROXY_URL}/api/code-files`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -147,30 +242,30 @@ async function handleAccess() {
     const list = document.getElementById('fileList')
     list.innerHTML = ''
     if (filtered.length === 0) {
-      list.innerHTML = '<p class="text-center text-sm text-muted py-8">No files available for this code.</p>'
+      list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--color-muted);font-size:14px">No files available for this code.</div>'
     } else {
-      filtered.forEach(f => {
+      document.getElementById('fileCount').textContent = filtered.length + ' file' + (filtered.length > 1 ? 's' : '')
+      filtered.forEach((f, fi) => {
         const icon = fileIconData(f.name)
-        const el = document.createElement('div')
-        el.className = 'flex items-center gap-3 bg-surface-card border border-hairline rounded-xl px-4 py-3 mb-2 hover:shadow-sm hover:border-primary/30 transition-all cursor-pointer'
-        el.onclick = function() { previewFile(f) }
-        el.innerHTML = `
-          <div class="file-icon" style="width:36px;height:36px;border-radius:8px;background:${icon.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon.svg}</div>
-          <div class="flex-1 min-w-0">
-            <div class="truncate text-sm text-ink font-medium">${f.name}</div>
-            <div class="text-xs text-muted">${formatBytes(f.size)}</div>
-          </div>
-          <button class="download-btn" data-b2="${f.b2FileName}" data-name="${f.name}" style="padding:6px 12px;border:1px solid var(--color-hairline);border-radius:8px;background:transparent;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;font-size:12px;color:var(--color-primary);font-weight:500">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download
-          </button>`
-        el.querySelector('.download-btn').onclick = async function(e) {
+        const card = document.createElement('div')
+        card.className = 'file-card'
+        card.style.cssText = 'display:flex;align-items:center;gap:14px;background:var(--color-surface-card);border:1px solid var(--color-hairline);border-radius:12px;padding:12px 16px;margin-bottom:10px'
+        card.onclick = function() { previewFile(f) }
+        card.innerHTML = '<div style="width:40px;height:40px;border-radius:10px;background:' + icon.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">' + icon.svg + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:14px;font-weight:500;color:var(--color-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + f.name + '</div>' +
+            '<div style="font-size:12px;color:var(--color-muted);margin-top:2px">' + formatBytes(f.size) + '</div>' +
+          '</div>' +
+          '<button class="dl-btn" data-b2="' + f.b2FileName + '" data-name="' + f.name + '" style="padding:7px 14px;border:1px solid var(--color-hairline);border-radius:8px;background:transparent;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;font-size:12px;color:var(--color-primary);font-weight:500;transition:background .15s" onmouseenter="this.style.background=\'var(--color-surface-soft)\'" onmouseleave="this.style.background=\'transparent\'">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            'Download</button>'
+        card.querySelector('.dl-btn').onclick = async function(e) {
           e.stopPropagation()
           if (this.dataset.downloading) return
           this.dataset.downloading = '1'
           this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Downloading...'
           try {
-            const res = await fetch(`${B2_PROXY_URL}/api/download`, {
+            const res = await fetch(B2_PROXY_URL + '/api/download', {
               method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ fileName: this.dataset.b2 })
             })
@@ -184,14 +279,13 @@ async function handleAccess() {
           } catch(e) { alert(userErrorMessage(e)); this.innerHTML = '...' }
           setTimeout(() => { delete this.dataset.downloading; this.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download' }, 3000)
         }
-        list.appendChild(el)
+        list.appendChild(card)
       })
     }
     document.getElementById('codeEntry').classList.add('hidden')
+    document.getElementById('codeEntry').style.position = 'absolute'
     document.getElementById('fileView').classList.remove('hidden')
   } catch (e) { showError(userErrorMessage(e)) }
-  document.getElementById('accessBtn').disabled = false
-  document.getElementById('accessBtn').textContent = 'Access files'
 }
 
 // ponytail: previewTypes + previewFile/closePreview from dashboard
@@ -211,16 +305,16 @@ async function previewFile(f) {
   c.innerHTML = '<div style="padding:48px;color:var(--color-muted)">Loading...</div>'
   document.getElementById('previewOverlay').classList.add('show')
   try {
-    const res = await fetch(`${B2_PROXY_URL}/api/download`, {
+    const res = await fetch(B2_PROXY_URL + '/api/download', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ fileName: f.b2FileName })
     })
     if (!res.ok) { const body = await res.json().catch(()=>{}); throw new Error(body?.error || 'Preview failed') }
-    if (ext === 'pdf') { const blob = await res.blob(); c.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf">`; return }
-    if (['mp4','webm','mov','avi','mkv'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<video src="${URL.createObjectURL(blob)}" controls autoplay></video>`; return }
-    if (['mp3','wav','ogg','m4a'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<audio src="${URL.createObjectURL(blob)}" controls autoplay></audio>`; return }
-    if (['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) { const blob = await res.blob(); c.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${f.name}">`; return }
-    c.innerHTML = `<pre>${await res.text()}</pre>`
+    if (ext === 'pdf') { const blob = await res.blob(); c.innerHTML = '<embed src="' + URL.createObjectURL(blob) + '" type="application/pdf">'; return }
+    if (['mp4','webm','mov','avi','mkv'].includes(ext)) { const blob = await res.blob(); c.innerHTML = '<video src="' + URL.createObjectURL(blob) + '" controls autoplay></video>'; return }
+    if (['mp3','wav','ogg','m4a'].includes(ext)) { const blob = await res.blob(); c.innerHTML = '<audio src="' + URL.createObjectURL(blob) + '" controls autoplay></audio>'; return }
+    if (['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) { const blob = await res.blob(); c.innerHTML = '<img src="' + URL.createObjectURL(blob) + '" alt="' + f.name + '">'; return }
+    c.innerHTML = '<pre>' + await res.text() + '</pre>'
   } catch(e) { c.innerHTML = '<div id="previewFallback">Preview unavailable</div>' }
 }
 function closePreview() {
