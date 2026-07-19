@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -396,6 +397,11 @@ fun DashboardScreen(
                                     isDarkTheme = isDarkTheme
                                 )
                             }
+                            if (state.hasMoreFiles) {
+                                item(span = { GridItemSpan(2) }) {
+                                    LoadMoreButton(onClick = { viewModel.loadMoreFiles() })
+                                }
+                            }
                         }
                     } else {
                         LazyColumn(
@@ -428,6 +434,11 @@ fun DashboardScreen(
                                     onRename = { showRenameFileDialog = file },
                                     isDarkTheme = isDarkTheme
                                 )
+                            }
+                            if (state.hasMoreFiles) {
+                                item {
+                                    LoadMoreButton(onClick = { viewModel.loadMoreFiles() })
+                                }
                             }
                         }
                     }
@@ -926,6 +937,16 @@ private fun DrawerStorageIndicator(
             color = Primary,
             trackColor = trackColor,
         )
+    }
+}
+
+@Composable
+private fun LoadMoreButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Show more", style = MaterialTheme.typography.labelLarge, color = Primary)
     }
 }
 

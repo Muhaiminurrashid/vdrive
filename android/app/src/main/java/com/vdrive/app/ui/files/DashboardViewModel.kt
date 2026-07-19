@@ -14,9 +14,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Query
 import com.vdrive.app.data.repository.FileRepository
 import com.vdrive.app.domain.model.Folder
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +58,7 @@ data class DashboardUiState(
     val currentFolderId: String? = null,
     val folderPath: List<Folder> = emptyList(),
     val isLoading: Boolean = false,
+    val hasMoreFiles: Boolean = false,
     val userEmail: String = "",
     val generatedCode: String? = null,
     val codeExpiryLabel: String = "1 hour",
@@ -79,38 +82,42 @@ class DashboardViewModel @Inject constructor(
     private val _state = MutableStateFlow(DashboardUiState())
     val state: StateFlow<DashboardUiState> = _state.asStateFlow()
 
+    private val pageSize = 50
+    private var fileCursor: DocumentSnapshot? = null
+
     init {
         auth.currentUser?.let { user ->
             _state.value = _state.value.copy(userEmail = user.email ?: "")
             loadFolders()
         }
+        loadStorageBar()
     }
 
-    // ponytail: loads all user files + folders, filters in-memory for current context
-    fun loadContents() {
+    // ponytail: paginated file query per folder, folders from cache
+    fun loadContents(isLoadMore: Boolean = false) {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            if (!isLoadMore) {
+                _state.value = _state.value.copy(isLoading = true)
+                fileCursor = null
+            }
             try {
                 val folderId = _state.value.currentFolderId
-                val fileSnap = firestore.collection("files")
-                    .whereEqualTo("userId", user.uid).get().await()
-                val folderSnap = firestore.collection("folders")
-                    .whereEqualTo("userId", user.uid).get().await()
+                var query = firestore.collection("files")
+                    .whereEqualTo("userId", user.uid)
+                    .whereEqualTo("folderId", folderId)
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .limit(pageSize.toLong())
+                if (fileCursor != null) query = query.startAfter(fileCursor!!)
 
-                val folderNames = folderSnap.documents.mapNotNull { doc ->
-                    val d = doc.data ?: return@mapNotNull null
-                    doc.id to (d["name"] as? String ?: "")
-                }.toMap()
+                val snap = query.get().await()
+                fileCursor = snap.documents.lastOrNull()
+                val hasMore = snap.documents.size == pageSize
 
-                var totalBytes = 0L
-                fileSnap.documents.forEach { doc ->
-                    doc.data?.let { totalBytes += (it["size"] as? Number)?.toLong() ?: 0L }
-                }
-                val items = fileSnap.documents.mapNotNull { doc ->
+                val folderNames = _state.value.folders.associate { it.id to it.name }
+                val items = snap.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
                     val fId = data["folderId"] as? String
-                    if ((fId ?: "") != (folderId ?: "")) return@mapNotNull null
                     FileUiItem(
                         id = doc.id,
                         name = data["name"] as? String ?: "",
@@ -125,28 +132,43 @@ class DashboardViewModel @Inject constructor(
                     )
                 }
 
-                val subFolders = folderSnap.documents.mapNotNull { doc ->
-                    val d = doc.data ?: return@mapNotNull null
-                    val pfId = d["parentId"] as? String
-                    if ((pfId ?: "") != (folderId ?: "")) return@mapNotNull null
-                    Folder(
-                        id = doc.id,
-                        name = d["name"] as? String ?: "",
-                        parentId = pfId
-                    )
-                }
+                val subFolders = _state.value.folders
+                    .filter { (it.parentId ?: "") == (folderId ?: "") }
+                    .map { it }
+
+                val allItems = if (isLoadMore) _state.value.files + items else items
 
                 _state.value = _state.value.copy(
-                    files = items,
-                    fileCount = items.size,
-                    storagePercent = (totalBytes / 1_000_000_000f).coerceAtMost(1f),
-                    totalStorageBytes = totalBytes,
+                    files = allItems,
+                    fileCount = allItems.size,
                     subFolders = subFolders,
+                    hasMoreFiles = hasMore,
                     isLoading = false
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, error = userMessage(e))
             }
+        }
+    }
+
+    fun loadMoreFiles() = loadContents(isLoadMore = true)
+
+    // ponytail: separate query sums all file sizes for storage bar
+    fun loadStorageBar() {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val snap = firestore.collection("files")
+                    .whereEqualTo("userId", user.uid).get().await()
+                var totalBytes = 0L
+                snap.documents.forEach { doc ->
+                    doc.data?.let { totalBytes += (it["size"] as? Number)?.toLong() ?: 0L }
+                }
+                _state.value = _state.value.copy(
+                    storagePercent = (totalBytes / 1_000_000_000f).coerceAtMost(1f),
+                    totalStorageBytes = totalBytes
+                )
+            } catch (_: Exception) { }
         }
     }
 
@@ -278,7 +300,7 @@ class DashboardViewModel @Inject constructor(
                 fileRepository.uploadFile(user.uid, uri, contentResolver, folderId) { progress ->
                     _state.value = _state.value.copy(uploadProgress = progress)
                 }
-                loadContents()
+                loadContents(); loadStorageBar()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(error = userMessage(e))
             } finally {
@@ -394,10 +416,10 @@ class DashboardViewModel @Inject constructor(
             _state.value = _state.value.copy(actionLabel = "Deleting...")
             try {
                 fileRepository.deleteFile(file.id, file.b2FileId, file.b2FileName)
-                loadContents()
+                loadContents(); loadStorageBar()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(error = userMessage(e))
-                loadContents()
+                loadContents(); loadStorageBar()
             } finally {
                 _state.value = _state.value.copy(actionLabel = null)
             }

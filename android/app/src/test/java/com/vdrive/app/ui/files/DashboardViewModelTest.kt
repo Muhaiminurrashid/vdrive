@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.vdrive.app.data.repository.FileRepository
 import io.mockk.coEvery
@@ -49,9 +50,14 @@ class DashboardViewModelTest {
         folders: List<Pair<String, Map<String, Any?>>> = emptyList()
     ) {
         val filesColRef = mockk<CollectionReference>()
+        val filesQuery = mockk<Query>()
         val filesSnap = mockk<QuerySnapshot>()
         every { firestore.collection("files") } returns filesColRef
         every { filesColRef.whereEqualTo("userId", "user123") } returns filesColRef
+        every { filesColRef.whereEqualTo("folderId", any()) } returns filesQuery
+        every { filesQuery.orderBy(any<String>(), any<Query.Direction>()) } returns filesQuery
+        every { filesQuery.limit(any<Long>()) } returns filesQuery
+        coEvery { filesQuery.get() } returns Tasks.forResult(filesSnap)
         coEvery { filesColRef.get() } returns Tasks.forResult(filesSnap)
         every { filesSnap.documents } returns docs.map { (id, data) ->
             val doc = mockk<com.google.firebase.firestore.QueryDocumentSnapshot>()
@@ -102,8 +108,13 @@ class DashboardViewModelTest {
     @Test
     fun `loadFiles sets error on exception`() = runTest(testDispatcher) {
         val filesColRef = mockk<CollectionReference>()
+        val filesQuery = mockk<Query>()
         every { firestore.collection("files") } returns filesColRef
         every { filesColRef.whereEqualTo("userId", "user123") } returns filesColRef
+        every { filesColRef.whereEqualTo("folderId", any()) } returns filesQuery
+        every { filesQuery.orderBy(any<String>(), any<Query.Direction>()) } returns filesQuery
+        every { filesQuery.limit(any<Long>()) } returns filesQuery
+        coEvery { filesQuery.get() } returns Tasks.forException(Exception("network error"))
         coEvery { filesColRef.get() } returns Tasks.forException(Exception("network error"))
 
         val foldersColRef = mockk<CollectionReference>()
@@ -115,7 +126,7 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(auth, firestore, fileRepository)
         advanceUntilIdle()
-        assertEquals("network error", viewModel.state.value.error)
+        assertEquals("Something went wrong", viewModel.state.value.error)
     }
 
     @Test

@@ -46,7 +46,7 @@ class AuthViewModelTest {
         coEvery { authRepository.login("a@b.com", "pass") } throws Exception("wrong password")
         viewModel.login("a@b.com", "pass")
         advanceUntilIdle()
-        assertEquals("wrong password", viewModel.state.value.error)
+        assertEquals("Something went wrong", viewModel.state.value.error)
     }
 
     @Test
@@ -62,7 +62,7 @@ class AuthViewModelTest {
         coEvery { authRepository.register("a@b.com", "pass") } throws Exception("email exists")
         viewModel.register("a@b.com", "pass")
         advanceUntilIdle()
-        assertEquals("email exists", viewModel.state.value.error)
+        assertEquals("Something went wrong", viewModel.state.value.error)
     }
 
     @Test

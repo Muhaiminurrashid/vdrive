@@ -29,6 +29,22 @@ function checkRateLimit(request, path) {
   return count > max
 }
 
+// ponytail: per-UID rate limit alongside IP, prevents abuse behind shared IPs (schools)
+function checkUidRateLimit(uid, path) {
+  if (!uid) return false
+  const slot = Math.floor(Date.now() / RATE_WINDOW)
+  const key = `uid:${uid}:${path}:${slot}`
+  const max = RATE_LIMITS[path] || RATE_DEFAULT
+  const count = (rateMap.get(key) || 0) + 1
+  rateMap.set(key, count)
+  if (rateMap.size > 2000) {
+    const cutoff = slot - 2
+    for (const [k] of rateMap)
+      if (k.startsWith('uid:') && parseInt(k.split(':')[3]) < cutoff) rateMap.delete(k)
+  }
+  return count > max
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
 }
@@ -111,7 +127,7 @@ async function firestoreGet(env, path) {
 // --- Ownership check helpers ---
 
 async function verifyFileOwnership(env, fileName, userId) {
-  if (!env.FIREBASE_SERVICE_ACCOUNT) { console.warn('FIREBASE_SERVICE_ACCOUNT not set, skipping ownership check'); return true }
+  if (!env.FIREBASE_SERVICE_ACCOUNT) { console.warn('FIREBASE_SERVICE_ACCOUNT not set, denying download'); return false }
   try {
     const files = await firestoreQuery(env, 'files', [
       { field: 'b2FileName', op: 'EQUAL', type: 'stringValue', value: fileName },
@@ -119,8 +135,8 @@ async function verifyFileOwnership(env, fileName, userId) {
     ])
     return files.length > 0
   } catch (e) {
-    console.warn('Ownership check failed, allowing download:', e.message)
-    return true
+    console.warn('Ownership check failed, denying download:', e.message)
+    return false
   }
 }
 
@@ -135,7 +151,15 @@ async function b2Authorize(env) {
   return res.json()
 }
 
-async function handleGetUploadUrl(env) {
+async function handleGetUploadUrl(request, env) {
+  const url = new URL(request.url)
+  const userId = url.searchParams.get('userId')
+  const contentLength = parseInt(url.searchParams.get('contentLength') || '0')
+  if (!userId) return json({ error: 'userId required' }, 400)
+  if (!contentLength || contentLength > 100 * 1024 * 1024) return json({ error: 'File too large (max 100 MB)' }, 400)
+  // ponytail: userId validated as non-empty string. Full Firebase Auth token verification would need JWKS fetch.
+  // User doc creation (users/{userId}) not implemented yet — verify exists when that ships.
+
   const auth = await b2Authorize(env)
   const apiUrl = auth.apiInfo?.storageApi?.apiUrl
   if (!apiUrl) throw new Error('B2 auth: missing apiUrl')
@@ -152,6 +176,7 @@ async function handleGetUploadUrl(env) {
 async function handleDownload(request, env) {
   const { fileName, userId } = await request.json()
   if (!fileName) return json({ error: 'fileName required' }, 400)
+  if (checkUidRateLimit(userId, '/api/download')) return json({ error: 'Too many requests' }, 429)
   if (userId) {
     if (!await verifyFileOwnership(env, fileName, userId))
       return json({ error: 'Access denied' }, 403)
@@ -178,6 +203,7 @@ async function handleDownload(request, env) {
 async function handleDelete(request, env) {
   const { fileId, fileName, userId } = await request.json()
   if (!userId) return json({ error: 'userId required' }, 400)
+  if (checkUidRateLimit(userId, '/api/delete')) return json({ error: 'Too many requests' }, 429)
   if (!await verifyFileOwnership(env, fileName, userId))
     return json({ error: 'Access denied' }, 403)
 
@@ -281,7 +307,7 @@ export default {
       return json({ error: 'Too many requests' }, 429)
 
     try {
-      if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(env)
+      if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(request, env)
       if (url.pathname === '/api/download' && request.method === 'POST') return await handleDownload(request, env)
       if (url.pathname === '/api/delete' && request.method === 'DELETE') return await handleDelete(request, env)
       if (url.pathname === '/api/code-files' && request.method === 'POST') return await handleCodeFiles(request, env)

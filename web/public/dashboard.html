@@ -324,6 +324,12 @@ window.folderNames = {}
 window.panelFiles = {}
 window.panelFolders = {}
 window.lastCode = null
+// ponytail: client-side page window, switch to Firestore limit+startAfter if >5000 user files
+const PAGE_SIZE = 50
+window.fileCursor = null
+window.hasMoreFiles = false
+window.currentPageFiles = []
+window.currentSubFolders = []
 
 // --- Auth ---
 auth.onAuthStateChanged(user => {
@@ -331,7 +337,7 @@ auth.onAuthStateChanged(user => {
   window.currentUser = user
   $('avatarBtn').textContent = (user.email?.[0] || '?').toUpperCase()
   $('avatarEmail').textContent = user.email
-  renderBreadcrumb(); loadFolders().then(() => loadContents())
+  renderBreadcrumb(); loadFolders().then(() => { loadContents(); loadStorageBar() })
 })
 
 // ponytail: native drag-drop, drop anywhere
@@ -381,7 +387,7 @@ function toggleView(v) {
   localStorage.setItem('vdriveView', v)
   $('viewListBtn').classList.toggle('active', v === 'list')
   $('viewGridBtn').classList.toggle('active', v === 'grid')
-  loadContents()
+  renderCurrentView()
 }
 
 // --- Sidebar ---
@@ -458,10 +464,25 @@ async function loadFolders() {
   const snap = await db.collection('folders').where('userId', '==', window.currentUser.uid).get()
   window.folderNames = {}
   window.panelFolders = {}
+  window.allFolders = []
   snap.docs.forEach(doc => {
-    window.folderNames[doc.id] = doc.data().name
-    window.panelFolders[doc.id] = { id: doc.id, name: doc.data().name }
+    const d = doc.data()
+    window.folderNames[doc.id] = d.name
+    window.panelFolders[doc.id] = { id: doc.id, name: d.name }
+    window.allFolders.push({ id: doc.id, name: d.name, parentId: d.parentId || null })
   })
+}
+
+// ponytail: loads ALL file sizes for storage bar, accept extra read
+async function loadStorageBar() {
+  if (!window.currentUser) return
+  try {
+    const snap = await db.collection('files').where('userId', '==', window.currentUser.uid).get()
+    const totalBytes = snap.docs.reduce((s, d) => s + (d.data().size||0), 0)
+    const pct = Math.min(100, (totalBytes / 1_000_000_000) * 100)
+    $('sidebarStorageFill').style.width = pct + '%'
+    $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
+  } catch(e) { console.warn('Storage bar:', e.message) }
 }
 
 function renderBreadcrumb() {
@@ -546,7 +567,7 @@ async function handleUpload(inputOrFile) {
   $('newBtn').innerHTML = 'Uploading...'
   showProgress('Uploading...')
   try {
-    const { uploadUrl, authToken } = await fetch(`${B2_PROXY_URL}/api/upload-url`).then(r => r.json())
+    const { uploadUrl, authToken } = await fetch(`${B2_PROXY_URL}/api/upload-url?userId=${window.currentUser.uid}&contentLength=${file.size}`).then(r => r.json())
     const b2FileName = `${window.currentUser.uid}_${Date.now()}_${file.name}`
     const b2Result = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
@@ -569,7 +590,7 @@ async function handleUpload(inputOrFile) {
   hideProgress()
   $('newBtn').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New'
   if (inputOrFile.files) inputOrFile.value = ''
-  loadContents()
+  loadContents(); loadStorageBar()
 }
 
 // --- Download / Open / Share ---
@@ -611,8 +632,8 @@ async function deleteFile(f) {
       if (!res.ok) throw new Error('Delete failed')
     }
     await db.collection('files').doc(f.id).delete()
-    closeInfoPanel(); loadContents()
-  } catch(e) { alert(userErrorMessage(e)); loadContents() }
+    closeInfoPanel(); loadContents(); loadStorageBar()
+  } catch(e) { alert(userErrorMessage(e)); loadContents(); loadStorageBar() }
   hideProgress()
 }
 
@@ -733,7 +754,7 @@ function handleDotClick(e) {
 async function deleteFolderConfirm(id) {
   if (confirm('Delete this folder? Files and sub-folders will be detached.')) {
     await deleteFolderById(id)
-    await loadFolders(); loadContents()
+    await loadFolders(); loadContents(); loadStorageBar()
   }
 }
 
@@ -862,38 +883,58 @@ function closePreview() {
 }
 
 // --- Main render ---
-async function loadContents() {
+// ponytail: paginated file load per folder, folders loaded all at once
+async function loadContents(isLoadMore = false) {
   const user = window.currentUser
   if (!user) return
-  $('searchInput').value = ''
-  const [fileSnap, folderSnap] = await Promise.all([
-    db.collection('files').where('userId','==',user.uid).get(),
-    db.collection('folders').where('userId','==',user.uid).get()
-  ])
+
+  if (!isLoadMore) {
+    window.fileCursor = null
+    window.currentPageFiles = []
+    $('searchInput').value = ''
+  }
 
   const fid = window.currentFolderId
-  const files = []
-  fileSnap.forEach(doc => {
-    const d = doc.data()
-    if ((d.folderId||null) === fid) files.push({ id: doc.id, ...d })
-    window.panelFiles[doc.id] = { id: doc.id, ...d }
-  })
-  const subFolders = []
-  folderSnap.forEach(doc => {
-    const d = doc.data()
-    if ((d.parentId||null) === fid) subFolders.push({ id: doc.id, name: d.name })
-    window.panelFolders[doc.id] = { id: doc.id, ...d }
-  })
+  try {
+    let query = db.collection('files')
+      .where('userId', '==', user.uid)
+      .where('folderId', '==', fid)
+      .orderBy('createdAt', 'desc')
+      .limit(PAGE_SIZE)
+    if (window.fileCursor) query = query.startAfter(window.fileCursor)
+    const snap = await query.get()
+    window.fileCursor = snap.docs[snap.docs.length - 1] || null
+    window.hasMoreFiles = snap.docs.length === PAGE_SIZE
+    const newFiles = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    window.currentPageFiles = isLoadMore ? [...window.currentPageFiles, ...newFiles] : newFiles
+    newFiles.forEach(f => { window.panelFiles[f.id] = f })
+  } catch(e) {
+    // ponytail: if composite index missing, show link to create it
+    if (e.message && e.message.includes('index')) {
+      const link = e.message.match(/https:\/\/console\.firebase[^\s]+/)?.[0]
+      $('uploadStatus').textContent = link ? 'Need index: ' + link : 'Query requires composite index — create in Firestore console'
+      $('uploadProgress').classList.remove('hidden')
+      setTimeout(() => hideProgress(), 8000)
+    } else {
+      alert(userErrorMessage(e))
+    }
+    return
+  }
 
-  // Storage bar (global)
-  const totalBytes = fileSnap.docs.reduce((s, d) => s + (d.data().size||0), 0)
-  const pct = Math.min(100, (totalBytes / 1_000_000_000) * 100)
-  $('sidebarStorageFill').style.width = pct + '%'
-  $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
+  // sub-folders from cache (no extra query)
+  window.currentSubFolders = (window.allFolders || [])
+    .filter(f => f.parentId === fid)
+    .map(f => ({ id: f.id, name: f.name }))
 
+  renderCurrentView()
+}
+
+function renderCurrentView() {
   const list = $('fileList'), grid = $('grid'), empty = $('emptyState')
   list.innerHTML = ''; grid.innerHTML = ''
 
+  const files = window.currentPageFiles
+  const subFolders = window.currentSubFolders
   const fc = files.length, foc = subFolders.length
   let ct = fc + ' file' + (fc !== 1 ? 's' : '')
   if (foc) ct += ' · ' + foc + ' folder' + (foc !== 1 ? 's' : '')
@@ -938,6 +979,15 @@ function renderList(container, folders, files) {
     row.querySelector('.file-menu').onclick = handleDotClick
     container.appendChild(row)
   })
+  // ponytail: show-more button, triggers next page
+  if (window.hasMoreFiles) {
+    const row = document.createElement('div')
+    row.className = 'file-row'
+    row.style.justifyContent = 'center'
+    row.innerHTML = `<span style="cursor:pointer;color:var(--color-primary);font-size:13px;font-weight:500">Show more</span>`
+    row.onclick = () => loadContents(true)
+    container.appendChild(row)
+  }
 }
 
 // ponytail: grid view, tinted icon cards
@@ -967,6 +1017,18 @@ function renderGrid(container, folders, files) {
     card.querySelector('.grid-card-menu').onclick = handleDotClick
     container.appendChild(card)
   })
+  // ponytail: show-more button, triggers next page
+  if (window.hasMoreFiles) {
+    const card = document.createElement('div')
+    card.className = 'grid-card'
+    card.style.display = 'flex'
+    card.style.alignItems = 'center'
+    card.style.justifyContent = 'center'
+    card.style.cursor = 'pointer'
+    card.innerHTML = `<span style="color:var(--color-primary);font-size:13px;font-weight:500">Show more</span>`
+    card.onclick = () => loadContents(true)
+    container.appendChild(card)
+  }
 }
 </script>
 </body>

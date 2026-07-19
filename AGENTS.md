@@ -70,7 +70,7 @@ vdrive/
 - **Google Sign-In**: Web (popup) + Android (Credential Manager + GetGoogleIdOption) both working.
 - **Storage bar**: computed from `size` field sum over ALL user files (global, not per-folder). Formatted text "X MB / 1 GB" + percentage bar.
 - **Access code algorithm**: 6 chars from "ABCDEFGHJKLMNPQRSTUVWXYZ23456789". 15 min TTL. No auth check — student enters code, fetches shared files.
-- **Firestore rules**: Open read/write (dev mode, expires Aug 2026). Needs auth-gated rules before production.
+- **Firestore rules**: Auth-gated per-user. Students can read accessCodes without auth (code entry flow).
 
 ## Design System
 

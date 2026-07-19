@@ -42,7 +42,7 @@ class FileRepository @Inject constructor(
 
             // Get B2 upload URL from Worker
             val uploadUrlRes = client.newCall(
-                Request.Builder().url("$B2_PROXY_URL/api/upload-url").get().build()
+                Request.Builder().url("$B2_PROXY_URL/api/upload-url?userId=$userId&contentLength=${bytes.size}").get().build()
             ).execute()
             val workerData = JSONObject(uploadUrlRes.body!!.string())
             val b2UploadUrl = workerData.getString("uploadUrl")
@@ -84,9 +84,9 @@ class FileRepository @Inject constructor(
                 "userId" to userId,
                 "b2FileId" to b2Result.getString("fileId"),
                 "b2FileName" to b2FileName,
+                "folderId" to folderId,
                 "createdAt" to FieldValue.serverTimestamp()
             )
-            if (folderId != null) doc["folderId"] = folderId
             val metaRef = firestore.collection("files").add(doc).await()
             metaRef.id
         }
