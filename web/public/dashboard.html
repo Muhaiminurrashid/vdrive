@@ -19,12 +19,13 @@ html.dark {
   --color-body: #bdc1c6;
   --color-muted: #9aa0a6;
   --color-muted-soft: #7a8088;
-  --color-primary: #7BA3D4;
-  --color-primary-active: #5A82B4;
+  --color-primary: #ffffff;
+  --color-primary-active: #e0e0e0;
+  --color-on-primary: #1c1b1e;
   --color-hairline: #303440;
   --color-on-dark: #e8eaed;
   --color-on-dark-soft: #9aa0a6;
-  --color-primary-disabled: #2d3a5a;
+  --color-primary-disabled: var(--color-hairline);
   --color-hairline-soft: #262933;
 }
 
@@ -75,7 +76,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .file-row:hover { background:var(--color-surface-soft); }
 .file-row.isFolder { cursor:pointer; }
 .file-icon { width:20px; height:20px; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.file-icon svg { width:14px; height:14px; }
+.file-icon svg { width:18px; height:18px; }
 .file-name { font-size:13px; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-size { font-size:12px; color:var(--color-muted); width:80px; text-align:right; flex-shrink:0; }
 .file-folder { font-size:12px; color:var(--color-muted-soft); width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
@@ -86,7 +87,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .grid-card { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:10px; padding:16px 12px 12px; cursor:pointer; position:relative; }
 .grid-card:hover { border-color:var(--color-primary); }
 .grid-card-icon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
-.grid-card-icon svg { width:26px; height:26px; }
+.grid-card-icon svg { width:36px; height:36px; }
 .grid-card-name { font-size:12px; font-weight:500; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .grid-card-size { font-size:11px; color:var(--color-muted); text-align:center; }
 .grid-card-menu { position:absolute; bottom:8px; right:8px; width:28px; height:28px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; }
@@ -775,7 +776,7 @@ function showInfoPanel(type, id) {
   if (!f) return
   const isFolder = type === 'folder'
   const icon = isFolder
-    ? { bg: 'var(--color-primary)', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' }
+    ? { bg: 'transparent', svg: '<svg viewBox="0 0 24 24" style="fill:var(--color-primary);stroke:none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' }
     : fileIconData(f.name)
   $('panelIconWrap').style.background = icon.bg
   $('panelIconWrap').innerHTML = icon.svg
@@ -915,7 +916,7 @@ async function loadContents(isLoadMore = false) {
     // ponytail: if composite index missing, show link to create it
     if (e.message && e.message.includes('index')) {
       const link = e.message.match(/https:\/\/console\.firebase[^\s]+/)?.[0]
-      $('uploadStatus').textContent = link ? 'Need index: ' + link : 'Query requires composite index — create in Firestore console'
+      $('uploadStatus').textContent = link ? 'Need index: ' + link : 'Query requires composite index - create in Firestore console'
       $('uploadProgress').classList.remove('hidden')
       setTimeout(() => hideProgress(), 8000)
     } else {
@@ -961,7 +962,7 @@ function renderList(container, folders, files) {
     const row = document.createElement('div')
     row.className = 'file-row isFolder'
     row.onclick = () => navigateToFolder(f.id)
-    row.innerHTML = `<div class="file-icon" style="background:var(--color-primary)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+    row.innerHTML = `<div class="file-icon" style="background:transparent"><svg viewBox="0 0 24 24" style="fill:var(--color-primary);stroke:none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
       <span class="file-name">${escapeHtml(f.name)}</span>
       <span class="file-size"></span>
       <span class="file-folder"></span>
@@ -999,8 +1000,8 @@ function renderGrid(container, folders, files) {
     const card = document.createElement('div')
     card.className = 'grid-card'
     card.onclick = () => navigateToFolder(f.id)
-    card.innerHTML = `<div class="grid-card-icon" style="background:var(--color-primary)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+    card.innerHTML = `<div class="grid-card-icon" style="background:transparent">
+      <svg viewBox="0 0 24 24" style="fill:var(--color-primary);stroke:none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
       <div class="grid-card-name">${escapeHtml(f.name)}</div>
       <div class="grid-card-size"></div>
       <button class="grid-card-menu" data-id="${f.id}" data-type="folder"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`

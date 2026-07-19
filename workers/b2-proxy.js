@@ -158,7 +158,7 @@ async function handleGetUploadUrl(request, env) {
   if (!userId) return json({ error: 'userId required' }, 400)
   if (!contentLength || contentLength > 100 * 1024 * 1024) return json({ error: 'File too large (max 100 MB)' }, 400)
   // ponytail: userId validated as non-empty string. Full Firebase Auth token verification would need JWKS fetch.
-  // User doc creation (users/{userId}) not implemented yet — verify exists when that ships.
+  // User doc creation (users/{userId}) not implemented yet - verify exists when that ships.
 
   const auth = await b2Authorize(env)
   const apiUrl = auth.apiInfo?.storageApi?.apiUrl
@@ -181,7 +181,7 @@ async function handleDownload(request, env) {
     if (!await verifyFileOwnership(env, fileName, userId))
       return json({ error: 'Access denied' }, 403)
   }
-  // ponytail: userId optional — access page calls without it (already validated via access code)
+  // ponytail: userId optional - access page calls without it (already validated via access code)
 
   const auth = await b2Authorize(env)
   const downloadUrl = auth.apiInfo?.storageApi?.downloadUrl
@@ -229,7 +229,7 @@ async function handleCodeFiles(request, env) {
   if (codes.length === 0) return json({ error: 'Code not found' }, 404)
   const codeDoc = codes[0]
 
-  // ponytail: check expiry — accepts both Timestamp string and millis number
+  // ponytail: check expiry - accepts both Timestamp string and millis number
   const exp = codeDoc.expiresAt
   const now = Date.now()
   let expired = false

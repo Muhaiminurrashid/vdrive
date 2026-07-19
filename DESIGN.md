@@ -1,17 +1,17 @@
 ---
 version: 1.2
 name: vdrive-design-system
-description: Navy & Cool design system for Virtual Pendrive, a cloud USB drive for classrooms. Navy blue primary, cool light canvas, Inter throughout — clean, professional, classroom-ready.
+description: Navy & Cool design system for Virtual Pendrive, a cloud USB drive for classrooms. Navy blue primary, cool light canvas, Inter throughout - clean, professional, classroom-ready.
 ---
 
 ## Palette
 
-- canvas: "#f4f5f6"       (cool light gray — never pure white)
+- canvas: "#f4f5f6"       (cool light gray - never pure white)
 - surface-card: "#ffffff"  (white card on cool canvas)
 - surface-soft: "#edeef0"  (section dividers, hover states)
-- surface-dark: "#1a1f2e"  (deep navy — hero mockup, footer)
+- surface-dark: "#1a1f2e"  (deep navy - hero mockup, footer)
 - surface-dark-soft: "#212638" (slightly lighter navy)
-- primary: "#3B5C9A"       (navy blue — brand + CTAs)
+- primary: "#3B5C9A"       (navy blue - brand + CTAs)
 - primary-active: "#2D4A7A"
 - primary-disabled: "#c8d2e0"
 - ink: "#1c1b1e"           (warm dark, slightly off-black)
@@ -66,11 +66,11 @@ xs: 4px, sm: 6px, md: 8px, lg: 12px, xl: 16px, pill: 9999px
 
 ## Elevation
 
-- Flat: no shadow — body sections, nav, cards
-- Hairline: 1px `hairline` border — inputs, card containers, file rows
-- Surface card: `surface-card` background with border — no shadow
-- Dark surface: `surface-dark` background — hero mockup, footer
-- Hover: faint shadow `0 1px 4px rgba(20,20,19,0.06)` — file rows on hover
+- Flat: no shadow - body sections, nav, cards
+- Hairline: 1px `hairline` border - inputs, card containers, file rows
+- Surface card: `surface-card` background with border - no shadow
+- Dark surface: `surface-dark` background - hero mockup, footer
+- Hover: faint shadow `0 1px 4px rgba(20,20,19,0.06)` - file rows on hover
 
 ## Components
 
@@ -82,7 +82,7 @@ border-bottom: 1px hairline
 padding: 0 24px
 display: flex, justify-between, align-center
 brand: icon + "Virtual Pendrive" in 14px/600 primary
-links: user email (muted), "Password" link, "Sign out" — 14px/500
+links: user email (muted), "Password" link, "Sign out" - 14px/500
 ```
 
 ### nav-landing
@@ -354,7 +354,7 @@ padding: 56px 32px
 text-align: center
 Heading: on-primary, display-md Inter
 Sub: on-primary at 0.75 opacity
-Button: inverted — white bg, primary text
+Button: inverted - white bg, primary text
 ```
 
 ### landing-footer
@@ -411,25 +411,25 @@ Surface alternation: cool → soft → navy callout → navy footer
 ## Do's
 
 - Use cool canvas everywhere. White reads generic.
-- Navy is the brand — buttons, links, icons, storage fill, CTA band.
-- Inter only — no serif. Clean and professional.
+- Navy is the brand - buttons, links, icons, storage fill, CTA band.
+- Inter only - no serif. Clean and professional.
 - Dark navy surfaces for hero mockup + footer only.
 - File type badge colors differentiate at a glance in dense lists.
 - Breadcrumb active segment is ink, ancestors are clickable navy.
-- File rows have hover elevation — subtle, not a box-shadow arms race.
-- Access code input is large monospace center-aligned — makes typing codes easy.
+- File rows have hover elevation - subtle, not a box-shadow arms race.
+- Access code input is large monospace center-aligned - makes typing codes easy.
 - Sub-folders render before files (Google Drive convention).
 
 ## Don'ts
 
-- Don't use pure white (#fff) — cool canvas is the brand.
-- Don't use warm tones (coral, cream, terracotta) — that was the old palette.
-- Don't use serif fonts — Inter only.
+- Don't use pure white (#fff) - cool canvas is the brand.
+- Don't use warm tones (coral, cream, terracotta) - that was the old palette.
+- Don't use serif fonts - Inter only.
 - Don't put navy on secondary actions. Ghost/outline buttons stay muted.
-- Don't use the same surface for two consecutive bands — alternate.
+- Don't use the same surface for two consecutive bands - alternate.
 - Don't shadow everything. Color contrast is depth.
-- Don't make file rows taller than ~44px — list density matters.
-- Don't nest breadcrumb text — keep inline, use "›" separator.
+- Don't make file rows taller than ~44px - list density matters.
+- Don't nest breadcrumb text - keep inline, use "›" separator.
 
 ## Responsive
 

@@ -11,7 +11,7 @@ Required skills:
 
 # Virtual Pendrive
 
-Cloud-based virtual USB drive for classrooms. Teachers upload files, generate 6-char access codes (15 min expiry), share with students. Students enter code on any PC — no account needed.
+Cloud-based virtual USB drive for classrooms. Teachers upload files, generate 6-char access codes (15 min expiry), share with students. Students enter code on any PC - no account needed.
 
 ## Project Structure
 
@@ -48,28 +48,28 @@ vdrive/
 |-------|---------|-----|
 | Language | Kotlin | Vanilla JS |
 | UI | Jetpack Compose + M3 | HTML/CSS |
-| DI | Hilt | — |
+| DI | Hilt | - |
 | Auth | Firebase Auth | Firebase Auth SDK |
 | DB | Firestore | Firestore SDK |
 | Storage | Backblaze B2 via Cloudflare Worker | Backblaze B2 (public bucket) |
-| Navigation | Navigation Compose | — |
+| Navigation | Navigation Compose | - |
 
 ## Firestore Data Model
 
 ```
-/users/{userId}               — { email, displayName, createdAt }
-/files/{fileId}               — { name, size, type, userId, folderId?, b2FileId, b2FileName, createdAt }
-/folders/{folderId}           — { name, userId, parentId?, createdAt, updatedAt }
-/accessCodes/{code}           — { code, userId, fileIds[], expiresAt }
+/users/{userId}               - { email, displayName, createdAt }
+/files/{fileId}               - { name, size, type, userId, folderId?, b2FileId, b2FileName, createdAt }
+/folders/{folderId}           - { name, userId, parentId?, createdAt, updatedAt }
+/accessCodes/{code}           - { code, userId, fileIds[], expiresAt }
 ```
 
 ## Architecture Decisions
 
-- **Files in Backblaze B2** — upload via Cloudflare Worker (auth proxy), direct download from public B2 URL. 10 GB free, 10 TB max file size. No more 1 MiB Firestore doc limit.
-- **Folders** — `folders` collection active. Hierarchical (parentId). Breadcrumb navigation (Google Drive-style): "My Files > Folder > Subfolder". Sub-folders shown in file list above files, clickable to navigate deeper. Create/delete writes `parentId`.
+- **Files in Backblaze B2** - upload via Cloudflare Worker (auth proxy), direct download from public B2 URL. 10 GB free, 10 TB max file size. No more 1 MiB Firestore doc limit.
+- **Folders** - `folders` collection active. Hierarchical (parentId). Breadcrumb navigation (Google Drive-style): "My Files > Folder > Subfolder". Sub-folders shown in file list above files, clickable to navigate deeper. Create/delete writes `parentId`.
 - **Google Sign-In**: Web (popup) + Android (Credential Manager + GetGoogleIdOption) both working.
 - **Storage bar**: computed from `size` field sum over ALL user files (global, not per-folder). Formatted text "X MB / 1 GB" + percentage bar.
-- **Access code algorithm**: 6 chars from "ABCDEFGHJKLMNPQRSTUVWXYZ23456789". 15 min TTL. No auth check — student enters code, fetches shared files.
+- **Access code algorithm**: 6 chars from "ABCDEFGHJKLMNPQRSTUVWXYZ23456789". 15 min TTL. No auth check - student enters code, fetches shared files.
 - **Firestore rules**: Auth-gated per-user. Students can read accessCodes without auth (code entry flow).
 
 ## Design System
@@ -87,8 +87,8 @@ See DESIGN.md for full spec.
 - Android: Hilt DI, ViewModel + StateFlow, Navigation Compose sealed routes
 - Web: Firebase CDN SDK, vanilla JS global state, CSS custom properties
 - Commits: conventional commits (feat/fix/chore)
-- Unit tests exist (`./gradlew app:testDebugUnitTest`) — add more with `testing-setup` skill
-- Error messages: `userMessage(e)` / `authError(e)` helpers on Android, `authErrorMessage(e)` / `userErrorMessage(e)` on web — map exception codes to user-friendly strings. Add new mappings when adding new error sources.
+- Unit tests exist (`./gradlew app:testDebugUnitTest`) - add more with `testing-setup` skill
+- Error messages: `userMessage(e)` / `authError(e)` helpers on Android, `authErrorMessage(e)` / `userErrorMessage(e)` on web - map exception codes to user-friendly strings. Add new mappings when adding new error sources.
 - Code review: `ponytail-review` for over-engineering audit
 
 ## graphify

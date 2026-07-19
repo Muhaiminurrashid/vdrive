@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Classroom Access — Virtual Pendrive</title>
+<title>Classroom Access - Virtual Pendrive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,12 +20,13 @@ html.dark {
   --color-body: #bdc1c6;
   --color-muted: #9aa0a6;
   --color-muted-soft: #7a8088;
-  --color-primary: #7BA3D4;
-  --color-primary-active: #5A82B4;
+  --color-primary: #ffffff;
+  --color-primary-active: #e0e0e0;
+  --color-on-primary: #1c1b1e;
   --color-hairline: #303440;
   --color-on-dark: #e8eaed;
   --color-on-dark-soft: #9aa0a6;
-  --color-primary-disabled: #2d3a5a;
+  --color-primary-disabled: var(--color-hairline);
   --color-hairline-soft: #262933;
 }
 
@@ -37,7 +38,7 @@ html.dark {
   background:var(--color-surface-card); color:var(--color-ink);
   outline:none; transition:border-color .15s,box-shadow .15s;
 }
-.otp-input:focus { border-color:var(--color-primary); box-shadow:0 0 0 3px rgba(59,92,154,.15); }
+.otp-input:focus { border-color:var(--color-primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent); }
 .otp-input.filled { border-color:var(--color-primary); background:rgba(59,92,154,.04); }
 #codeEntry, #fileView { transition:opacity .25s,transform .3s; }
 #codeEntry.hidden, #fileView.hidden { opacity:0; transform:translateY(12px); pointer-events:none; position:absolute; }
