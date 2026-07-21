@@ -345,10 +345,21 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Files changed**: `web/public/dashboard.html`, `web/public/access.html`
 - **Deployed**: Firebase Hosting.
 
+### Phase 32 - User Doc Creation on Signup
+- **Problem**: Worker ownership checks failed-closed because `users/{userId}` docs never existed. Data model specified them but no signup/login code wrote them.
+- **Fix**: `ensureUserDoc()` helper on both platforms — checks doc existence, writes `{ email, displayName, createdAt: serverTimestamp }` only on first auth.
+- **Web** (`login.html`): added Firestore SDK init + `ensureUserDoc()` called after email register and Google sign-in.
+- **Android** (`FirebaseService.kt`): added `ensureUserDoc()` method + `FieldValue` import, called from `signUp()` and `signInWithGoogle()`.
+- **Idempotent**: existing users logging in skip the write (get().exists check).
+- **Bugfix**: missing `firebase-firestore-compat.js` import caused "Something went wrong" on Google sign-in (firestore was undefined). Added script + `firebase.firestore()` init.
+- **Zero new dependencies** on either platform.
+- **Files changed**: `web/public/login.html`, `FirebaseService.kt`
+- **Pushed**: GitHub main (`b09ea3a`).
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
-2. **User existence check broke uploads**: Added `firestoreGet(env, 'users/${userId}')` to verify uploader exists. Crashed every upload because **no `/users/{userId}` docs are created anywhere in the app** - the data model specifies it but no signup/login code writes it. Removed the check, now validates userId is non-empty string only.
+2. **User existence check broke uploads**: Added `firestoreGet(env, 'users/${userId}')` to verify uploader exists. Crashed every upload because **no `/users/{userId}` docs are created anywhere in the app** - the data model specifies it but no signup/login code writes it. Removed the check, now validates userId is non-empty string only. **Fixed in Phase 32** — user docs now created on signup.
 3. **Hosting redeploy required**: Worker fix alone wasn't enough - old `dashboard.html` (without userId/contentLength params) was cached on Firebase Hosting. Had to `firebase deploy --only hosting` to push updated client code.
 
 ### Lesson
@@ -359,7 +370,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 ### What's Next
 
-- [ ] Create `/users/{userId}` doc on signup (both web + Android) - enables proper user existence verification for all endpoints
+- [x] Create `/users/{userId}` doc on signup (both web + Android) - enables proper user existence verification for all endpoints
 - [ ] Harden remaining open items: restrict `CORS: *` to known origins, add MIME type validation on upload
 - [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env
 - [ ] **Phase 32 - Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only (admin uses Firebase Console via web UI instead of raw console). Simple admin check: hardcoded UID or custom claim.

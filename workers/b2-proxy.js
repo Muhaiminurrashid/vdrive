@@ -1,11 +1,19 @@
 // ponytail: single Worker, zero deps, handles upload auth + download proxy + delete + Firestore ownership verification
 // Secrets: B2_APP_KEY_ID, B2_APP_KEY, FIREBASE_SERVICE_ACCOUNT
-// Vars:   B2_BUCKET_ID, B2_BUCKET_NAME
+// Vars:   B2_BUCKET_ID, B2_BUCKET_NAME, ALLOWED_ORIGINS
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+// ponytail: first allowed origin, add Origin-echoing if multi-origin needed later
+function corsOrigin(env) {
+  return (env?.ALLOWED_ORIGINS || 'https://vdrive-64deb.web.app').split(',')[0].trim()
+}
+
+function corsHeaders(env) {
+  const origin = corsOrigin(env)
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
 }
 
 // ponytail: in-memory sliding-window rate limiter, resets on deploy
@@ -45,8 +53,8 @@ function checkUidRateLimit(uid, path) {
   return count > max
 }
 
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+function json(body, status = 200, env) {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders(env) } })
 }
 
 // --- Firebase service account → OAuth2 token for Firestore admin access ---
@@ -155,7 +163,7 @@ async function handleGetUploadUrl(request, env) {
   const url = new URL(request.url)
   const userId = url.searchParams.get('userId')
   const contentLength = parseInt(url.searchParams.get('contentLength') || '0')
-  if (!userId) return json({ error: 'userId required' }, 400)
+  if (!userId) return json({ error: 'userId required' }, 400, env)
   // ponytail: read subscription doc for tier cap, fail-soft to free on error
   let maxSize = 100 * 1024 * 1024
   try {
@@ -163,7 +171,7 @@ async function handleGetUploadUrl(request, env) {
     if (sub && sub.status === 'active' && sub.expiresAt && new Date(sub.expiresAt) > new Date())
       maxSize = 500 * 1024 * 1024
   } catch (_) { /* fail-soft: default free tier */ }
-  if (!contentLength || contentLength > maxSize) return json({ error: `File too large (max ${maxSize / (1024*1024)} MB)` }, 400)
+  if (!contentLength || contentLength > maxSize) return json({ error: `File too large (max ${maxSize / (1024*1024)} MB)` }, 400, env)
 
   const auth = await b2Authorize(env)
   const apiUrl = auth.apiInfo?.storageApi?.apiUrl
@@ -175,16 +183,16 @@ async function handleGetUploadUrl(request, env) {
   })
   if (!res.ok) throw new Error('B2 upload URL failed: ' + (await res.text()))
   const data = await res.json()
-  return json({ uploadUrl: data.uploadUrl, authToken: data.authorizationToken })
+  return json({ uploadUrl: data.uploadUrl, authToken: data.authorizationToken }, 200, env)
 }
 
 async function handleDownload(request, env) {
   const { fileName, userId } = await request.json()
-  if (!fileName) return json({ error: 'fileName required' }, 400)
-  if (checkUidRateLimit(userId, '/api/download')) return json({ error: 'Too many requests' }, 429)
+  if (!fileName) return json({ error: 'fileName required' }, 400, env)
+  if (checkUidRateLimit(userId, '/api/download')) return json({ error: 'Too many requests' }, 429, env)
   if (userId) {
     if (!await verifyFileOwnership(env, fileName, userId))
-      return json({ error: 'Access denied' }, 403)
+      return json({ error: 'Access denied' }, 403, env)
   }
   // ponytail: userId optional - access page calls without it (already validated via access code)
 
@@ -196,7 +204,7 @@ async function handleDownload(request, env) {
   })
   const respHeaders = new Headers({
     'Content-Disposition': 'attachment',
-    'Access-Control-Allow-Origin': '*',
+    ...corsHeaders(env),
   })
   const ct = b2Res.headers.get('Content-Type')
   if (ct) respHeaders.set('Content-Type', ct)
@@ -207,10 +215,10 @@ async function handleDownload(request, env) {
 
 async function handleDelete(request, env) {
   const { fileId, fileName, userId } = await request.json()
-  if (!userId) return json({ error: 'userId required' }, 400)
-  if (checkUidRateLimit(userId, '/api/delete')) return json({ error: 'Too many requests' }, 429)
+  if (!userId) return json({ error: 'userId required' }, 400, env)
+  if (checkUidRateLimit(userId, '/api/delete')) return json({ error: 'Too many requests' }, 429, env)
   if (!await verifyFileOwnership(env, fileName, userId))
-    return json({ error: 'Access denied' }, 403)
+    return json({ error: 'Access denied' }, 403, env)
 
   const auth = await b2Authorize(env)
   const apiUrl = auth.apiInfo?.storageApi?.apiUrl
@@ -221,17 +229,17 @@ async function handleDelete(request, env) {
     body: JSON.stringify({ fileId, fileName })
   })
   if (!res.ok) throw new Error('B2 delete failed: ' + (await res.text()))
-  return new Response('ok', { status: 200, headers: corsHeaders })
+  return new Response('ok', { status: 200, headers: corsHeaders(env) })
 }
 
 async function handleCodeFiles(request, env) {
   const { code } = await request.json()
-  if (!code) return json({ error: 'code required' }, 400)
+  if (!code) return json({ error: 'code required' }, 400, env)
 
   const codes = await firestoreQuery(env, 'accessCodes', [
     { field: 'code', op: 'EQUAL', type: 'stringValue', value: code },
   ])
-  if (codes.length === 0) return json({ error: 'Code not found' }, 404)
+  if (codes.length === 0) return json({ error: 'Code not found' }, 404, env)
   const codeDoc = codes[0]
 
   // ponytail: check expiry - accepts both Timestamp string and millis number
@@ -240,7 +248,7 @@ async function handleCodeFiles(request, env) {
   let expired = false
   if (typeof exp === 'string') expired = new Date(exp).getTime() < now
   else if (typeof exp === 'number') expired = exp < now
-  if (expired) return json({ error: 'Code expired' }, 410)
+  if (expired) return json({ error: 'Code expired' }, 410, env)
 
   let items = []
   if (codeDoc.folderId) {
@@ -258,7 +266,7 @@ async function handleCodeFiles(request, env) {
       }
     }
   }
-  return json({ files: items })
+  return json({ files: items }, 200, env)
 }
 
 // --- Setup endpoints ---
@@ -281,7 +289,7 @@ async function handleSetCors(env) {
     })
   })
   if (!res.ok) throw new Error('B2 CORS setup failed: ' + (await res.text()))
-  return new Response('CORS configured', { headers: corsHeaders })
+  return new Response('CORS configured', { headers: corsHeaders(env) })
 }
 
 async function handleSetLifecycle(env) {
@@ -298,18 +306,18 @@ async function handleSetLifecycle(env) {
     })
   })
   if (!res.ok) throw new Error('B2 lifecycle setup failed: ' + (await res.text()))
-  return new Response('Lifecycle configured', { headers: corsHeaders })
+  return new Response('Lifecycle configured', { headers: corsHeaders(env) })
 }
 
 // --- Router ---
 
 export default {
   async fetch(request, env) {
-    if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+    if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(env) })
     const url = new URL(request.url)
     const setupPaths = ['/api/set-cors', '/api/set-lifecycle']
     if (!setupPaths.includes(url.pathname) && checkRateLimit(request, url.pathname))
-      return json({ error: 'Too many requests' }, 429)
+      return json({ error: 'Too many requests' }, 429, env)
 
     try {
       if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(request, env)
@@ -318,9 +326,9 @@ export default {
       if (url.pathname === '/api/code-files' && request.method === 'POST') return await handleCodeFiles(request, env)
       if (url.pathname === '/api/set-cors' && request.method === 'POST') return await handleSetCors(env)
       if (url.pathname === '/api/set-lifecycle' && request.method === 'POST') return await handleSetLifecycle(env)
-      return json({ error: 'Not found' }, 404)
+      return json({ error: 'Not found' }, 404, env)
     } catch (e) {
-      return json({ error: e.message }, 500)
+      return json({ error: e.message }, 500, env)
     }
   }
 }
