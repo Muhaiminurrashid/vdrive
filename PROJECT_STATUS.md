@@ -366,6 +366,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **1 file changed**: `workers/b2-proxy.js`. Zero new dependencies.
 - **Deployed**: Worker version `69b7e976`.
 
+### Phase 34 - Admin Subscription Panel
+- **Admin page** (`/admin.html`): filter tabs (Pending/Active/Rejected/All), user email lookup (fetched from `/users` collection), Approve (sets `status:active` + 30-day `expiresAt`) and Reject (`status:rejected`) buttons
+- **Sidebar**: gear icon "Admin Panel" nav item shown only when admin UID matches Worker config
+- **ADMIN_UID** moved from hardcoded JS to Worker env var (`workers/.env`), exposed via `GET /api/config` endpoint — no UIDs in client source
+- **Firestore rules**: admin UID bypass on `subscriptions` (read all + update) + `users` (read all)
+- **Fix**: after approve/reject, updates local state instead of re-fetching (avoids Firestore SDK cache staleness)
+- **Zero new dependencies** on any platform
+- **4 files changed**: `firestore.rules`, `workers/b2-proxy.js`, `web/public/dashboard.html`, `web/public/admin.html`
+- **Deployed**: Worker + Firestore rules + Firebase Hosting
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
@@ -384,7 +394,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [x] Restrict `CORS: *` to known origins - replaced with `ALLOWED_ORIGINS` env var (default: Firebase Hosting URL)
 - [ ] MIME type validation on upload
 - [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env
-- [ ] **Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only (admin uses Firebase Console via web UI instead of raw console). Simple admin check: hardcoded UID or custom claim.
+- [x] **Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only admin page with filter tabs. Admin UID set via Worker env var.
 - [ ] Access code expiry picker: 5/15/30/60 min TTL
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
