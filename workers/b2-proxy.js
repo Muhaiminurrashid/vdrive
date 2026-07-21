@@ -309,6 +309,13 @@ async function handleSetLifecycle(env) {
   return new Response('Lifecycle configured', { headers: corsHeaders(env) })
 }
 
+// --- Config ---
+
+// ponytail: exposes ADMIN_UID so client JS doesn't hardcode it
+function handleConfig(env) {
+  return json({ adminUid: env.ADMIN_UID || '' }, 200, env)
+}
+
 // --- Router ---
 
 export default {
@@ -320,6 +327,7 @@ export default {
       return json({ error: 'Too many requests' }, 429, env)
 
     try {
+      if (url.pathname === '/api/config' && request.method === 'GET') return handleConfig(env)
       if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(request, env)
       if (url.pathname === '/api/download' && request.method === 'POST') return await handleDownload(request, env)
       if (url.pathname === '/api/delete' && request.method === 'DELETE') return await handleDelete(request, env)

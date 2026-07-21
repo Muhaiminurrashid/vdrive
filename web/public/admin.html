@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Virtual Pendrive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=2">
+<style>
+body { font-family:Inter,sans-serif; margin:0; background:var(--color-canvas); color:var(--color-ink); }
+nav { display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 24px; background:var(--color-surface-card); border-bottom:1px solid var(--color-hairline); }
+main { max-width:960px; margin:0 auto; padding:32px 24px; }
+h1 { font-size:22px; font-weight:600; margin:0; }
+h1 small { font-size:14px; font-weight:400; color:var(--color-muted); margin-left:12px; }
+.filters { display:flex; gap:8px; margin:20px 0; }
+.filters button { padding:6px 16px; border:1px solid var(--color-hairline); border-radius:20px; background:var(--color-surface-card); color:var(--color-body); font-size:13px; font-weight:500; cursor:pointer; }
+.filters button:hover { border-color:var(--color-primary); color:var(--color-primary); }
+.filters button.active { background:var(--color-primary); border-color:var(--color-primary); color:var(--color-on-primary); }
+.card { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:10px; margin-bottom:6px; padding:14px 20px; display:flex; align-items:center; gap:16px; }
+.card:hover { border-color:var(--color-primary); }
+.card .info { flex:1; min-width:0; }
+.card .info .email { font-size:13px; font-weight:500; }
+.card .info .meta { font-size:12px; color:var(--color-muted); margin-top:2px; }
+.badge { padding:2px 10px; border-radius:10px; font-size:11px; font-weight:600; text-transform:capitalize; }
+.badge.pending { background:#fef3c7; color:#92400e; }
+.badge.active { background:#d1fae5; color:#065f46; }
+.badge.rejected { background:#fee2e2; color:#991b1b; }
+.actions { display:flex; gap:6px; flex-shrink:0; }
+.actions button { padding:5px 14px; border:none; border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; }
+.btn-primary { background:var(--color-primary); color:var(--color-on-primary); }
+.btn-primary:hover { background:var(--color-primary-active); }
+.btn-soft { background:var(--color-surface-soft); color:var(--color-body); }
+.btn-soft:hover { background:var(--color-hairline); }
+.empty { text-align:center; padding:48px; color:var(--color-muted); font-size:14px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:12px">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#3B5C9A"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+    <span style="font-weight:600;color:var(--color-primary);font-size:15px">Admin Panel</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="/dashboard.html" style="font-size:13px;color:var(--color-muted);text-decoration:none">&larr; Dashboard</a>
+    <button onclick="handleLogout()" style="font-size:13px;color:var(--color-muted);background:none;border:none;cursor:pointer;padding:0">Sign out</button>
+  </div>
+</nav>
+
+<main>
+  <h1>Subscriptions <small id="subCount"></small></h1>
+
+  <div class="filters" id="filterBar">
+    <button class="active" data-filter="pending">Pending</button>
+    <button data-filter="active">Active</button>
+    <button data-filter="rejected">Rejected</button>
+    <button data-filter="all">All</button>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC4LhzNvivwitunV6qJp3-Pb6UjyDXPoLU",
+  authDomain: "vdrive-64deb.firebaseapp.com",
+  projectId: "vdrive-64deb",
+  messagingSenderId: "541773803308",
+  appId: "1:541773803308:web:f2c49d374a13abb8920689",
+}
+firebase.initializeApp(firebaseConfig)
+const auth = firebase.auth()
+const db = firebase.firestore()
+const B2_PROXY_URL = 'https://b2-proxy.muhaiminurrashid99.workers.dev'
+
+let ADMIN_UID = ''
+let allSubs = []
+let usersMap = {}
+let currentFilter = 'pending'
+
+// ponytail: fetch admin UID from Worker config instead of hardcoding
+fetch(B2_PROXY_URL + '/api/config').then(r => r.json()).then(c => {
+  ADMIN_UID = c.adminUid || ''
+  auth.onAuthStateChanged(user => {
+    if (!user || user.uid !== ADMIN_UID) { window.location.href = '/dashboard.html'; return }
+    Promise.all([loadSubs(), loadUsers()]).then(render)
+  })
+})
+
+async function loadSubs() {
+  const snap = await db.collection('subscriptions').orderBy('createdAt', 'desc').get()
+  allSubs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+async function loadUsers() {
+  const snap = await db.collection('users').get()
+  snap.docs.forEach(d => { usersMap[d.id] = d.data().email || d.id })
+}
+
+function render() {
+  const filtered = currentFilter === 'all' ? allSubs : allSubs.filter(s => s.status === currentFilter)
+  document.getElementById('subCount').textContent = `(${allSubs.length} total, ${filtered.length} shown)`
+  const list = document.getElementById('list')
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">No ' + currentFilter + ' subscriptions</div>'
+    return
+  }
+  list.innerHTML = filtered.map(s => `
+    <div class="card">
+      <div class="info">
+        <div class="email">${escapeHtml(usersMap[s.userId] || s.userId)}</div>
+        <div class="meta">TX: ${escapeHtml(s.txId || '-')} &middot; BDT ${s.txAmount || '-'} &middot; ${s.createdAt?.toDate().toLocaleString() || '-'}</div>
+      </div>
+      <span class="badge ${s.status}">${s.status}</span>
+      ${s.status === 'pending' ? `
+        <div class="actions">
+          <button class="btn-primary" onclick="approve('${s.id}')">Approve</button>
+          <button class="btn-soft" onclick="reject('${s.id}')">Reject</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('')
+}
+
+async function approve(id) {
+  await db.collection('subscriptions').doc(id).update({
+    status: 'active',
+    expiresAt: firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 30*24*60*60*1000))
+  })
+  // ponytail: update local state instead of re-fetching (avoids cache staleness)
+  const sub = allSubs.find(s => s.id === id)
+  if (sub) { sub.status = 'active'; sub.expiresAt = new firebase.firestore.Timestamp(Math.floor(Date.now()/1000)+30*24*60*60, 0) }
+  render()
+}
+
+async function reject(id) {
+  await db.collection('subscriptions').doc(id).update({ status: 'rejected' })
+  const sub = allSubs.find(s => s.id === id)
+  if (sub) sub.status = 'rejected'
+  render()
+}
+
+function handleLogout() { auth.signOut(); window.location.href = '/login.html' }
+
+// Filter tabs
+document.getElementById('filterBar').addEventListener('click', e => {
+  const btn = e.target.closest('[data-filter]')
+  if (!btn) return
+  document.querySelectorAll('#filterBar [data-filter]').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  currentFilter = btn.dataset.filter
+  render()
+})
+
+function escapeHtml(s) { if (typeof s !== 'string') return s; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+</script>
+</body>
+</html>

@@ -356,6 +356,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Files changed**: `web/public/login.html`, `FirebaseService.kt`
 - **Pushed**: GitHub main (`b09ea3a`).
 
+### Phase 33 - CORS Restriction (Replace `*` with Known Origins)
+- **Problem**: Worker returned `Access-Control-Allow-Origin: *` on all endpoints — any website could make requests to the proxy.
+- **Fix**: Replaced static `corsHeaders` with `corsOrigin(env)` / `corsHeaders(env)` functions that read `ALLOWED_ORIGINS` env var.
+- **Default allowlist**: `https://vdrive-64deb.web.app` (Firebase Hosting). Configurable via Worker var.
+- **All endpoints covered**: `json()` helper, `handleDownload` attachment response, `handleDelete`, setup endpoints, OPTIONS preflight — all use `corsHeaders(env)`.
+- **Android**: native HTTP — no CORS enforcement, no changes needed.
+- **New Worker var**: `ALLOWED_ORIGINS` added to `workers/.env` + set via `wrangler deploy --var`.
+- **1 file changed**: `workers/b2-proxy.js`. Zero new dependencies.
+- **Deployed**: Worker version `69b7e976`.
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
@@ -371,11 +381,11 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 ### What's Next
 
 - [x] Create `/users/{userId}` doc on signup (both web + Android) - enables proper user existence verification for all endpoints
-- [ ] Harden remaining open items: restrict `CORS: *` to known origins, add MIME type validation on upload
+- [x] Restrict `CORS: *` to known origins - replaced with `ALLOWED_ORIGINS` env var (default: Firebase Hosting URL)
+- [ ] MIME type validation on upload
 - [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env
-- [ ] **Phase 32 - Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only (admin uses Firebase Console via web UI instead of raw console). Simple admin check: hardcoded UID or custom claim.
+- [ ] **Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only (admin uses Firebase Console via web UI instead of raw console). Simple admin check: hardcoded UID or custom claim.
 - [ ] Access code expiry picker: 5/15/30/60 min TTL
-- [ ] Student upload via code: homework submission
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
 
@@ -417,13 +427,18 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 |---|--------------|--------|-----|
 | 6 | **GitHub secrets `FIREBASE_TOKEN` + `CLOUDFLARE_API_TOKEN` in CI** | If CI pipeline is compromised, both tokens readable from workflow logs or env. | Restrict token scopes to minimum, use OIDC if available. |
 
+### FIXED in Phase 33
+
+| # | Vulnerability | Fix |
+|---|--------------|------|
+| 9 | **`CORS: *` on Worker** | Replaced with `ALLOWED_ORIGINS` env var — restricted to `https://vdrive-64deb.web.app`. |
+
 ### OPEN - MEDIUM
 
 | # | Vulnerability | Impact | Fix |
 |---|--------------|--------|-----|
 | 7 | **Access code 6-char limited alphabet** | `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (30 chars) × 6 = 729M combinations. No rate limit on code entry. Attacker can brute-force valid codes (15 min window). | Add rate limiting on Firestore accessCode reads (already rate-limited per-IP at Worker level for `/api/code-files`). |
 | 8 | **No file type validation on upload** | Any file type accepted (exe, html, js). If served from B2 with permissive content-type, could be used for malware delivery. | Check MIME type on upload, reject executable types. Serve downloads with `Content-Disposition: attachment`. |
-| 9 | **`CORS: *` on Worker** | Any website can make requests to the proxy. While endpoints require auth/UID, broad CORS increases attack surface. | Restrict `Access-Control-Allow-Origin` to known origins (Firebase Hosting + Android app). |
 
 ## Fix ASAP (Step by Step) - DONE
 
