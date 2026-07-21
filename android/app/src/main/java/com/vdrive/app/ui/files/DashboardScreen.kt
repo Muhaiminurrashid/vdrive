@@ -61,12 +61,16 @@ fun DashboardScreen(
     var fabExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var isRefreshing by remember { mutableStateOf(false) }
 
     val pullRefreshState = rememberPullRefreshState(
-        refreshing = state.isLoading,
-        onRefresh = { viewModel.loadContents() }
+        refreshing = isRefreshing,
+        onRefresh = { isRefreshing = true; viewModel.loadContents() }
     )
     val scope = rememberCoroutineScope()
+    if (!state.isLoading) {
+        LaunchedEffect(isRefreshing) { isRefreshing = false }
+    }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -471,7 +475,7 @@ fun DashboardScreen(
                         }
                     }
                     PullRefreshIndicator(
-                        refreshing = state.isLoading,
+                        refreshing = isRefreshing,
                         state = pullRefreshState,
                         modifier = Modifier.align(Alignment.TopCenter),
                         backgroundColor = if (isDarkTheme) DarkSurface else SurfaceCard,

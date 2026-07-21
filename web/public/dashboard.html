@@ -584,6 +584,7 @@ function escapeHtml(s) { return (s+'').replace(/[&<>"]/g, c => ({'&':'&amp;','<'
 function navigateToFolder(id) {
   const folder = window.folderNames[id]
   if (!folder) return
+  if (window.folderPath.length && window.folderPath[window.folderPath.length-1].id === id) return
   window.currentFolderId = id
   window.folderPath.push({ id, name: folder })
   renderBreadcrumb(); loadContents()

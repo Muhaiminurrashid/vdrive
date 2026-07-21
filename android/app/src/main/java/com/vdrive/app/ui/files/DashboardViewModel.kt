@@ -201,6 +201,7 @@ class DashboardViewModel @Inject constructor(
 
     fun navigateToFolder(folderId: String) {
         val folder = _state.value.folders.find { it.id == folderId } ?: return
+        if (_state.value.folderPath.lastOrNull()?.id == folderId) return
         val path = _state.value.folderPath + folder
         _state.value = _state.value.copy(
             currentFolderId = folderId,
