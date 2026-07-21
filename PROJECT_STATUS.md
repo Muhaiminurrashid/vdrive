@@ -2,7 +2,7 @@
 
 ## What's Built
 
-- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. Google Drive-style UI: resizable sidebar with brand/[+ New]/storage/dark mode, list/grid view toggle, 3-dot context menu (always visible) per file, file info side panel, double-click preview (images/video/audio/PDF/text), account avatar dropdown. File upload/download/delete, access code sharing (6-char, 15 min TTL), drag-drop upload, folder tree navigation with breadcrumb.
+- **Web**: Vanilla HTML/CSS/JS app with Firebase Auth + Firestore. Google Drive-style UI: resizable sidebar with brand/[+ New]/storage/dark mode, list/grid view toggle, 3-dot context menu (always visible) per file, file info side panel, double-click preview (images/video/audio/PDF/text), account avatar dropdown. File upload/download/delete, access code sharing (6-char, 15 min TTL), drag-drop upload, folder tree navigation with breadcrumb. Access page: OTP-style code entry, dark mode across dashboard + access page.
 - **Android**: Kotlin + Jetpack Compose + Hilt app. Same features as web. Google Sign-In works on device. Folder tree navigation with breadcrumb. File size display. Tap opens file in system viewer, 3-dot saves to Downloads.
 - **Storage**: Backblaze B2 (private bucket `vdrive12`) via Cloudflare Worker proxy. Files stored on B2, metadata in Firestore.
 - **Web deployed**: Firebase Hosting → https://vdrive-64deb.web.app
@@ -329,6 +329,22 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Lesson**: Creating a service account + key is not enough - it needs an IAM role binding too. The Phase 24 notes said "with `roles/datastore.user`" but that step was never executed. Always verify IAM bindings after creating service accounts.
 - **Changed files**: None (GCP IAM only)
 
+### Phase 30 - Access Page Redesign (Classroom Unlock)
+- **OTP code entry**: 6 individual input boxes, auto-advance on keypress, backspace to prev, paste support (fills all 6 from clipboard), auto-submit on 6th char typed (no button needed). Navy border + focus ring per DESIGN.md spec.
+- **Dark mode**: added `html.dark` CSS overrides (same palette as dashboard), moon SVG toggle in nav, persisted in `localStorage` (`vdriveDark` key). Grid dots background via CSS radial-gradient on canvas.
+- **Visual overhaul**: centered hero layout, richer file cards (40px tinted icons, larger name, size + download button, hover lift), staggered fade-in animation (CSS nth-child delay), "Enter a different code" link in file view header.
+- **Transitions**: code entry fades out + slides up on submit, file list slides in from bottom (CSS only, no JS animation lib).
+- **Dead code removed**: `fileTypeColors`/`fileTypeColor()`, `#accessBtn` replaced by auto-submit.
+- **1 file changed**: `web/public/access.html`. Zero new deps, zero Worker changes.
+- **Deployed**: Firebase Hosting.
+
+### Phase 31 - Dark Mode UI Polish
+- **Brand text readability**: `--color-primary` overridden to `#ffffff` (white) in dark mode on both dashboard + access page - all blue text (links, breadcrumb, active nav, labels) renders white on dark surfaces.
+- **Button backgrounds white**: `--color-on-primary` set to `#1c1b1e` - buttons, nav strip, storage bar fill become white background with dark text. Blue buttons eliminated in dark mode.
+- **Folder icons**: replaced outline SVG + colored bg div with filled SVG using `fill:var(--color-primary)`. Folder shape follows primary color - navy in light, white in dark. No background div, icon size bumped (list 14→18px, grid 26→36px).
+- **Files changed**: `web/public/dashboard.html`, `web/public/access.html`
+- **Deployed**: Firebase Hosting.
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
@@ -346,6 +362,11 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [ ] Create `/users/{userId}` doc on signup (both web + Android) - enables proper user existence verification for all endpoints
 - [ ] Harden remaining open items: restrict `CORS: *` to known origins, add MIME type validation on upload
 - [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env
+- [ ] **Phase 32 - Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only (admin uses Firebase Console via web UI instead of raw console). Simple admin check: hardcoded UID or custom claim.
+- [ ] Access code expiry picker: 5/15/30/60 min TTL
+- [ ] Student upload via code: homework submission
+- [ ] QR code for codes: scan -> open access page
+- [ ] Android file preview: double-tap inline preview
 
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms - use context menu instead
@@ -373,11 +394,11 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 | 4 | **Worker has no auth on `/api/upload-url`** | Now requires `userId` query param, validates non-empty string. |
 | 5 | **No upload size check in Worker** | Reads `contentLength` query param, rejects > 100 MB at Worker level. |
 
-### OPEN - CRITICAL
+### FIXED in Phase 30/31
 
-| # | Vulnerability | Impact | Fix |
-|---|--------------|--------|-----|
-| 2 | **Firebase service account private key on disk** (`service-account.json`) | File at `/home/wise/Development/vdrive/service-account.json` has `roles/datastore.user` (granted in Phase 29) - anyone with file read can read/write ALL Firestore data + Firestore indexes. Already in `.gitignore` (not tracked), but exists on disk. | Delete from disk, store as Worker secret only (`FIREBASE_SERVICE_ACCOUNT`). |
+| # | Vulnerability | Fix |
+|---|--------------|------|
+| 2 | **Firebase service account private key on disk** (`service-account.json`) | Deleted from disk. Key never committed. Service account valid via Worker secret only. |
 
 ### OPEN - HIGH
 
@@ -400,132 +421,34 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 3. ✅ **Worker ownership check** fail-soft → fail-closed on both error paths.
 4. ✅ **Upload endpoint** now requires `userId` + enforces `contentLength` ≤ 100 MB.
 5. ✅ **Web + Android clients** pass `userId` + file size to upload endpoint.
-6. ❌ **`service-account.json` on disk** - file exists but not git-tracked. Delete it: `rm service-account.json`
+6. ✅ **`service-account.json` on disk** - deleted from disk. Stored as Worker secret only.
 7. ✅ **Worker Firestore 403** - service account lacked `roles/datastore.user`. Granted via `setIamPolicy`. No code change needed.
 
-### Phase 29 - bKash Subscription (Manual Payment)
+### Phase 29 - bKash Subscription (Manual Payment) - DONE
 
-#### Data Model
+- **Data model**: `/subscriptions/{userId}` doc — `plan: "premium"`, `status: "pending"|"active"`, `txId`, `txAmount: 99`, `userId`, `createdAt`
+- **Firestore rules**: `subscriptions/{userId}` — user read self, create self (admin verifies via Firebase Console)
+- **Worker**: `handleGetUploadUrl` reads subscription doc via `firestoreGet()`, caps at 500 MB for active premium, 100 MB for free. Fail-soft to free on read error.
+- **Web dashboard**:
+  - Sidebar: plan badge ("Free"/"Premium") + "Upgrade" link below storage bar
+  - Subscribe modal: click-to-copy bKash number `01605091313`, single TX ID input, writes `status:"pending"` doc
+  - `loadStorageBar()`: fetches subscription + files, adjusts cap display (10 GB premium / 1 GB free)
+  - `handleUpload()`: checks cached `window.currentSub` before size check
+- **Android**:
+  - `DrawerStorageIndicator`: accepts `isPremium` param, shows "10 GB" cap
+  - Drawer: plan badge + "Upgrade" TextButton → `SubscribeDialog`
+  - `SubscribeDialog`: copy button for bKash number, single TX ID field, calls `submitSubscription(txId)`
+  - `DashboardViewModel`: `loadStorageBar()` reads sub doc, `uploadFile()` reads sub doc before upload, `submitSubscription()` writes pending doc with `txAmount: 99`
+  - `FileRepository.uploadFile()`: accepts `isPremium` param, uses 500 MB cap
+- **Pricing**: 99 BDT/month (hardcoded)
+- **Admin flow**: user submits TX → `status:"pending"` → admin checks bKash app → sets `status:"active"` + `expiresAt` Timestamp in Firebase Console → next upload/refresh picks up premium tier
+- **Zero new dependencies** on any platform
+- **7 files changed**: `firestore.rules`, `workers/b2-proxy.js`, `web/public/dashboard.html`, `FileRepository.kt`, `DashboardViewModel.kt`, `DashboardScreen.kt`, `DashboardViewModelTest.kt`
+- **Deployed**: Worker (`6c1c2e6a`), Firestore rules, Firebase Hosting
 
-```
-/subscriptions/{userId} - {
-  plan: "premium",
-  status: "active" | "pending" | "expired" | "cancelled",
-  txId: "bKash TX ID",       // manual verification ref
-  txNumber: "bkash number",   // where user sent money
-  txAmount: 150,               // amount in BDT
-  verifiedBy: "admin uid",    // admin who confirmed payment
-  verifiedAt: Timestamp,
-  expiresAt: Timestamp,        // 30 days from verification
-  createdAt: Timestamp
-}
-```
+### Phase 30 - Access Page Redesign (Classroom Unlock) - DONE
 
-- No new collection - `subscriptions/{userId}` doc per user
-- Admin verifies: reads Firestore doc, marks `status: "active"`, sets `expiresAt`
-- Firestore rules: user read self, admin write
-
-#### Storage Limit Logic
-
-| Tier | Per-file max | Total storage |
-|------|-------------|---------------|
-| Free | 100 MB | 1 GB |
-| Premium | 500 MB | 10 GB |
-
-- **Worker `/api/upload-url`**: reads `subscriptions/{userId}` doc before returning URL. Free users get `contentLength ≤ 100 MB`. Premium users get `≤ 500 MB`.
-- **Client upload check**: same limit enforced in web `handleUpload()` + Android `FileRepository.uploadFile()`.
-- **Storage bar**: premium users see `"X MB / 10 GB"` instead of `"X MB / 1 GB"`.
-
-#### bKash Payment Flow
-
-1. User clicks "Upgrade" in sidebar → subscription page
-2. Page shows bKash merchant number + "Send money" instructions
-3. User sends money to bKash number, gets TX ID
-4. User enters TX ID + amount in form
-5. Form writes `/subscriptions/{userId}` doc with `status: "pending"`, `txId`, `txNumber`, `txAmount`
-6. Admin checks bKash app → verifies TX ID → updates doc to `status: "active"`, sets `expiresAt`
-7. On next upload/refresh, Work picks up subscription status and applies limits
-
-#### Web
-
-- **Subscription page** (`subscribe.html` or modal in `dashboard.html`):
-  - Current plan badge (Free / Premium)
-  - Pricing card: "Premium - 150 BDT/month"
-  - bKash number display + instructions
-  - Form: bKash sender number, TX ID, amount
-  - Status: pending/active/expired display
-- **Dashboard sidebar**: "Free" / "Premium" badge below storage bar
-- **Storage bar**: `"X MB / 10 GB"` for premium users
-- **`loadStorageBar()`**: fetches `/subscriptions/{userId}` doc, adjusts display
-- **`handleUpload()`**: checks subscription before allowing >100 MB file
-
-#### Android
-
-- **Subscription screen**: same flow - pricing card, bKash info, TX form
-- **Sidebar**: plan badge
-- **Storage bar**: 10 GB cap for premium
-- **`uploadFile()`**: checks subscription before uploading >100 MB
-
-#### Worker
-
-- **`/api/upload-url`**: reads `/subscriptions/{userId}` doc from Firestore.
-  - No doc or `status != "active"` or expired → free tier cap (100 MB)
-  - Active premium → 500 MB cap
-- Uses existing `firestoreGet()` helper - no new deps.
-
-#### Cuts (YAGNI)
-
-- No auto-recurring billing (manual every month)
-- No Stripe/SSLCommerz integration - bKash only
-- No webhook - admin manually verifies via Firestore console
-- No refund flow
-- No trial period
-- No usage metering beyond storage bar
-
-#### Files Changed (estimate)
-
-| File | Change |
-|------|--------|
-| `workers/b2-proxy.js` | Read subscription doc in `/api/upload-url`, adjust file size cap |
-| `web/public/dashboard.html` | Plan badge, storage bar cap, upload limit check |
-| `web/public/subscribe.html` | New page: pricing, bKash info, TX form |
-| `DashboardViewModel.kt` | Plan-aware storage bar, upload cap |
-| `DashboardScreen.kt` | Plan badge in sidebar |
-| `FileRepository.kt` | Subscription check before upload |
-| `firestore.rules` | `/subscriptions/{userId}` - user read, admin write |
-| `firestore.indexes.json` | No new indexes needed |
-
-### Phase 30 - Access Page Redesign (Classroom Unlock)
-
-**OTP-style code entry**: Replaced single code input with 6 individual square boxes, large JetBrains Mono, auto-advance on keypress. Paste support (parses 6-char string). Enter or auto-submit when 6th char typed.
-
-**Dark mode**: CSS vars on `<html>` `.dark` class, toggle icon in nav, persisted in `localStorage`. Same palette as dashboard dark (`#1a1f2e` surfaces, `#212638` soft, `#f4f5f6` on-dark). Dark overlay for preview already works.
-
-**Visual overhaul:**
-- Code entry: centered hero layout, 6 OTP boxes with gap, navy border + subtle ring on focus, "Enter code" instruction above
-- File view: richer cards - 40px tinted file-type icons, larger name, size + download button, hover lift. Staggered fade-in on reveal
-- Transition: code entry fades out + slides up, file list slides in from bottom (CSS only, no JS animation lib)
-- "Enter a different code" link at bottom of file view
-- Background: subtle grid dots pattern via CSS radial-gradient on canvas
-- Preview overlay unchanged (works fine)
-
-**No changes to**: Worker endpoint `/api/code-files`, download proxy, preview logic. JS logic unchanged - only HTML structure + CSS.
-
-**Cuts (YAGNI):**
-- No teacher name / class name from code doc
-- No Android access page redesign
-- No new Worker endpoints
-
-**Files changed:**
-- `web/public/access.html` - full HTML restructure + dark mode + OTP boxes
-- `web/public/styles.css` - rebuilt via `npm run css`
-
-### Post-Subscription - Remaining Features
-
-- [ ] **Access code expiry picker**: 5/15/30/60 min TTL
-- [ ] **Student upload via code**: homework submission
-- [ ] **QR code for codes**: scan → open access page
-- [ ] **Android file preview**: double-tap inline preview
+See completed section above.
 
 ## What Was Tried & Failed
 

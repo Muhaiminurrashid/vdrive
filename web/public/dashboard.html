@@ -161,6 +161,21 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #uploadProgress { background:var(--color-hairline); border-radius:2px; overflow:hidden; margin-bottom:16px; padding:8px; }
 #uploadStatus { font-size:13px; color:var(--color-muted); margin-bottom:4px; }
 #uploadProgressFill { height:4px; background:var(--color-primary); border-radius:2px; transition:width .15s; }
+#sidebarPlan { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:12px; color:var(--color-muted); }
+#planBadge { font-size:11px; padding:2px 8px; border-radius:4px; background:var(--color-hairline); color:var(--color-body); }
+#planBadge.premium { background:var(--color-primary); color:var(--color-on-primary); }
+#upgradeLink { cursor:pointer; color:var(--color-primary); font-weight:500; }
+#upgradeLink:hover { text-decoration:underline; }
+#subscribeModal { display:none; position:fixed; inset:0; z-index:2000; justify-content:center; align-items:center; }
+#subscribeModal.show { display:flex; }
+#subscribeOverlay { position:absolute; inset:0; background:rgba(0,0,0,.4); }
+#subscribeCard { position:relative; background:var(--color-surface-card); border-radius:12px; padding:24px; max-width:400px; width:90%; z-index:1; }
+#subscribeCard h2 { margin:0 0 4px; font-size:20px; font-weight:600; color:var(--color-ink); }
+#subscribeCard .p { font-size:13px; color:var(--color-muted); margin:0 0 16px; line-height:1.4; }
+#subscribeCard label { display:block; font-size:13px; color:var(--color-body); margin-bottom:4px; }
+#subscribeCard input { width:100%; padding:10px 12px; border:1px solid var(--color-hairline); border-radius:8px; background:var(--color-surface-soft); color:var(--color-ink); font-size:14px; margin-bottom:12px; box-sizing:border-box; outline:none; }
+#subscribeCard input:focus { border-color:var(--color-primary); }
+.copyable { cursor:pointer; color:var(--color-primary); font-weight:600; }
 </style>
 </head>
 <body>
@@ -186,6 +201,10 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
     <div id="sidebarBottom">
       <div id="sidebarStorageBar"><div id="sidebarStorageFill" style="width:0%"></div></div>
       <div id="sidebarStorageText">0 B / 1 GB</div>
+      <div id="sidebarPlan">
+        <span id="planBadge">Free</span>
+        <span id="upgradeLink">Upgrade</span>
+      </div>
       <div id="sidebarDarkToggle">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         <span>Dark mode</span>
@@ -300,6 +319,21 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
   </div>
 </div>
 
+<!-- ponytail: subscribe modal, no new page needed -->
+<div id="subscribeModal">
+  <div id="subscribeOverlay"></div>
+  <div id="subscribeCard">
+    <h2>Upgrade to Premium</h2>
+    <p class="p">Send <strong>99 BDT</strong> to bKash <strong class="copyable" onclick="copyBkash()">01605091313</strong> (click to copy), then enter the TX ID below. Admin will verify within 24 hours.</p>
+    <label>bKash TX ID</label>
+    <input id="subTxId" type="text" placeholder="Transaction ID from bKash app">
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="subCancelBtn" style="flex:1;padding:10px;border:1px solid var(--color-hairline);border-radius:8px;background:transparent;color:var(--color-body);cursor:pointer;font-size:14px">Cancel</button>
+      <button id="subSubmitBtn" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--color-primary);color:var(--color-on-primary);cursor:pointer;font-size:14px;font-weight:500">Submit</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
@@ -334,6 +368,22 @@ window.fileCursor = null
 window.hasMoreFiles = false
 window.currentPageFiles = []
 window.currentSubFolders = []
+window.currentSub = null
+
+function showSubscribe() { $('subscribeModal').classList.add('show') }
+function hideSubscribe() { $('subscribeModal').classList.remove('show') }
+function copyBkash() { navigator.clipboard.writeText('01605091313'); $('subCancelBtn').textContent = 'Copied!'; setTimeout(() => $('subCancelBtn').textContent = 'Cancel', 2000) }
+async function submitSubscription() {
+  const txId = $('subTxId').value.trim()
+  if (!txId) return
+  try {
+    await db.collection('subscriptions').doc(window.currentUser.uid).set({
+      plan: 'premium', status: 'pending', txId, txAmount: 99,
+      userId: window.currentUser.uid, createdAt: firebase.firestore.Timestamp.now()
+    })
+    hideSubscribe(); loadStorageBar()
+  } catch(e) { alert(userErrorMessage(e)) }
+}
 
 // --- Auth ---
 auth.onAuthStateChanged(user => {
@@ -365,6 +415,10 @@ $('viewGridBtn').onclick = () => toggleView('grid')
 $('hamburger').onclick = toggleSidebar
 $('sidebarOverlay').onclick = toggleSidebar
 $('sidebarDarkToggle').onclick = toggleDark
+$('upgradeLink').onclick = showSubscribe
+$('subCancelBtn').onclick = hideSubscribe
+$('subSubmitBtn').onclick = submitSubscription
+$('subscribeOverlay').onclick = hideSubscribe
 $('panelClose').onclick = closeInfoPanel
 $('panelOverlay').onclick = closeInfoPanel
 $('copyBtn').onclick = copyCode
@@ -481,11 +535,22 @@ async function loadFolders() {
 async function loadStorageBar() {
   if (!window.currentUser) return
   try {
-    const snap = await db.collection('files').where('userId', '==', window.currentUser.uid).get()
+    const [snap, subSnap] = await Promise.all([
+      db.collection('files').where('userId', '==', window.currentUser.uid).get(),
+      db.collection('subscriptions').doc(window.currentUser.uid).get()
+    ])
     const totalBytes = snap.docs.reduce((s, d) => s + (d.data().size||0), 0)
-    const pct = Math.min(100, (totalBytes / 1_000_000_000) * 100)
+    const subData = subSnap.exists ? subSnap.data() : null
+    const isPremium = subData && subData.status === 'active' && (subData.expiresAt?.toMillis() || 0) > Date.now()
+    window.currentSub = isPremium ? subData : null
+    const cap = isPremium ? 10_000_000_000 : 1_000_000_000
+    const pct = Math.min(100, (totalBytes / cap) * 100)
     $('sidebarStorageFill').style.width = pct + '%'
-    $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / 1 GB'
+    $('sidebarStorageText').textContent = formatBytes(totalBytes) + ' / ' + (isPremium ? '10 GB' : '1 GB')
+    const badge = $('planBadge')
+    badge.textContent = isPremium ? 'Premium' : 'Free'
+    badge.className = isPremium ? 'premium' : ''
+    $('upgradeLink').style.display = isPremium ? 'none' : ''
   } catch(e) { console.warn('Storage bar:', e.message) }
 }
 
@@ -567,7 +632,9 @@ async function moveFileToFolder(fileId) {
 async function handleUpload(inputOrFile) {
   const file = inputOrFile.files ? inputOrFile.files[0] : inputOrFile
   if (!file || !window.currentUser) return
-  if (file.size > 100*1024*1024) { alert('File too large (max 100 MB)'); return }
+  const isPremium = window.currentSub?.status === 'active' && (window.currentSub?.expiresAt?.toMillis() || 0) > Date.now()
+  const maxSize = isPremium ? 500*1024*1024 : 100*1024*1024
+  if (file.size > maxSize) { alert('File too large (max ' + maxSize/(1024*1024) + ' MB)'); return }
   $('newBtn').innerHTML = 'Uploading...'
   showProgress('Uploading...')
   try {
@@ -714,7 +781,7 @@ function userErrorMessage(e) {
   if (m.includes('permission')) return 'Permission denied'
   if (m.includes('unavailable') || m.includes('unauthenticated')) return 'Service unavailable. Try again.'
   if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return 'Network error. Check your connection.'
-  if (m.includes('too large')) return 'File too large (max 100 MB)'
+  if (m.includes('too large')) return e.message || 'File too large'
   if (m.includes('delete failed')) return 'Delete failed'
   return 'Something went wrong'
 }

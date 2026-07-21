@@ -77,6 +77,14 @@ class DashboardViewModelTest {
             every { doc.data } returns data
             doc
         }
+
+        // ponytail: subscription doc mock (no sub = free tier)
+        val subDocRef = mockk<com.google.firebase.firestore.DocumentReference>()
+        val subDocSnap = mockk<com.google.firebase.firestore.DocumentSnapshot>(relaxed = true)
+        every { firestore.collection("subscriptions") } returns mockk {
+            every { document(any()) } returns subDocRef
+        }
+        coEvery { subDocRef.get() } returns Tasks.forResult(subDocSnap)
     }
 
     @Test
@@ -143,7 +151,7 @@ class DashboardViewModelTest {
     @Test
     fun `uploadFile delegates to repository and reloads`() = runTest(testDispatcher) {
         mockFirestoreSnapshot(emptyList())
-        coEvery { fileRepository.uploadFile(any(), any(), any()) } returns "newFileId"
+        coEvery { fileRepository.uploadFile(any(), any(), any(), any(), any(), any()) } returns "newFileId"
         viewModel = DashboardViewModel(auth, firestore, fileRepository)
         advanceUntilIdle()
         assertEquals(0, viewModel.state.value.fileCount)

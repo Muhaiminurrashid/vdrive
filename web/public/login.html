@@ -71,6 +71,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyC4LhzNvivwitunV6qJp3-Pb6UjyDXPoLU",
@@ -82,6 +83,7 @@ const firebaseConfig = {
 }
 firebase.initializeApp(firebaseConfig)
 const auth = firebase.auth()
+const firestore = firebase.firestore()
 let isRegister = false
 
 function authErrorMessage(e) {
@@ -115,13 +117,29 @@ function showError(msg) {
   else { el.classList.add('hidden'); }
 }
 
+async function ensureUserDoc(user) {
+  const ref = firestore.doc(`users/${user.uid}`)
+  const doc = await ref.get()
+  if (!doc.exists) {
+    await ref.set({
+      email: user.email,
+      displayName: user.displayName || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  }
+}
+
 async function handleAuth() {
   const email = document.getElementById('emailInput').value
   const password = document.getElementById('passwordInput').value
   showError('')
   try {
-    if (isRegister) await auth.createUserWithEmailAndPassword(email, password)
-    else await auth.signInWithEmailAndPassword(email, password)
+    if (isRegister) {
+      await auth.createUserWithEmailAndPassword(email, password)
+      await ensureUserDoc(auth.currentUser)
+    } else {
+      await auth.signInWithEmailAndPassword(email, password)
+    }
     window.location.href = '/dashboard.html'
   } catch (e) { showError(authErrorMessage(e)) }
 }
@@ -130,6 +148,7 @@ async function handleGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider()
   try {
     await auth.signInWithPopup(provider)
+    await ensureUserDoc(auth.currentUser)
     window.location.href = '/dashboard.html'
   } catch (e) { showError(authErrorMessage(e)) }
 }

@@ -3,6 +3,7 @@ package com.vdrive.app.data.firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -22,13 +23,28 @@ class FirebaseService @Inject constructor(
 
     suspend fun signUp(email: String, password: String): FirebaseUser {
         val result = auth.createUserWithEmailAndPassword(email, password).await()
-        return result.user ?: throw Exception("Sign up failed")
+        val user = result.user ?: throw Exception("Sign up failed")
+        ensureUserDoc(user)
+        return user
     }
 
     suspend fun signInWithGoogle(idToken: String): FirebaseUser {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         val result = auth.signInWithCredential(credential).await()
-        return result.user ?: throw Exception("Google sign in failed")
+        val user = result.user ?: throw Exception("Google sign in failed")
+        ensureUserDoc(user)
+        return user
+    }
+
+    private suspend fun ensureUserDoc(user: FirebaseUser) {
+        val ref = firestore.collection("users").document(user.uid)
+        if (!ref.get().await().exists()) {
+            ref.set(mapOf(
+                "email" to (user.email ?: ""),
+                "displayName" to (user.displayName ?: ""),
+                "createdAt" to FieldValue.serverTimestamp()
+            )).await()
+        }
     }
 
     fun signOut() {

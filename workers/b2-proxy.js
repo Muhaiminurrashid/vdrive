@@ -156,9 +156,14 @@ async function handleGetUploadUrl(request, env) {
   const userId = url.searchParams.get('userId')
   const contentLength = parseInt(url.searchParams.get('contentLength') || '0')
   if (!userId) return json({ error: 'userId required' }, 400)
-  if (!contentLength || contentLength > 100 * 1024 * 1024) return json({ error: 'File too large (max 100 MB)' }, 400)
-  // ponytail: userId validated as non-empty string. Full Firebase Auth token verification would need JWKS fetch.
-  // User doc creation (users/{userId}) not implemented yet - verify exists when that ships.
+  // ponytail: read subscription doc for tier cap, fail-soft to free on error
+  let maxSize = 100 * 1024 * 1024
+  try {
+    const sub = await firestoreGet(env, `subscriptions/${userId}`)
+    if (sub && sub.status === 'active' && sub.expiresAt && new Date(sub.expiresAt) > new Date())
+      maxSize = 500 * 1024 * 1024
+  } catch (_) { /* fail-soft: default free tier */ }
+  if (!contentLength || contentLength > maxSize) return json({ error: `File too large (max ${maxSize / (1024*1024)} MB)` }, 400)
 
   const auth = await b2Authorize(env)
   const apiUrl = auth.apiInfo?.storageApi?.apiUrl

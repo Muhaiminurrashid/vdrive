@@ -67,6 +67,7 @@ data class DashboardUiState(
     val error: String? = null,
     val uploadProgress: Float? = null,
     val actionLabel: String? = null,
+    val isPremium: Boolean = false,
 )
 
 // ponytail: set after deploying Worker
@@ -164,9 +165,14 @@ class DashboardViewModel @Inject constructor(
                 snap.documents.forEach { doc ->
                     doc.data?.let { totalBytes += (it["size"] as? Number)?.toLong() ?: 0L }
                 }
+                val subDoc = firestore.collection("subscriptions").document(user.uid).get().await()
+                val expiresAt = subDoc.getTimestamp("expiresAt")?.toDate()?.time ?: 0L
+                val isPremium = subDoc.exists() && subDoc.getString("status") == "active" && expiresAt > System.currentTimeMillis()
+                val cap = if (isPremium) 10_000_000_000f else 1_000_000_000f
                 _state.value = _state.value.copy(
-                    storagePercent = (totalBytes / 1_000_000_000f).coerceAtMost(1f),
-                    totalStorageBytes = totalBytes
+                    storagePercent = (totalBytes / cap).coerceAtMost(1f),
+                    totalStorageBytes = totalBytes,
+                    isPremium = isPremium
                 )
             } catch (_: Exception) { }
         }
@@ -297,7 +303,10 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, uploadProgress = 0f, actionLabel = "Uploading...")
             try {
-                fileRepository.uploadFile(user.uid, uri, contentResolver, folderId) { progress ->
+                val subDoc = firestore.collection("subscriptions").document(user.uid).get().await()
+                val expiresAt = subDoc.getTimestamp("expiresAt")?.toDate()?.time ?: 0L
+                val isPremium = subDoc.exists() && subDoc.getString("status") == "active" && expiresAt > System.currentTimeMillis()
+                fileRepository.uploadFile(user.uid, uri, contentResolver, isPremium, folderId) { progress ->
                     _state.value = _state.value.copy(uploadProgress = progress)
                 }
                 loadContents(); loadStorageBar()
@@ -490,6 +499,23 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun submitSubscription(txId: String) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                firestore.collection("subscriptions").document(user.uid).set(mapOf(
+                    "plan" to "premium",
+                    "status" to "pending",
+                    "txId" to txId,
+                    "txAmount" to 99,
+                    "userId" to user.uid,
+                    "createdAt" to FieldValue.serverTimestamp()
+                )).await()
+                _state.value = _state.value.copy(error = null)
+            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
+        }
+    }
+
     fun changePassword(newPassword: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             try {
@@ -516,7 +542,7 @@ class DashboardViewModel @Inject constructor(
     // ponytail: maps exception to user-friendly message
     private fun userMessage(e: Exception): String {
         val msg = e.message ?: return "Something went wrong"
-        if (msg == "File too large (max 100 MB)") return msg
+        if (msg.contains("File too large")) return msg
         if (e is FirebaseFirestoreException) {
             return when (e.code) {
                 FirebaseFirestoreException.Code.PERMISSION_DENIED -> "Permission denied"

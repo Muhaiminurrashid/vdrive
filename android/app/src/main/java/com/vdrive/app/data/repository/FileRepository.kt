@@ -29,6 +29,7 @@ class FileRepository @Inject constructor(
 
     suspend fun uploadFile(
         userId: String, uri: Uri, contentResolver: ContentResolver,
+        isPremium: Boolean = false,
         folderId: String? = null,
         onProgress: ((Float) -> Unit)? = null
     ): String? = withContext(Dispatchers.IO) {
@@ -37,8 +38,8 @@ class FileRepository @Inject constructor(
             val inputStream = contentResolver.openInputStream(uri) ?: return@withContext null
             val bytes = inputStream.readBytes()
             inputStream.close()
-            // ponytail: 100 MB limit, B2 has no real cap but keeps free tier sane
-            if (bytes.size > 100L * 1024 * 1024) throw Exception("File too large (max 100 MB)")
+            val maxSize = if (isPremium) 500L * 1024 * 1024 else 100L * 1024 * 1024
+            if (bytes.size > maxSize) throw Exception("File too large (max ${maxSize / (1024*1024)} MB)")
 
             // Get B2 upload URL from Worker
             val uploadUrlRes = client.newCall(

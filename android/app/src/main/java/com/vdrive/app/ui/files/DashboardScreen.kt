@@ -56,6 +56,7 @@ fun DashboardScreen(
     var showMoveFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
     var showRenameFolderDialog by remember { mutableStateOf<Folder?>(null) }
     var showRenameFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
+    var showSubscribeDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
     var fabExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -135,6 +136,16 @@ fun DashboardScreen(
         )
     }
 
+    if (showSubscribeDialog) {
+        SubscribeDialog(
+            onDismiss = { showSubscribeDialog = false },
+            onSubmit = { txId ->
+                viewModel.submitSubscription(txId)
+                showSubscribeDialog = false
+            }
+        )
+    }
+
                     state.generatedCode?.let { code ->
                         CodeBottomSheet(
                             code = code,
@@ -167,9 +178,26 @@ fun DashboardScreen(
                 DrawerStorageIndicator(
                     percent = state.storagePercent,
                     totalBytes = state.totalStorageBytes,
+                    isPremium = state.isPremium,
                     isDarkTheme = isDarkTheme,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
+                Row(
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (state.isPremium) "Premium" else "Free",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isDarkTheme) DarkMuted else Muted,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    if (!state.isPremium) {
+                        TextButton(onClick = { showSubscribeDialog = true }) {
+                            Text("Upgrade", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 NavigationDrawerItem(
                     icon = { Icon(if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null) },
@@ -919,14 +947,16 @@ private fun StorageCard(
 private fun DrawerStorageIndicator(
     percent: Float,
     totalBytes: Long,
+    isPremium: Boolean = false,
     isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val textColor = if (isDarkTheme) DarkMuted else Muted
     val trackColor = if (isDarkTheme) DarkHairline else Hairline
+    val cap = if (isPremium) "10 GB" else "1 GB"
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "${totalBytes.formatBytes()} of 1 GB used",
+            text = "${totalBytes.formatBytes()} of $cap used",
             style = MaterialTheme.typography.bodySmall,
             color = textColor
         )
@@ -1094,6 +1124,40 @@ private fun CodeBottomSheet(
             }
         }
     }
+}
+
+@Composable
+private fun SubscribeDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (txId: String) -> Unit,
+) {
+    var txId by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Upgrade to Premium") },
+        text = {
+            Column {
+                Text("Send 99 BDT to bKash, then enter TX ID below:", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("01605091313", fontFamily = FontFamily.Monospace, color = Primary, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = {
+                        val c = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        c.setPrimaryClip(ClipData.newPlainText("bKash", "01605091313"))
+                        Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT).show()
+                    }) { Icon(Icons.Default.ContentCopy, "Copy", tint = Primary) }
+                }
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(value = txId, onValueChange = { txId = it }, label = { Text("bKash TX ID") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(txId) }, enabled = txId.isNotBlank()) { Text("Submit") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 // ponytail: icon map, no custom icons
