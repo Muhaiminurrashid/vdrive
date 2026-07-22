@@ -400,6 +400,26 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Deployed**: Worker version `9d3608f2`. Firebase Hosting.
 - **Pushed**: GitHub main (`4a08308`).
 
+### Phase 37 - Web UI Visual Hierarchy + Design Polish
+- **Folder vs file differentiation**: folders get navy 3px accent bar (::before pseudo-element), 56px height (vs 48px for files), navy-tinted background `color-mix(in srgb, var(--color-primary) 2%, transparent)`, navy icon circle, `→` chevron that slides right on hover. Files get file-type colored accent bar + icon circle (per DESIGN.md palette — PDF rust, PPT amber, DOC sage, video lavender, ZIP slate), two-line name layout (semi-bold name + muted size/type below).
+- **Grid cards**: 4px top color strip via `::before` (navy for folders, file-type color for files), `translateY(-2px)` + soft shadow on hover, 40px icon with `scale(1.08)` on hover, staggered `fadeSlideUp` animation (CSS nth-child delay).
+- **CSS-only micro-interactions**: row hover `background` + accent bar `scaleY(1.15)` at 150ms, breadcrumb chevrons `rotate(10deg)` on hover, storage bar fill `0.6s ease` (was 0.3s), page `fadeIn` body animation, grid card stagger reveals.
+- **Canvas texture**: `grid-dots` class (24px radial-gradient at 0.5px, `var(--color-hairline)` color) applied to all page bodies — ultra-subtle depth without shadow per DESIGN.md rule.
+- **Empty state**: subfolder-aware SVG (folder icon when in subfolder, file icon at root) + copy ("This folder is empty" / "No files yet") swapped dynamically in `renderCurrentView()`.
+- **Font-serif removed**: `font-serif` class replaced with `font-medium` (Inter 500) across all 12 HTML pages — fixes DESIGN.md spec violation (Inter only, no serif).
+- **Zero new dependencies. 12 files changed, +141 -54.**
+- **Deployed**: Firebase Hosting.
+
+### Phase 38 - File Type Badge UI + Dark Mode Palette Fix
+- **List view**: replaced icon circles with colored text badges (PDF, PPT, DOC, VIDEO, etc.) per file type color palette. Single-line layout: `[badge] [name] [size] [3-dot]`. Folders keep original icon-circle format.
+- **Grid view**: badges replace icon circles for both files and folders.
+- **Info panel**: shows badge label instead of SVG icon.
+- **Access page**: same badge treatment — file cards show colored text badges instead of icon circles.
+- **Dark mode palette**: `--color-primary` changed from `#ffffff` (washed out) to `#6B8FC4` (lighter navy). Canvas `#0d1117`, cards `#151922`. Navy brand returns in dark mode — buttons, breadcrumb, storage fill, nav items all show navy instead of white. Applied to both `dashboard.html` and `access.html`.
+- **Font size bump**: badge 12px, file name 15px, size 14px (were 10/13/12).
+- **Zero new dependencies. 2 files changed.**
+- **Deployed**: Firebase Hosting.
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.

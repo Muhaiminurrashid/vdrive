@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Classroom Access - Virtual Pendrive</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@350..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,22 +13,22 @@
 @keyframes spin { to { transform: rotate(360deg) } }
 @keyframes fadeSlideUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
 html.dark {
-  --color-canvas: #0f1117;
-  --color-surface-card: #1a1d27;
-  --color-surface-soft: #262933;
-  --color-surface-dark: #0a0c12;
+  --color-canvas: #0d1117;
+  --color-surface-card: #151922;
+  --color-surface-soft: #1c2130;
+  --color-surface-dark: #0a0d14;
   --color-ink: #e8eaed;
-  --color-body: #bdc1c6;
-  --color-muted: #9aa0a6;
+  --color-body: #c9cdd3;
+  --color-muted: #9aa0a8;
   --color-muted-soft: #7a8088;
-  --color-primary: #ffffff;
-  --color-primary-active: #e0e0e0;
-  --color-on-primary: #1c1b1e;
-  --color-hairline: #303440;
+  --color-primary: #6B8FC4;
+  --color-primary-active: #5A7DB0;
+  --color-on-primary: #ffffff;
+  --color-hairline: #2b2f3b;
   --color-on-dark: #e8eaed;
-  --color-on-dark-soft: #9aa0a6;
+  --color-on-dark-soft: #9aa0a8;
   --color-primary-disabled: var(--color-hairline);
-  --color-hairline-soft: #262933;
+  --color-hairline-soft: #222736;
 }
 
 .otp-wrap { display:flex; gap:8px; justify-content:center; }
@@ -93,7 +94,7 @@ html.dark .file-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.25); }
         <div style="text-align:center;margin-bottom:28px">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <div style="font-size:14px;font-weight:500;color:var(--color-ink)">Enter code</div>
-          <div style="font-size:13px;color:var(--color-muted);margin-top:4px">6 characters from your teacher</div>
+          <div style="font-size:13px;color:var(--color-muted);margin-top:4px">Access shared files</div>
         </div>
         <div id="errorBox" style="display:none;background:rgba(198,69,69,.08);color:var(--color-error);padding:8px 16px;border-radius:8px;font-size:13px;margin-bottom:20px"></div>
         <div class="otp-wrap" id="otpContainer">
@@ -180,16 +181,26 @@ function showCodeEntry() {
 function fileIconData(name) {
   const ext = name.split('.').pop().toLowerCase()
   const map = {
-    pdf: { bg:'#C27A5C', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
-    ppt: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
-    pptx: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
-    doc: { bg:'#7EB89E', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
-    docx: { bg:'#7EB89E', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
-    mp4: { bg:'#9B7FC8', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>' },
-    xlsx: { bg:'#D4A373', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 12h8M8 16h5"/></svg>' },
-    zip: { bg:'#6c6a64', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>' }
+    pdf: { bg:'#C27A5C' },
+    ppt: { bg:'#D4A373' },
+    pptx: { bg:'#D4A373' },
+    doc: { bg:'#7EB89E' },
+    docx: { bg:'#7EB89E' },
+    mp4: { bg:'#9B7FC8' },
+    xlsx: { bg:'#D4A373' },
+    zip: { bg:'#6c6a64' }
   }
-  return map[ext] || { bg:'#8e8b82', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' }
+  return map[ext] || { bg:'#8e8b82' }
+}
+
+function fileTypeLabel(name) {
+  const ext = name.split('.').pop().toLowerCase()
+  const map = {
+    pdf:'PDF', pptx:'PPT', ppt:'PPT', docx:'DOC', doc:'DOC',
+    mp4:'VIDEO', mp3:'AUDIO', xlsx:'XLS', zip:'ZIP',
+    jpg:'IMG', jpeg:'IMG', png:'IMG', gif:'IMG', webp:'IMG', svg:'IMG'
+  }
+  return map[ext] || 'FILE'
 }
 
 // ponytail: OTP auto-advance, backspace, paste, auto-submit
@@ -247,12 +258,12 @@ async function handleAccess() {
     } else {
       document.getElementById('fileCount').textContent = filtered.length + ' file' + (filtered.length > 1 ? 's' : '')
       filtered.forEach((f, fi) => {
-        const icon = fileIconData(f.name)
+        const color = fileIconData(f.name).bg
         const card = document.createElement('div')
         card.className = 'file-card'
         card.style.cssText = 'display:flex;align-items:center;gap:14px;background:var(--color-surface-card);border:1px solid var(--color-hairline);border-radius:12px;padding:12px 16px;margin-bottom:10px'
         card.onclick = function() { previewFile(f) }
-        card.innerHTML = '<div style="width:40px;height:40px;border-radius:10px;background:' + icon.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">' + icon.svg + '</div>' +
+        card.innerHTML = '<span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:5px;text-transform:uppercase;letter-spacing:0.5px;color:' + color + ';background:' + color + '14;flex-shrink:0">' + fileTypeLabel(f.name) + '</span>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:14px;font-weight:500;color:var(--color-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + f.name + '</div>' +
             '<div style="font-size:12px;color:var(--color-muted);margin-top:2px">' + formatBytes(f.size) + '</div>' +

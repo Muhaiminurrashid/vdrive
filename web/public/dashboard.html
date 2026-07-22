@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Virtual Pendrive</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -11,25 +12,25 @@
 <style>
 html { --sidebar-w: 240px; }
 html.dark {
-  --color-canvas: #0f1117;
-  --color-surface-card: #1a1d27;
-  --color-surface-soft: #262933;
-  --color-surface-dark: #0a0c12;
+  --color-canvas: #0d1117;
+  --color-surface-card: #151922;
+  --color-surface-soft: #1c2130;
+  --color-surface-dark: #0a0d14;
   --color-ink: #e8eaed;
-  --color-body: #bdc1c6;
-  --color-muted: #9aa0a6;
+  --color-body: #c9cdd3;
+  --color-muted: #9aa0a8;
   --color-muted-soft: #7a8088;
-  --color-primary: #ffffff;
-  --color-primary-active: #e0e0e0;
-  --color-on-primary: #1c1b1e;
-  --color-hairline: #303440;
+  --color-primary: #6B8FC4;
+  --color-primary-active: #5A7DB0;
+  --color-on-primary: #ffffff;
+  --color-hairline: #2b2f3b;
   --color-on-dark: #e8eaed;
-  --color-on-dark-soft: #9aa0a6;
+  --color-on-dark-soft: #9aa0a8;
   --color-primary-disabled: var(--color-hairline);
-  --color-hairline-soft: #262933;
+  --color-hairline-soft: #222736;
 }
 
-body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); color:var(--color-ink); }
+body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); color:var(--color-ink); animation:fadeIn .3s ease; }
 #app { display:flex; min-height:100vh; }
 #sidebar { width:var(--sidebar-w); min-width:200px; max-width:400px; background:var(--color-surface-card); border-right:1px solid var(--color-hairline); display:flex; flex-direction:column; flex-shrink:0; position:relative; }
 #resizeHandle { position:absolute; right:-3px; top:0; bottom:0; width:6px; cursor:col-resize; z-index:10; }
@@ -40,7 +41,8 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #breadcrumb .seg { font-size:20px; font-weight:500; cursor:pointer; white-space:nowrap; }
 #breadcrumb .seg:hover:not(.active) { color:var(--color-primary); }
 #breadcrumb .seg.active { cursor:default; }
-.sep { font-size:18px; color:var(--color-muted-soft); margin:0 2px; user-select:none; }
+.sep { font-size:18px; color:var(--color-muted-soft); margin:0 2px; user-select:none; display:inline-block; transition:transform .15s; }
+#breadcrumb:hover .sep { transform:rotate(10deg); }
 #sidebarBrand { display:flex; align-items:center; gap:8px; padding:16px; font-size:15px; font-weight:600; color:var(--color-primary); border-bottom:1px solid var(--color-hairline); }
 #newBtn { margin:12px 16px; padding:0 16px; height:40px; background:var(--color-primary); color:var(--color-on-primary); border:none; border-radius:20px; font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap; }
 #newBtn:hover { background:var(--color-primary-active); }
@@ -49,7 +51,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .navItem.active { background:var(--color-surface-soft); color:var(--color-primary); }
 #sidebarBottom { padding:12px 16px; border-top:1px solid var(--color-hairline); }
 #sidebarStorageBar { height:4px; background:var(--color-hairline); border-radius:2px; overflow:hidden; margin-bottom:4px; }
-#sidebarStorageFill { height:100%; background:var(--color-primary); border-radius:2px; transition:width .3s; }
+#sidebarStorageFill { height:100%; background:var(--color-primary); border-radius:2px; transition:width .6s ease; }
 #sidebarStorageText { font-size:11px; color:var(--color-muted-soft); }
 #sidebarDarkToggle { display:flex; align-items:center; gap:8px; padding:8px 0; font-size:13px; color:var(--color-muted); cursor:pointer; }
 #sidebarDarkToggle:hover { color:var(--color-ink); }
@@ -71,26 +73,40 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #codeDisplay:not(.show) { display:none; }
 .hidden { display:none !important; }
 #codeDisplay.show { display:block !important; }
-/* File list */
-.file-row { display:flex; align-items:center; padding:0 16px; height:48px; border-radius:8px; cursor:default; gap:12px; }
+/* File list — single-line: badge → name → size → menu */
+.file-row { display:flex; align-items:center; padding:0 16px; height:44px; border-radius:8px; cursor:default; gap:12px; transition:background .15s; }
 .file-row:hover { background:var(--color-surface-soft); }
-.file-row.isFolder { cursor:pointer; }
-.file-icon { width:20px; height:20px; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.file-icon svg { width:18px; height:18px; }
-.file-name { font-size:13px; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.file-size { font-size:12px; color:var(--color-muted); width:80px; text-align:right; flex-shrink:0; }
-.file-folder { font-size:12px; color:var(--color-muted-soft); width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
-.file-menu { width:32px; height:32px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.file-row.isFolder { height:56px; cursor:pointer; background:color-mix(in srgb, var(--color-primary) 2%, transparent); }
+.file-row.isFolder:hover { background:color-mix(in srgb, var(--color-primary) 5%, transparent); }
+.file-icon-circle { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.file-row.isFolder .file-icon-circle { background:color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.file-icon-circle svg { width:18px; height:18px; fill:var(--color-primary); stroke:none; }
+.file-type-badge { font-size:12px; font-weight:700; padding:4px 10px; border-radius:5px; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; min-width:48px; text-align:center; }
+.file-name { font-size:15px; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-size { font-size:14px; color:var(--color-muted); flex-shrink:0; margin-right:4px; }
+.file-chevron { width:20px; height:20px; flex-shrink:0; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; transition:transform .15s; }
+.file-row.isFolder:hover .file-chevron { transform:translateX(3px); }
+.file-menu { width:32px; height:32px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s,color .15s; }
 .file-menu:hover { background:var(--color-surface-soft); color:var(--color-ink); }
 /* Grid */
 #grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
-.grid-card { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:10px; padding:16px 12px 12px; cursor:pointer; position:relative; }
-.grid-card:hover { border-color:var(--color-primary); }
-.grid-card-icon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
-.grid-card-icon svg { width:36px; height:36px; }
-.grid-card-name { font-size:12px; font-weight:500; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.grid-card-size { font-size:11px; color:var(--color-muted); text-align:center; }
-.grid-card-menu { position:absolute; bottom:8px; right:8px; width:28px; height:28px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; }
+#grid > * { animation:fadeSlideUp .35s ease backwards; }
+#grid > *:nth-child(1) { animation-delay:0s; }
+#grid > *:nth-child(2) { animation-delay:.04s; }
+#grid > *:nth-child(3) { animation-delay:.08s; }
+#grid > *:nth-child(4) { animation-delay:.12s; }
+#grid > *:nth-child(5) { animation-delay:.16s; }
+#grid > *:nth-child(6) { animation-delay:.2s; }
+.grid-card { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:10px; padding:18px 12px 12px; cursor:pointer; position:relative; overflow:hidden; transition:transform .2s,box-shadow .2s; }
+.grid-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--accent-color,var(--color-hairline)); transition:background .2s; }
+.grid-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(20,20,19,.06); }
+.grid-card-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; transition:transform .2s; }
+.grid-card:hover .grid-card-icon { transform:scale(1.08); }
+.grid-card-icon svg { width:28px; height:28px; }
+.grid-card-badge { font-size:12px; font-weight:700; padding:8px 12px; border-radius:6px; text-transform:uppercase; letter-spacing:0.5px; text-align:center; margin:0 auto 12px; width:fit-content; min-width:56px; }
+.grid-card-name { font-size:12px; font-weight:600; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.grid-card-size { font-size:11px; color:var(--color-muted); text-align:center; margin-top:2px; }
+.grid-card-menu { position:absolute; bottom:8px; right:8px; width:28px; height:28px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; transition:background .15s; }
 .grid-card-menu:hover { background:var(--color-surface-soft); }
 /* Dot menu */
 #dotMenu { position:fixed; background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:8px; padding:4px 0; min-width:160px; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,.12); }
@@ -178,7 +194,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .copyable { cursor:pointer; color:var(--color-primary); font-weight:600; }
 </style>
 </head>
-<body>
+<body class="grid-dots">
 
 <div id="app">
   <aside id="sidebar">
@@ -264,9 +280,9 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
       <div id="grid" class="hidden"></div>
 
       <div id="emptyState" class="empty-state hidden">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-        <p>No files yet</p>
-        <p class="p2">Click <strong>+ New</strong> to upload or create a folder.</p>
+        <svg id="emptyIcon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-muted-soft);margin-bottom:8px"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <p id="emptyTitle" style="font-size:15px;font-weight:600;color:var(--color-ink);margin:0">No files yet</p>
+        <p id="emptySub" class="p2" style="margin-top:4px">Click <strong>+ New</strong> to upload or create a folder.</p>
       </div>
     </div>
   </div>
@@ -515,6 +531,16 @@ function formatBytes(bytes) {
 function getFileType(name) {
   const map = { pdf:'PDF', pptx:'PPT', ppt:'PPT', docx:'DOC', doc:'DOC', mp4:'Video', xlsx:'XLS', zip:'ZIP' }
   return map[name.split('.').pop().toLowerCase()] || 'FILE'
+}
+
+function fileTypeLabel(name) {
+  const ext = name.split('.').pop().toLowerCase()
+  const map = {
+    pdf:'PDF', pptx:'PPT', ppt:'PPT', docx:'DOC', doc:'DOC',
+    mp4:'VIDEO', mp3:'AUDIO', xlsx:'XLS', zip:'ZIP',
+    jpg:'IMG', jpeg:'IMG', png:'IMG', gif:'IMG', webp:'IMG', svg:'IMG'
+  }
+  return map[ext] || 'FILE'
 }
 
 function fileIconData(name) {
@@ -860,10 +886,10 @@ function showInfoPanel(type, id) {
   if (!f) return
   const isFolder = type === 'folder'
   const icon = isFolder
-    ? { bg: 'transparent', svg: '<svg viewBox="0 0 24 24" style="fill:var(--color-primary);stroke:none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>' }
-    : fileIconData(f.name)
-  $('panelIconWrap').style.background = icon.bg
-  $('panelIconWrap').innerHTML = icon.svg
+    ? { bg: 'transparent', label: 'FOLDER', labelColor: 'var(--color-primary)' }
+    : { bg: fileIconData(f.name).bg, label: fileTypeLabel(f.name), labelColor: fileIconData(f.name).bg }
+  $('panelIconWrap').style.background = isFolder ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : icon.bg + '14'
+  $('panelIconWrap').innerHTML = `<span style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${icon.labelColor}">${icon.label}</span>`
   $('panelName').textContent = f.name
 
   let meta = ''
@@ -1028,7 +1054,18 @@ function renderCurrentView() {
   if (foc) ct += ' · ' + foc + ' folder' + (foc !== 1 ? 's' : '')
   $('fileCount').textContent = ct
 
-  if (!fc && !foc) { empty.classList.remove('hidden'); list.classList.add('hidden'); grid.classList.add('hidden'); return }
+  if (!fc && !foc) {
+    empty.classList.remove('hidden'); list.classList.add('hidden'); grid.classList.add('hidden')
+    const inSub = window.folderPath.length > 0
+    $('emptyIcon').innerHTML = inSub
+      ? '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>'
+      : '<path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>'
+    $('emptyTitle').textContent = inSub ? 'This folder is empty' : 'No files yet'
+    $('emptySub').innerHTML = inSub
+      ? 'Click <strong>+ New</strong> to add files here.'
+      : 'Click <strong>+ New</strong> to upload or create a folder.'
+    return
+  }
   empty.classList.add('hidden')
 
   if (window.viewMode === 'grid') {
@@ -1040,34 +1077,33 @@ function renderCurrentView() {
   }
 }
 
-// ponytail: list view, Drive column layout
+// ponytail: list view, file type badge + single-line layout
 function renderList(container, folders, files) {
   folders.forEach(f => {
     const row = document.createElement('div')
     row.className = 'file-row isFolder'
     row.onclick = () => navigateToFolder(f.id)
-    row.innerHTML = `<div class="file-icon" style="background:transparent"><svg viewBox="0 0 24 24" style="fill:var(--color-primary);stroke:none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+    row.innerHTML =
+      `<div class="file-icon-circle"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
       <span class="file-name">${escapeHtml(f.name)}</span>
-      <span class="file-size"></span>
-      <span class="file-folder"></span>
+      <span class="file-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span>
       <button class="file-menu" data-id="${f.id}" data-type="folder"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
     row.querySelector('.file-menu').onclick = handleDotClick
     container.appendChild(row)
   })
   files.forEach(f => {
-    const icon = fileIconData(f.name)
+    const color = fileIconData(f.name).bg
     const row = document.createElement('div')
     row.className = 'file-row'
     row.ondblclick = () => previewFile(f)
-    row.innerHTML = `<div class="file-icon" style="background:${icon.bg}">${icon.svg}</div>
+    row.innerHTML =
+      `<span class="file-type-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</span>
       <span class="file-name">${escapeHtml(f.name)}</span>
       <span class="file-size">${formatBytes(f.size)}</span>
-      <span class="file-folder">${f.folderId ? escapeHtml(window.folderNames[f.folderId]||'') : ''}</span>
       <button class="file-menu" data-id="${f.id}" data-type="file"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
     row.querySelector('.file-menu').onclick = handleDotClick
     container.appendChild(row)
   })
-  // ponytail: show-more button, triggers next page
   if (window.hasMoreFiles) {
     const row = document.createElement('div')
     row.className = 'file-row'
@@ -1078,14 +1114,15 @@ function renderList(container, folders, files) {
   }
 }
 
-// ponytail: grid view, tinted icon cards
+// ponytail: grid view, badge labels instead of icon circles
 function renderGrid(container, folders, files) {
   folders.forEach(f => {
     const card = document.createElement('div')
     card.className = 'grid-card'
+    card.style.setProperty('--accent-color', 'var(--color-primary)')
     card.onclick = () => navigateToFolder(f.id)
-    card.innerHTML = `<div class="grid-card-icon" style="background:transparent">
-      <svg viewBox="0 0 24 24" style="fill:var(--color-primary);stroke:none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+    card.innerHTML =
+      `<div class="grid-card-badge" style="color:var(--color-primary);background:color-mix(in srgb, var(--color-primary) 10%, transparent)">FOLDER</div>
       <div class="grid-card-name">${escapeHtml(f.name)}</div>
       <div class="grid-card-size"></div>
       <button class="grid-card-menu" data-id="${f.id}" data-type="folder"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
@@ -1093,19 +1130,20 @@ function renderGrid(container, folders, files) {
     container.appendChild(card)
   })
   files.forEach(f => {
-    const icon = fileIconData(f.name)
+    const color = fileIconData(f.name).bg
     const card = document.createElement('div')
     card.className = 'grid-card'
+    card.style.setProperty('--accent-color', color)
     card.onclick = () => showInfoPanel('file', f.id)
     card.ondblclick = () => previewFile(f)
-    card.innerHTML = `<div class="grid-card-icon" style="background:${icon.bg}">${icon.svg}</div>
+    card.innerHTML =
+      `<div class="grid-card-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</div>
       <div class="grid-card-name">${escapeHtml(f.name)}</div>
       <div class="grid-card-size">${formatBytes(f.size)}</div>
       <button class="grid-card-menu" data-id="${f.id}" data-type="file"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
     card.querySelector('.grid-card-menu').onclick = handleDotClick
     container.appendChild(card)
   })
-  // ponytail: show-more button, triggers next page
   if (window.hasMoreFiles) {
     const card = document.createElement('div')
     card.className = 'grid-card'
