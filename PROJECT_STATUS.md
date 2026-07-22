@@ -458,6 +458,10 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [ ] Access code expiry picker: 5/15/30/60 min TTL
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
+- [ ] Multiple file upload (Web + Android): sequential upload of N files. Web: `multiple` attr on `<input>`, loop in `handleUpload()`. Android: `GetMultipleContents()` → loop URIs. Progress "File 2 of 5".
+- [ ] Multi-file download as ZIP: Worker endpoint streams multiple B2 files into a zip archive, client downloads single file. High value for classroom — student gets all materials at once.
+- [ ] Batch select + batch delete (Web + Android): checkbox multi-select, delete N files. Useful for teacher end-of-semester cleanup.
+- [ ] Trash / recycle bin: deleted files recoverable for 30 days. Low priority — B2 lifecycle (1-day version delete) already provides basic recovery.
 - [ ] SEO meta tags on all MPA pages
 - [x] Verify Android builds clean after FileTypeBadge refactor
 
