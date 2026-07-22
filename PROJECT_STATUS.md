@@ -410,15 +410,27 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Zero new dependencies. 12 files changed, +141 -54.**
 - **Deployed**: Firebase Hosting.
 
-### Phase 38 - File Type Badge UI + Dark Mode Palette Fix
-- **List view**: replaced icon circles with colored text badges (PDF, PPT, DOC, VIDEO, etc.) per file type color palette. Single-line layout: `[badge] [name] [size] [3-dot]`. Folders keep original icon-circle format.
-- **Grid view**: badges replace icon circles for both files and folders.
-- **Info panel**: shows badge label instead of SVG icon.
+### Phase 38 - File Type Badge UI (Web + Android) + Dark Mode Palette Fix
+- **Web list view**: replaced icon circles with colored text badges (PDF, PPT, DOC, VIDEO, etc.) per DESIGN.md file type palette. Single-line layout: `[badge] [name] [size] [3-dot]`. Folders keep original icon-circle format.
+- **Web grid view**: badges replace icon circles for both files and folders.
+- **Web info panel**: shows badge label instead of SVG icon.
 - **Access page**: same badge treatment — file cards show colored text badges instead of icon circles.
-- **Dark mode palette**: `--color-primary` changed from `#ffffff` (washed out) to `#6B8FC4` (lighter navy). Canvas `#0d1117`, cards `#151922`. Navy brand returns in dark mode — buttons, breadcrumb, storage fill, nav items all show navy instead of white. Applied to both `dashboard.html` and `access.html`.
-- **Font size bump**: badge 12px, file name 15px, size 14px (were 10/13/12).
-- **Zero new dependencies. 2 files changed.**
+- **Web dark mode palette**: `--color-primary` changed from `#ffffff` (washed out) to `#6B8FC4` (lighter navy). Canvas `#0d1117`, cards `#151922`. Navy brand returns in dark mode — buttons, breadcrumb, storage fill, nav items all show navy instead of white. Same fix on `access.html`.
+- **Web font size bump**: badge 12px, file name 15px, size 14px (were 10/13/12).
+- **Android FileCard**: replaced `getFileIcon()` Material icon + colored circle with `FileTypeBadge` composable (colored text in tinted surface). Removed `typeLabel` from subtitle (shown in badge now). Selected state renders badge with `Primary` background + white text.
+- **Android FileGridCard**: replaced icon circle with centered `FileTypeBadge`.
+- **Android Color.kt**: added `FilePdf`, `FilePpt`, `FileDoc`, `FileVideo`, `FileZip`, `FileDefault` colors matching web palette. Dark palette updated to `#0d1117`/`#151922`/`#1c2130` to match web.
+- **Code removed**: `getFileIcon()` function (7 Material icons no longer needed).
+- **Zero new dependencies** on either platform.
+- **3 files changed**: `web/public/dashboard.html`, `web/public/access.html`, `DashboardScreen.kt`, `Color.kt`
 - **Deployed**: Firebase Hosting.
+
+### Phase 39 - Android Build Fix: FileGridCard Dead Selection State
+- **Bug**: `FileGridCard` referenced `onToggleSelect`/`isSelected` params that didn't exist — build broke after Phase 38 badge refactor.
+- **Fix**: replaced orphaned `Surface` + `clickable` + `isSelected` color logic on badge with same `FileTypeBadge` composable used in `FileCard` (display-only). Grid badge no longer supports selection tap — consistent with list view behavior.
+- **Ponytail**: removed code instead of threading new params. Smaller diff, no feature loss.
+- **Changed files**: `DashboardScreen.kt` (-1 composable, -5 lines)
+- **Build verified**: `./gradlew app:assembleDebug` + `app:testDebugUnitTest` both pass.
 
 ## What Went Wrong
 
@@ -426,6 +438,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 2. **User existence check broke uploads**: Added `firestoreGet(env, 'users/${userId}')` to verify uploader exists. Crashed every upload because **no `/users/{userId}` docs are created anywhere in the app** - the data model specifies it but no signup/login code writes it. Removed the check, now validates userId is non-empty string only. **Fixed in Phase 32** — user docs now created on signup.
 3. **Hosting redeploy required**: Worker fix alone wasn't enough - old `dashboard.html` (without userId/contentLength params) was cached on Firebase Hosting. Had to `firebase deploy --only hosting` to push updated client code.
 4. **Pull-to-refresh M3 API unreliable**: tried `rememberPullToRefreshState()` + `PullToRefreshContainer` from Material3 (`compose-bom:2024.02.00`) — `isRefreshing` state transitions didn't trigger properly, indicator never dismissed after loading completed. M2 `pullRefresh` modifier + local `isRefreshing` flag worked reliably.
+5. **Plan mode blocked Android badge edits**: plan mode prevented file edits despite user approving plan. Required multiple retries to get into build mode. Workflow friction — user had to dismiss plan prompt 3× before edits applied.
 
 ### Lesson
 
@@ -446,6 +459,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
 - [ ] SEO meta tags on all MPA pages
+- [x] Verify Android builds clean after FileTypeBadge refactor
 
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms - use context menu instead
