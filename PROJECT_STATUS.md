@@ -390,6 +390,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Deployed**: Firebase Hosting.
 - **Pushed**: GitHub main.
 
+### Phase 36 - Access Code Brute-Force Rate Limit
+
+- **Per-code failed-attempt rate limit**: `checkCodeFailedRateLimit(code)` in Worker — same in-memory sliding window as IP/UID rate limiters, keyed by `cfail:${code.toUpperCase()}:${slot}`. Limits invalid/expired code lookups to 10/min per code.
+- **Successful lookups unlimited**: 50 students all entering correct code pass through with no limit.
+- **Defense in depth**: per-code rate closes targeted guessing against a known code (e.g. partial code from board). IP rate limit (30/min) still covers broad code spraying across different codes.
+- **Ponytail**: reuses existing `rateMap` + cleanup. No new data structures. No client changes — Worker-only enforcement.
+- **1 file changed**: `workers/b2-proxy.js` (+19 lines)
+- **Deployed**: Worker version `9d3608f2`. Firebase Hosting.
+- **Pushed**: GitHub main (`4a08308`).
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
@@ -461,11 +471,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 |---|--------------|------|
 | 9 | **`CORS: *` on Worker** | Replaced with `ALLOWED_ORIGINS` env var — restricted to `https://vdrive-64deb.web.app`. |
 
+### FIXED in Phase 36
+
+| # | Vulnerability | Fix |
+|---|--------------|------|
+| 7 | **Access code brute-force** (no rate limit on code entry) | Per-code failed-attempt rate limit (10/min) on `/api/code-files`, plus existing IP rate limit (30/min). |
+
 ### OPEN - MEDIUM
 
 | # | Vulnerability | Impact | Fix |
 |---|--------------|--------|-----|
-| 7 | **Access code 6-char limited alphabet** | `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (30 chars) × 6 = 729M combinations. No rate limit on code entry. Attacker can brute-force valid codes (15 min window). | Add rate limiting on Firestore accessCode reads (already rate-limited per-IP at Worker level for `/api/code-files`). |
 | 8 | **No file type validation on upload** | Any file type accepted (exe, html, js). If served from B2 with permissive content-type, could be used for malware delivery. | Check MIME type on upload, reject executable types. Serve downloads with `Content-Disposition: attachment`. |
 
 ## Fix ASAP (Step by Step) - DONE
