@@ -37,6 +37,16 @@ function checkRateLimit(request, path) {
   return count > max
 }
 
+// ponytail: per-code failed-attempt rate limit, stops targeted code guessing
+function checkCodeFailedRateLimit(code) {
+  if (!code) return false
+  const slot = Math.floor(Date.now() / RATE_WINDOW)
+  const key = `cfail:${code.toUpperCase()}:${slot}`
+  const count = (rateMap.get(key) || 0) + 1
+  rateMap.set(key, count)
+  return count > 10
+}
+
 // ponytail: per-UID rate limit alongside IP, prevents abuse behind shared IPs (schools)
 function checkUidRateLimit(uid, path) {
   if (!uid) return false
@@ -239,7 +249,10 @@ async function handleCodeFiles(request, env) {
   const codes = await firestoreQuery(env, 'accessCodes', [
     { field: 'code', op: 'EQUAL', type: 'stringValue', value: code },
   ])
-  if (codes.length === 0) return json({ error: 'Code not found' }, 404, env)
+  if (codes.length === 0) {
+    if (checkCodeFailedRateLimit(code)) return json({ error: 'Too many requests' }, 429, env)
+    return json({ error: 'Code not found' }, 404, env)
+  }
   const codeDoc = codes[0]
 
   // ponytail: check expiry - accepts both Timestamp string and millis number
@@ -248,7 +261,10 @@ async function handleCodeFiles(request, env) {
   let expired = false
   if (typeof exp === 'string') expired = new Date(exp).getTime() < now
   else if (typeof exp === 'number') expired = exp < now
-  if (expired) return json({ error: 'Code expired' }, 410, env)
+  if (expired) {
+    if (checkCodeFailedRateLimit(code)) return json({ error: 'Too many requests' }, 429, env)
+    return json({ error: 'Code expired' }, 410, env)
+  }
 
   let items = []
   if (codeDoc.folderId) {

@@ -376,11 +376,26 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **4 files changed**: `firestore.rules`, `workers/b2-proxy.js`, `web/public/dashboard.html`, `web/public/admin.html`
 - **Deployed**: Worker + Firestore rules + Firebase Hosting
 
+### Phase 35 - MPA Info Pages + Bugfixes (Pull-to-Refresh / Duplicate Folder Push)
+
+- **Info pages created**: `privacy.html`, `terms.html`, `about.html`, `contact.html`, `404.html` — vanilla HTML with consistent nav + expanded footer. All pages cross-link in footer (Privacy · Terms · About · Contact).
+- **Footer expanded**: `index.html` footer now has row: brand left, info links right. Same footer copied to all info pages + 404 page.
+- **Contact email**: `muhaiminurrashid99@gmail.com` on contact page + privacy page.
+- **Duplicate breadcrumb push fix (web + Android)**: tapping a folder 3× appended 3 copies to `folderPath` → breadcrumb showed "My Files › test › test › test". Fixed by guard: skip push if last folderPath entry already matches clicked folder id.
+- **Pull-to-refresh showing during non-pull loads (Android)**: `rememberPullRefreshState` used `state.isLoading` as `refreshing` param — indicator showed during initial load, folder navigation, and upload. Fix: added local `isRefreshing` composable state that only flips true on pull gesture. `isRefreshing` reset when `state.isLoading` transitions back to false.
+  - **First attempt (M3 PullToRefreshContainer)**: unreliable state transitions, indicator never dismissed. Same bug as Phase 25 note.
+  - **Second attempt (M2 pullRefresh modifier)**: worked on first try with local `isRefreshing` flag — more predictable than M3 API.
+- **Zero new dependencies** on any platform.
+- **11 files changed**: `DashboardScreen.kt`, `DashboardViewModel.kt`, `dashboard.html`, `index.html`, `styles.css`, `404.html`, `privacy.html`, `terms.html`, `about.html`, `contact.html`
+- **Deployed**: Firebase Hosting.
+- **Pushed**: GitHub main.
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
 2. **User existence check broke uploads**: Added `firestoreGet(env, 'users/${userId}')` to verify uploader exists. Crashed every upload because **no `/users/{userId}` docs are created anywhere in the app** - the data model specifies it but no signup/login code writes it. Removed the check, now validates userId is non-empty string only. **Fixed in Phase 32** — user docs now created on signup.
 3. **Hosting redeploy required**: Worker fix alone wasn't enough - old `dashboard.html` (without userId/contentLength params) was cached on Firebase Hosting. Had to `firebase deploy --only hosting` to push updated client code.
+4. **Pull-to-refresh M3 API unreliable**: tried `rememberPullToRefreshState()` + `PullToRefreshContainer` from Material3 (`compose-bom:2024.02.00`) — `isRefreshing` state transitions didn't trigger properly, indicator never dismissed after loading completed. M2 `pullRefresh` modifier + local `isRefreshing` flag worked reliably.
 
 ### Lesson
 
@@ -392,12 +407,15 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 - [x] Create `/users/{userId}` doc on signup (both web + Android) - enables proper user existence verification for all endpoints
 - [x] Restrict `CORS: *` to known origins - replaced with `ALLOWED_ORIGINS` env var (default: Firebase Hosting URL)
+- [x] **Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only admin page with filter tabs. Admin UID set via Worker env var.
+- [x] MPA info pages: Privacy Policy, Terms & Conditions, About, Contact, 404
+- [ ] Pagination on admin panel (current: loads all users/subscriptions at once)
 - [ ] MIME type validation on upload
 - [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env
-- [x] **Admin subscription panel**: list pending subscriptions, approve (set `status:active` + `expiresAt`) or reject, view history. Web-only admin page with filter tabs. Admin UID set via Worker env var.
 - [ ] Access code expiry picker: 5/15/30/60 min TTL
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
+- [ ] SEO meta tags on all MPA pages
 
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms - use context menu instead
