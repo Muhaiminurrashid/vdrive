@@ -52,7 +52,6 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
-    var showPasswordDialog by remember { mutableStateOf(false) }
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var showMoveFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
     var showRenameFolderDialog by remember { mutableStateOf<Folder?>(null) }
@@ -86,16 +85,6 @@ fun DashboardScreen(
         scope.launch { drawerState.close() }
     }
 
-    if (showPasswordDialog) {
-        ChangePasswordDialog(
-            onDismiss = { showPasswordDialog = false },
-            onChange = { pass ->
-                viewModel.changePassword(pass) { error ->
-                    if (error == null) showPasswordDialog = false
-                }
-            }
-        )
-    }
 
     if (showCreateFolderDialog) {
         CreateFolderDialog(
@@ -274,13 +263,6 @@ fun DashboardScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
                                 HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text("Change password") },
-                                    onClick = {
-                                        menuExpanded = false
-                                        showPasswordDialog = true
-                                    }
-                                )
                                 DropdownMenuItem(
                                     text = { Text("Sign out") },
                                     onClick = {
@@ -835,53 +817,6 @@ private fun MoveFileDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = Muted) }
-        }
-    )
-}
-
-@Composable
-private fun ChangePasswordDialog(
-    onDismiss: () -> Unit,
-    onChange: (String) -> Unit,
-) {
-    var password by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Change password", style = MaterialTheme.typography.titleLarge, color = Ink) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (error != null) {
-                    Text(error!!, color = ErrorRed, style = MaterialTheme.typography.bodySmall)
-                }
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("New password") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        focusedContainerColor = Canvas,
-                        unfocusedContainerColor = Canvas,
-                    ),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (password.length < 6) {
-                        error = "Password must be at least 6 characters"
-                    } else {
-                        onChange(password)
-                    }
-                }
-            ) { Text("Save", color = Primary) }
-        },
-        dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel", color = Muted) }
         }
     )

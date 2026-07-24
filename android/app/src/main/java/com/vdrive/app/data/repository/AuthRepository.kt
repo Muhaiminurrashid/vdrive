@@ -13,14 +13,6 @@ class AuthRepository @Inject constructor(
 
     fun getCurrentUser(): FirebaseUser? = firebaseService.getCurrentUser()
 
-    suspend fun login(email: String, password: String): FirebaseUser {
-        return firebaseService.signIn(email, password)
-    }
-
-    suspend fun register(email: String, password: String): FirebaseUser {
-        return firebaseService.signUp(email, password)
-    }
-
     suspend fun signInWithGoogle(idToken: String): FirebaseUser {
         return firebaseService.signInWithGoogle(idToken)
     }

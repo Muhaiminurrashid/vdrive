@@ -19,7 +19,7 @@
       <line x1="3" y1="6" x2="21" y2="6"/>
       <path d="M16 10a4 4 0 01-8 0"/>
     </svg>
-    <h1 id="authTitle" class="font-medium text-primary text-3xl tracking-tight mb-1">Sign in</h1>
+    <h1 class="font-medium text-primary text-3xl tracking-tight mb-1">Sign in</h1>
     <p class="text-sm text-muted">Access your Virtual Pendrive</p>
   </div>
 
@@ -27,25 +27,6 @@
     <div class="h-1 bg-primary"></div>
     <div class="p-6">
       <div id="errorBox" class="bg-error/8 text-error px-4 py-2 rounded-lg text-sm mb-4 hidden"></div>
-
-      <div class="flex flex-col gap-3.5">
-        <input id="emailInput" type="email" placeholder="Email" class="w-full h-10 px-3.5 py-2.5 rounded-lg border border-hairline bg-surface-card text-ink text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/12" autocomplete="email">
-        <input id="passwordInput" type="password" placeholder="Password" class="w-full h-10 px-3.5 py-2.5 rounded-lg border border-hairline bg-surface-card text-ink text-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary/12" autocomplete="current-password">
-        <div class="flex justify-end">
-          <button id="forgotBtn" onclick="handleReset()" class="bg-transparent border-none text-sm text-muted cursor-pointer px-0 py-1 hover:text-primary">Forgot password?</button>
-        </div>
-        <button id="authBtn" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active w-full justify-center inline-flex items-center" onclick="handleAuth()">Sign in</button>
-      </div>
-
-      <div class="my-6 relative">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-hairline"></div>
-        </div>
-        <div class="relative flex justify-center">
-          <span class="bg-surface-card px-2 text-xs text-muted-soft">or</span>
-        </div>
-      </div>
-
       <button class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft w-full justify-center inline-flex items-center" onclick="handleGoogle()">
         <svg width="16" height="16" viewBox="0 0 24 24" class="mr-2 shrink-0">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -55,13 +36,6 @@
         </svg>
         Sign in with Google
       </button>
-
-      <p class="text-center text-sm text-muted mt-5">
-        <span id="toggleLabel">Don't have an account?</span>
-        <button id="toggleBtn" onclick="toggleMode()" class="bg-transparent border-none text-sm font-medium text-primary cursor-pointer px-0 ml-1">
-          Create one
-        </button>
-      </p>
     </div>
   </div>
 
@@ -85,31 +59,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig)
 const auth = firebase.auth()
 const firestore = firebase.firestore()
-let isRegister = false
 
 function authErrorMessage(e) {
-  const m = { 'invalid-credential':'Incorrect email or password', 'user-not-found':'Incorrect email or password', 'wrong-password':'Incorrect email or password', 'email-already-in-use':'An account with this email already exists', 'weak-password':'Password must be at least 6 characters', 'invalid-email':'Invalid email address', 'too-many-requests':'Too many attempts. Try again later.', 'network-request-failed':'Network error. Check your connection.', 'popup-closed-by-user':'Sign-in was cancelled' }
+  const m = { 'popup-closed-by-user':'Sign-in was cancelled', 'network-request-failed':'Network error. Check your connection.' }
   const c = e.code || ''
   for (const k in m) { if (c.includes(k)) return m[k] }
   return 'Something went wrong'
-}
-
-function handleReset() {
-  const email = document.getElementById('emailInput').value
-  if (!email) { showError('Enter your email first'); return }
-  auth.sendPasswordResetEmail(email)
-    .then(() => showError('Password reset email sent! Check your inbox.'))
-    .catch(e => showError(authErrorMessage(e)))
-}
-
-function toggleMode() {
-  isRegister = !isRegister
-  document.getElementById('authTitle').textContent = isRegister ? 'Create account' : 'Sign in'
-  document.getElementById('authTitle').nextElementSibling.textContent = isRegister ? 'Start your free Virtual Pendrive' : 'Access your Virtual Pendrive'
-  document.getElementById('authBtn').textContent = isRegister ? 'Create account' : 'Sign in'
-  document.getElementById('forgotBtn').style.display = isRegister ? 'none' : 'block'
-  document.getElementById('toggleLabel').textContent = isRegister ? 'Already have an account?' : "Don't have an account?"
-  document.getElementById('toggleBtn').textContent = isRegister ? 'Sign in' : 'Create one'
 }
 
 function showError(msg) {
@@ -128,21 +83,6 @@ async function ensureUserDoc(user) {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
   }
-}
-
-async function handleAuth() {
-  const email = document.getElementById('emailInput').value
-  const password = document.getElementById('passwordInput').value
-  showError('')
-  try {
-    if (isRegister) {
-      await auth.createUserWithEmailAndPassword(email, password)
-      await ensureUserDoc(auth.currentUser)
-    } else {
-      await auth.signInWithEmailAndPassword(email, password)
-    }
-    window.location.href = '/dashboard.html'
-  } catch (e) { showError(authErrorMessage(e)) }
 }
 
 async function handleGoogle() {

@@ -39,3 +39,6 @@ service-account.json
 
 # Graphify
 /graphify-out/
+
+# Auto-generated docs
+DOCUMENTS.md

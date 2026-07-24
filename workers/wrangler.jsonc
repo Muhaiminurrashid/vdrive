@@ -4,6 +4,8 @@
   "compatibility_date": "2026-01-01",
   "vars": {
     "B2_BUCKET_ID": "4d7288f14126592793f30117",
-    "B2_BUCKET_NAME": "vdrive12"
+    "B2_BUCKET_NAME": "vdrive12",
+    "ADMIN_UID": "eNlw9bVyN2dAhpLOj75IpCEuh8J3",
+    "ALLOWED_ORIGINS": "https://vdrive-64deb.web.app"
   }
 }

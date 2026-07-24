@@ -11,14 +11,12 @@ import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
 import com.vdrive.app.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -39,41 +37,6 @@ class AuthViewModel @Inject constructor(
     init {
         if (auth.currentUser != null) {
             _state.value = AuthUiState(isSuccess = true)
-        }
-    }
-
-    fun login(email: String, password: String) {
-        viewModelScope.launch {
-            _state.value = AuthUiState(isLoading = true)
-            try {
-                authRepository.login(email, password)
-                _state.value = AuthUiState(isSuccess = true)
-            } catch (e: Exception) {
-                _state.value = AuthUiState(error = authError(e))
-            }
-        }
-    }
-
-    fun register(email: String, password: String) {
-        viewModelScope.launch {
-            _state.value = AuthUiState(isLoading = true)
-            try {
-                authRepository.register(email, password)
-                _state.value = AuthUiState(isSuccess = true)
-            } catch (e: Exception) {
-                _state.value = AuthUiState(error = authError(e))
-            }
-        }
-    }
-
-    fun resetPassword(email: String) {
-        viewModelScope.launch {
-            try {
-                auth.sendPasswordResetEmail(email).await()
-                _state.value = AuthUiState(error = "Password reset email sent")
-            } catch (e: Exception) {
-                _state.value = AuthUiState(error = authError(e))
-            }
         }
     }
 
@@ -107,17 +70,10 @@ class AuthViewModel @Inject constructor(
 
     // ponytail: maps Firebase auth error codes to user-friendly messages
     private fun authError(e: Exception): String {
-        val code = (e as? FirebaseAuthException)?.errorCode ?: return "Something went wrong"
+        val code = (e as? com.google.firebase.auth.FirebaseAuthException)?.errorCode ?: return "Something went wrong"
         return when {
-            "invalid-credential" in code || "user-not-found" in code || "wrong-password" in code -> "Incorrect email or password"
-            "email-already-in-use" in code -> "An account with this email already exists"
-            "weak-password" in code -> "Password must be at least 6 characters"
-            "invalid-email" in code -> "Invalid email address"
-            "user-disabled" in code -> "This account has been disabled"
-            "too-many-requests" in code -> "Too many attempts. Try again later."
-            "network-request-failed" in code -> "Network error. Check your connection."
-            "requires-recent-login" in code -> "Please sign out and sign in again"
             "popup-closed-by-user" in code -> "Sign-in was cancelled"
+            "network-request-failed" in code -> "Network error. Check your connection."
             else -> "Something went wrong"
         }
     }

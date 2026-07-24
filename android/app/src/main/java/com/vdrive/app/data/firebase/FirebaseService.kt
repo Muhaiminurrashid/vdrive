@@ -16,18 +16,6 @@ class FirebaseService @Inject constructor(
 ) {
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    suspend fun signIn(email: String, password: String): FirebaseUser {
-        val result = auth.signInWithEmailAndPassword(email, password).await()
-        return result.user ?: throw Exception("Sign in failed")
-    }
-
-    suspend fun signUp(email: String, password: String): FirebaseUser {
-        val result = auth.createUserWithEmailAndPassword(email, password).await()
-        val user = result.user ?: throw Exception("Sign up failed")
-        ensureUserDoc(user)
-        return user
-    }
-
     suspend fun signInWithGoogle(idToken: String): FirebaseUser {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         val result = auth.signInWithCredential(credential).await()

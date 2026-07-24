@@ -439,12 +439,17 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 3. **Hosting redeploy required**: Worker fix alone wasn't enough - old `dashboard.html` (without userId/contentLength params) was cached on Firebase Hosting. Had to `firebase deploy --only hosting` to push updated client code.
 4. **Pull-to-refresh M3 API unreliable**: tried `rememberPullToRefreshState()` + `PullToRefreshContainer` from Material3 (`compose-bom:2024.02.00`) — `isRefreshing` state transitions didn't trigger properly, indicator never dismissed after loading completed. M2 `pullRefresh` modifier + local `isRefreshing` flag worked reliably.
 5. **Plan mode blocked Android badge edits**: plan mode prevented file edits despite user approving plan. Required multiple retries to get into build mode. Workflow friction — user had to dismiss plan prompt 3× before edits applied.
+6. **Admin Panel never worked — ADMIN_UID not deployed**: `workers/.env` had `ADMIN_UID` but `wrangler.jsonc` `vars` didn't include it. `wrangler deploy` only deploys vars defined in `wrangler.jsonc` — `.env` files are for local dev only. Admin Panel was broken since Phase 34.
+7. **ALLOWED_ORIGINS silently dropped on redeploy**: Set via `wrangler deploy --var` in Phase 33, not in `wrangler.jsonc`. Phase 41 Worker deploy replaced all vars with config file contents → `ALLOWED_ORIGINS` gone. CORS broke until detected and re-added.
 
 ### Lesson
 
 - **Never assume a collection exists because it's in the data model**. `/users/{userId}` was spec'd in Phase 1 but never populated. Any future check against it will silently fail. Create user docs on signup, or don't write code that depends on them.
 - **Fail-closed is safer than fail-soft for security checks**, even if it temporarily breaks functionality. The Phase 24 "fix" that introduced fail-soft was the wrong lesson - it traded security for availability when the correct fix was fixing the Firestore query, not bypassing the check.
 - **Firebase Hosting caches old HTML** - Worker and Hosting deploys are independent. After changing client-side API calls, always redeploy hosting too.
+- **Check Firebase Auth action handler URLs BEFORE building email verification**. `sendEmailVerification()` relies on Firebase console "Authorized domains" + "Action URLs" being configured. If action handler returns "selected page mode is invalid", the URL is misconfigured or the Firebase project's default redirect page is broken. Test this early — if it fails, Google-only auth is easier than building a custom code-based verification system.
+- **Don't build custom email verification from scratch**. If `sendEmailVerification()` doesn't work, the Firebase Auth action handler is broken. Building a custom flow (own verification codes, own expiry, own resend logic) duplicates Firebase's entire auth system. Google-only sign-in eliminates all verification logic: Google asserts the email is real, no app-level verification needed.
+- **`wrangler.jsonc` is the source of truth for Worker vars, not `.env`**. `wrangler deploy` reads vars from `wrangler.jsonc` — `.env` files only apply to `wrangler dev`. Any var set via `--var` flag or dashboard must be added to `wrangler.jsonc` or it will be lost on next `wrangler deploy`. Both `ADMIN_UID` and `ALLOWED_ORIGINS` were deployed this way and lost on first clean deploy.
 
 ### What's Next
 
@@ -479,6 +484,8 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Direct B2 download URL exposure**: replaced by Worker proxy download (Phase 14)
 - **Download cache + intent open**: replaced by persistent save to Downloads folder (Phase 15)
 - **FileDetailBottomSheet**: removed (Phase 15) - tap action now uses simple `downloadFile()` instead of metadata popup
+- **`[+ New]` button + dropdown**: replaced by "Upload File" + "New Folder" nav items (Phase 41)
+- **"My Files" nav item**: removed from sidebar (Phase 41) - no static label needed
 
 ## Active Security Vulnerabilities
 
@@ -557,6 +564,37 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 See completed section above.
 
+### Phase 40 - Remove email/password auth, Google-only sign-in
+
+- **Email verification broken**: `sendEmailVerification()` returned "selected page mode is invalid" — Firebase Auth action handler broken for this project
+- **Attempted fixes**: `handleCodeInApp: true`, `false`, empty `actionCodeSettings`, manual `applyActionCode()` — all failed. Firebase console Email Templates configured, no fix.
+- **Decision**: removed email/password auth entirely. Google-only sign-in eliminates verification bugs (Google verifies emails server-side).
+- **Web**: `login.html` stripped to brand header + Google button only. Removed `handleAuth()`, `handleReset()`, `toggleMode()`, `authErrorMessage()` (12 error mappings), `successBox`, divider.
+- **Web dashboard.html**: removed `verifyBanner`, `resendVerification()`, `handleChangePassword()`, `changePwdBtn` menu item, `authErrorMessage()`.
+- **Web reset-password.html**: deleted entirely.
+- **Android FirebaseService.kt**: removed `signIn()`, `signUp()`.
+- **Android AuthRepository.kt**: removed `login()`, `register()`.
+- **Android AuthViewModel.kt**: removed `login()`, `register()`, `resetPassword()`, `needsVerification` state, `authError()` trimmed from 14→3 mappings.
+- **Android LoginScreen.kt**: removed email/password fields, register/login button, forgot password link, toggle, verify message.
+- **Android DashboardViewModel.kt**: removed `changePassword()`.
+- **Android DashboardScreen.kt**: removed `showPasswordDialog`, `ChangePasswordDialog`, "Change password" dropdown item.
+- **AuthViewModelTest.kt**: removed register/login tests (2 remain: init with null user, init with logged-in user).
+- **Android build + tests pass**: `assembleDebug` + `testDebugUnitTest`.
+- **Caveat**: existing email/password users cannot sign in anymore (must use Google).
+
+### Phase 41 - Sidebar Redesign (Remove My Files + [+ New] dropdown) + Admin Panel Fix
+
+- **Sidebar**: removed `[+ New]` pill button + dropdown. Replaced with two direct `.navItem` entries: **Upload File** (triggers file input) + **New Folder** (calls `createFolder()`).
+- **"My Files" nav item removed** — no static label, click the folder breadcrumb or sidebar items to navigate.
+- **Empty state text updated**: "Upload a file or create a folder using the sidebar." instead of "Click + New to upload..."
+- **Bug — Admin Panel missing on live site**: `ADMIN_UID` was in `workers/.env` but **not deployed** as a Worker variable. `wrangler.jsonc` `vars` only had `B2_BUCKET_ID` + `B2_BUCKET_NAME`. Worker's `/api/config` returned `adminUid: ""` → `adminNavCheck()` never showed Admin Panel.
+- **Fix**: added `"ADMIN_UID"` to `wrangler.jsonc` vars.
+- **Bug — ALLOWED_ORIGINS also stale**: set via `wrangler deploy --var` in Phase 33 but never added to `wrangler.jsonc`. When Phase 41 deployed Worker with `wrangler deploy` (which replaces all vars with config file contents), `ALLOWED_ORIGINS` was silently dropped → CORS restricted to nothing.
+- **Fix**: added `"ALLOWED_ORIGINS"` to `wrangler.jsonc` vars, redeployed Worker.
+- **All 4 Worker vars now in `wrangler.jsonc`**: `B2_BUCKET_ID`, `B2_BUCKET_NAME`, `ADMIN_UID`, `ALLOWED_ORIGINS`.
+- **Deployed**: Worker (`b00a4cf4`) + Firebase Hosting.
+- **Files changed**: `web/public/dashboard.html`, `workers/wrangler.jsonc`
+
 ## What Was Tried & Failed
 
 | Attempt | Reason Failed |
@@ -566,6 +604,7 @@ See completed section above.
 | Supabase Storage | 50 MB cap works, but only 1 GB total vs B2's 10 GB free |
 | B2 public bucket | Making bucket public requires CC verification on B2 |
 | Worker upload proxy (plan) | User chose simpler B2 CORS config instead |
+| Firebase email verification + custom code-based verification | `sendEmailVerification()` returns "selected page mode is invalid" — Firebase Auth action handler URL misconfigured or broken for this project. All `actionCodeSettings` variants failed. |
 
 ## What Won (Current)
 **Backblaze B2 (private bucket) + Cloudflare Worker** - 10 GB free, no per-file limit, CC only needed for initial verification (not recurring). Worker keeps app key server-side. Signed download URLs give access control without public bucket.
