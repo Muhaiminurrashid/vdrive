@@ -31,6 +31,9 @@ class FileRepository @Inject constructor(
         userId: String, uri: Uri, contentResolver: ContentResolver,
         isPremium: Boolean = false,
         folderId: String? = null,
+        // ponytail: optional pre-fetched B2 credentials for batch (avoids N Worker calls)
+        b2UploadUrl: String? = null,
+        b2AuthToken: String? = null,
         onProgress: ((Float) -> Unit)? = null
     ): String? = withContext(Dispatchers.IO) {
             val name = getFileName(uri, contentResolver) ?: "file_${System.currentTimeMillis()}"
@@ -41,13 +44,20 @@ class FileRepository @Inject constructor(
             val maxSize = if (isPremium) 500L * 1024 * 1024 else 100L * 1024 * 1024
             if (bytes.size > maxSize) throw Exception("File too large (max ${maxSize / (1024*1024)} MB)")
 
-            // Get B2 upload URL from Worker
-            val uploadUrlRes = client.newCall(
-                Request.Builder().url("$B2_PROXY_URL/api/upload-url?userId=$userId&contentLength=${bytes.size}").get().build()
-            ).execute()
-            val workerData = JSONObject(uploadUrlRes.body!!.string())
-            val b2UploadUrl = workerData.getString("uploadUrl")
-            val b2AuthToken = workerData.getString("authToken")
+            val finalUploadUrl: String
+            val finalAuthToken: String
+            if (b2UploadUrl != null && b2AuthToken != null) {
+                finalUploadUrl = b2UploadUrl
+                finalAuthToken = b2AuthToken
+            } else {
+                // Get B2 upload URL from Worker
+                val uploadUrlRes = client.newCall(
+                    Request.Builder().url("$B2_PROXY_URL/api/upload-url?userId=$userId&contentLength=${bytes.size}").get().build()
+                ).execute()
+                val workerData = JSONObject(uploadUrlRes.body!!.string())
+                finalUploadUrl = workerData.getString("uploadUrl")
+                finalAuthToken = workerData.getString("authToken")
+            }
 
             // Upload file directly to B2
             val b2FileName = "${userId}_${System.currentTimeMillis()}_$name"
@@ -66,8 +76,8 @@ class FileRepository @Inject constructor(
                 }
             }
             val b2Res = client.newCall(
-                Request.Builder().url(b2UploadUrl)
-                    .addHeader("Authorization", b2AuthToken)
+                Request.Builder().url(finalUploadUrl)
+                    .addHeader("Authorization", finalAuthToken)
                     .addHeader("X-Bz-File-Name", URLEncoder.encode(b2FileName, "UTF-8"))
                     .addHeader("Content-Type", mimeType)
                     .addHeader("X-Bz-Content-Sha1", "do_not_verify")
@@ -91,6 +101,15 @@ class FileRepository @Inject constructor(
             val metaRef = firestore.collection("files").add(doc).await()
             metaRef.id
         }
+
+    // ponytail: fetch B2 upload URL once for batch reuse
+    suspend fun getUploadUrl(userId: String, contentLength: Int): Pair<String, String> = withContext(Dispatchers.IO) {
+        val res = client.newCall(
+            Request.Builder().url("$B2_PROXY_URL/api/upload-url?userId=$userId&contentLength=$contentLength").get().build()
+        ).execute()
+        val data = JSONObject(res.body!!.string())
+        data.getString("uploadUrl") to data.getString("authToken")
+    }
 
     suspend fun deleteFile(fileId: String, b2FileId: String?, b2FileName: String?) {
         // ponytail: B2 destroy via Worker, skip if null (pre-migration files)

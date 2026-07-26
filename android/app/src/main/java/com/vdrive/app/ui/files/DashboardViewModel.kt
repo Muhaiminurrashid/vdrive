@@ -319,6 +319,35 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    fun uploadFiles(uris: List<Uri>, contentResolver: ContentResolver, folderId: String? = null) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            try {
+                val subDoc = firestore.collection("subscriptions").document(user.uid).get().await()
+                val expiresAt = subDoc.getTimestamp("expiresAt")?.toDate()?.time ?: 0L
+                val isPremium = subDoc.exists() && subDoc.getString("status") == "active" && expiresAt > System.currentTimeMillis()
+                // ponytail: fetch B2 credentials once, reuse for all files
+                val firstBytes = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uris.first())?.use { it.readBytes() }
+                } ?: return@launch
+                val (b2UploadUrl, b2AuthToken) = fileRepository.getUploadUrl(user.uid, firstBytes.size)
+                for ((i, uri) in uris.withIndex()) {
+                    _state.value = _state.value.copy(uploadProgress = 0f, actionLabel = "Uploading file ${i + 1} of ${uris.size}...")
+                    fileRepository.uploadFile(user.uid, uri, contentResolver, isPremium, folderId,
+                        b2UploadUrl = b2UploadUrl, b2AuthToken = b2AuthToken) { progress ->
+                        _state.value = _state.value.copy(uploadProgress = progress)
+                    }
+                }
+                loadContents(); loadStorageBar()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = userMessage(e))
+            } finally {
+                _state.value = _state.value.copy(isLoading = false, uploadProgress = null, actionLabel = null)
+            }
+        }
+    }
+
     fun downloadFile(file: FileUiItem, context: Context) {
         viewModelScope.launch {
             _state.value = _state.value.copy(actionLabel = "Downloading ${file.name}...", uploadProgress = 0f)

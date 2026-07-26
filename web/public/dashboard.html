@@ -314,7 +314,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
   </div>
 </div>
 
-<input id="fileInput" type="file" class="hidden">
+<input id="fileInput" type="file" multiple class="hidden">
 
 <div id="avatarMenu" class="hidden" style="position:fixed;z-index:100;background:var(--color-surface-card);border:1px solid var(--color-hairline);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,.12)">
   <div style="padding:8px 14px;font-size:12px;color:var(--color-muted);border-bottom:1px solid var(--color-hairline)" id="avatarEmail"></div>
@@ -415,14 +415,13 @@ auth.onAuthStateChanged(user => {
 document.addEventListener('dragover', e => e.preventDefault())
 document.addEventListener('drop', e => {
   e.preventDefault()
-  const file = e.dataTransfer?.files[0]
-  if (file) handleUpload(file)
+  if (e.dataTransfer?.files?.length) handleUpload(e.dataTransfer.files)
 })
 
 // --- Event wiring ---
 $('uploadNav').onclick = () => $('fileInput').click()
 $('createFolderNav').onclick = createFolder
-$('fileInput').onchange = function() { handleUpload(this) }
+$('fileInput').onchange = function() { if (this.files?.length) handleUpload(this.files) }
 $('avatarBtn').onclick = toggleAvatarMenu
 $('logoutBtn').onclick = handleLogout
 $('viewListBtn').onclick = () => toggleView('list')
@@ -646,36 +645,44 @@ async function moveFileToFolder(fileId) {
 }
 
 // --- Upload ---
-async function handleUpload(inputOrFile) {
-  const file = inputOrFile.files ? inputOrFile.files[0] : inputOrFile
-  if (!file || !window.currentUser) return
+async function handleUpload(fileList) {
+  if (!fileList?.length || !window.currentUser) return
   const isPremium = window.currentSub?.status === 'active' && (window.currentSub?.expiresAt?.toMillis() || 0) > Date.now()
   const maxSize = isPremium ? 500*1024*1024 : 100*1024*1024
-  if (file.size > maxSize) { alert('File too large (max ' + maxSize/(1024*1024) + ' MB)'); return }
-  showProgress('Uploading...')
+  // ponytail: fetch one upload URL, reuse for all files (B2 allows reuse within auth session)
+  let uploadUrl, authToken
   try {
-    const { uploadUrl, authToken } = await fetch(`${B2_PROXY_URL}/api/upload-url?userId=${window.currentUser.uid}&contentLength=${file.size}`).then(r => r.json())
-    const b2FileName = `${window.currentUser.uid}_${Date.now()}_${file.name}`
-    const b2Result = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.upload.onprogress = e => { if (e.lengthComputable) $('uploadProgressFill').style.width = Math.round((e.loaded / e.total) * 100) + '%' }
-      xhr.onload = () => xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject(Error(xhr.responseText))
-      xhr.onerror = () => reject(Error('Upload failed'))
-      xhr.open('POST', uploadUrl)
-      xhr.setRequestHeader('Authorization', authToken)
-      xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(b2FileName))
-      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
-      xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify')
-      xhr.send(file)
-    })
-    await db.collection('files').add({
-      name: file.name, size: file.size, type: file.type, userId: window.currentUser.uid,
-      b2FileId: b2Result.fileId, b2FileName, folderId: window.currentFolderId || null,
-      createdAt: firebase.firestore.Timestamp.now(),
-    })
-  } catch(e) { alert(userErrorMessage(e)) }
+    const r = await fetch(`${B2_PROXY_URL}/api/upload-url?userId=${window.currentUser.uid}&contentLength=${fileList[0].size}`)
+    if (!r.ok) { const e = await r.json(); throw Error(e.error || 'Upload URL failed') }
+    const d = await r.json(); uploadUrl = d.uploadUrl; authToken = d.authToken
+  } catch(e) { alert(userErrorMessage(e)); return }
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i]
+    if (file.size > maxSize) { alert('"' + file.name + '" too large (max ' + maxSize/(1024*1024) + ' MB)'); break }
+    showProgress('Uploading (' + (i+1) + '/' + fileList.length + ') ' + file.name + '...')
+    try {
+      const b2FileName = `${window.currentUser.uid}_${Date.now()}_${file.name}`
+      const b2Result = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.upload.onprogress = e => { if (e.lengthComputable) $('uploadProgressFill').style.width = Math.round((e.loaded / e.total) * 100) + '%' }
+        xhr.onload = () => xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject(Error(xhr.responseText))
+        xhr.onerror = () => reject(Error('Upload failed'))
+        xhr.open('POST', uploadUrl)
+        xhr.setRequestHeader('Authorization', authToken)
+        xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(b2FileName))
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+        xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify')
+        xhr.send(file)
+      })
+      await db.collection('files').add({
+        name: file.name, size: file.size, type: file.type, userId: window.currentUser.uid,
+        b2FileId: b2Result.fileId, b2FileName, folderId: window.currentFolderId || null,
+        createdAt: firebase.firestore.Timestamp.now(),
+      })
+    } catch(e) { alert(userErrorMessage(e)); break }
+  }
   hideProgress()
-  if (inputOrFile.files) inputOrFile.value = ''
+  $('fileInput').value = ''
   loadContents(); loadStorageBar()
 }
 

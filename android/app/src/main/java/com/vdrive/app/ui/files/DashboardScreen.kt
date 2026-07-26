@@ -73,9 +73,9 @@ fun DashboardScreen(
     }
 
     val filePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.uploadFile(it, context.contentResolver, state.currentFolderId) }
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) viewModel.uploadFiles(uris, context.contentResolver, state.currentFolderId)
     }
 
     BackHandler(enabled = state.folderPath.isNotEmpty()) {
