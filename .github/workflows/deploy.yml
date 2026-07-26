@@ -52,6 +52,9 @@ jobs:
       - name: Deploy Firebase Hosting
         run: npx firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
         working-directory: web
+      - name: Install workers deps
+        run: npm ci
+        working-directory: workers
       - name: Deploy Cloudflare Worker
         run: npx wrangler deploy
         working-directory: workers
