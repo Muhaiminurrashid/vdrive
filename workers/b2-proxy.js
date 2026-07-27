@@ -19,7 +19,7 @@ function corsHeaders(env) {
 // ponytail: in-memory sliding-window rate limiter, resets on deploy
 const rateMap = new Map()
 const RATE_WINDOW = 60000
-const RATE_LIMITS = { '/api/upload-url': 10, '/api/download': 30, '/api/delete': 20, '/api/code-files': 30 }
+const RATE_LIMITS = { '/api/upload-url': 10, '/api/download': 30, '/api/delete': 20, '/api/code-files': 30, '/api/zip': 10, '/api/zip-delete': 6 }
 const RATE_DEFAULT = 60
 
 function checkRateLimit(request, path) {
@@ -332,7 +332,222 @@ function handleConfig(env) {
   return json({ adminUid: env.ADMIN_UID || '' }, 200, env)
 }
 
-// --- Router ---
+// --- ZIP helpers ---
+// ponytail: CRC32 lookup table, computed once at module load
+const _crc32Table = new Uint32Array(256)
+for (let i = 0; i < 256; i++) {
+  let c = i
+  for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1)
+  _crc32Table[i] = c
+}
+
+function crc32OfBytes(bytes) {
+  let crc = 0xFFFFFFFF
+  for (let i = 0; i < bytes.length; i++) crc = _crc32Table[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8)
+  return (crc ^ 0xFFFFFFFF) >>> 0
+}
+
+// Local file header with data descriptor (bit 3 set). CRC/sizes are 0 here;
+// the data descriptor that follows the file data carries the real values.
+function zipLocalFileHeader(name, nameBytes) {
+  const buf = new ArrayBuffer(30 + nameBytes.length)
+  const v = new DataView(buf)
+  let o = 0
+  v.setUint32(o, 0x04034b50, true); o += 4 // signature
+  v.setUint16(o, 20, true); o += 2 // version needed
+  v.setUint16(o, 0x0800, true); o += 2 // flag: data descriptor (bit 3)
+  v.setUint16(o, 0, true); o += 2 // compression: stored
+  v.setUint16(o, 0, true); o += 2 // mod time
+  v.setUint16(o, 0, true); o += 2 // mod date
+  v.setUint32(o, 0, true); o += 4 // CRC-32 (placeholder)
+  v.setUint32(o, 0, true); o += 4 // compressed size (placeholder)
+  v.setUint32(o, 0, true); o += 4 // uncompressed size (placeholder)
+  v.setUint16(o, nameBytes.length, true); o += 2 // name length
+  v.setUint16(o, 0, true); o += 2 // extra field length
+  new Uint8Array(buf, o).set(nameBytes)
+  return buf
+}
+
+// Data descriptor (follows file data when bit 3 is set)
+function zipDataDescriptor(crc, compressedSize, uncompressedSize) {
+  const buf = new ArrayBuffer(16)
+  const v = new DataView(buf)
+  v.setUint32(0, 0x08074b50, true) // signature
+  v.setUint32(4, crc, true)
+  v.setUint32(8, compressedSize, true)
+  v.setUint32(12, uncompressedSize, true)
+  return buf
+}
+
+function zipCentralDirEntry(name, nameBytes, crc, compressedSize, uncompressedSize, localHeaderOffset) {
+  const buf = new ArrayBuffer(46 + nameBytes.length)
+  const v = new DataView(buf)
+  let o = 0
+  v.setUint32(o, 0x02014b50, true); o += 4 // signature
+  v.setUint16(o, 20, true); o += 2 // version made by
+  v.setUint16(o, 20, true); o += 2 // version needed
+  v.setUint16(o, 0x0800, true); o += 2 // flag: data descriptor
+  v.setUint16(o, 0, true); o += 2 // compression: stored
+  v.setUint16(o, 0, true); o += 2 // mod time
+  v.setUint16(o, 0, true); o += 2 // mod date
+  v.setUint32(o, crc, true); o += 4
+  v.setUint32(o, compressedSize, true); o += 4
+  v.setUint32(o, uncompressedSize, true); o += 4
+  v.setUint16(o, nameBytes.length, true); o += 2
+  v.setUint16(o, 0, true); o += 2 // extra field length
+  v.setUint16(o, 0, true); o += 2 // file comment length
+  v.setUint16(o, 0, true); o += 2 // disk number start
+  v.setUint16(o, 0, true); o += 2 // internal file attributes
+  v.setUint32(o, 0, true); o += 4 // external file attributes
+  v.setUint32(o, localHeaderOffset, true); o += 4 // local header offset
+  new Uint8Array(buf, o).set(nameBytes)
+  return buf
+}
+
+function zipEOCD(numEntries, centralDirSize, centralDirOffset) {
+  const buf = new ArrayBuffer(22)
+  const v = new DataView(buf)
+  v.setUint32(0, 0x06054b50, true) // signature
+  v.setUint16(4, 0, true) // disk number
+  v.setUint16(6, 0, true) // disk with central dir
+  v.setUint16(8, numEntries, true) // entries on this disk
+  v.setUint16(10, numEntries, true) // total entries
+  v.setUint32(12, centralDirSize, true)
+  v.setUint32(16, centralDirOffset, true)
+  v.setUint16(20, 0, true) // comment length
+  return buf
+}
+
+async function handleZip(request, env) {
+  const body = await request.json()
+  const files = body.files
+  const userId = body.userId
+
+  if (!userId) return json({ error: 'userId required' }, 400, env)
+  if (!files?.length) return json({ error: 'No files selected' }, 400, env)
+  if (files.length > 20) return json({ error: 'Max 20 files per ZIP' }, 400, env)
+  if (checkUidRateLimit(userId, '/api/zip')) return json({ error: 'Too many requests' }, 429, env)
+
+  // Verify ownership of each file and fetch metadata
+  const fileMeta = []
+  for (const f of files) {
+    if (!f.b2FileName || !f.b2FileId) return json({ error: 'Missing file metadata' }, 400, env)
+    if (!await verifyFileOwnership(env, f.b2FileName, userId))
+      return json({ error: 'Access denied' }, 403, env)
+    fileMeta.push(f)
+  }
+
+  const auth = await b2Authorize(env)
+  const downloadUrl = auth.apiInfo?.storageApi?.downloadUrl
+  if (!downloadUrl) throw new Error('B2 auth: missing downloadUrl')
+
+  const encoder = new TextEncoder()
+  const entries = [] // { nameBytes, crc, compressedSize, uncompressedSize, localHeaderOffset }
+  let currentOffset = 0
+
+  const { readable, writable } = new TransformStream()
+  const writer = writable.getWriter()
+
+  ;(async () => {
+    try {
+      for (const f of fileMeta) {
+        const nameBytes = encoder.encode(f.name || 'file')
+        const localHeaderOffset = currentOffset
+        const localHeader = zipLocalFileHeader(f.name || 'file', nameBytes)
+        await writer.write(localHeader)
+        currentOffset += localHeader.byteLength
+
+        // Fetch file from B2 and stream through CRC computation
+        const b2Res = await fetch(`${downloadUrl}/file/${env.B2_BUCKET_NAME}/${encodeURIComponent(f.b2FileName)}`, {
+          headers: { Authorization: auth.authorizationToken }
+        })
+        if (!b2Res.ok) throw new Error(`Failed to fetch ${f.name}: ${b2Res.status}`)
+
+        const uncompressedSize = parseInt(b2Res.headers.get('Content-Length') || '0')
+        const crc = crc32OfBytes(new Uint8Array(await b2Res.arrayBuffer()))
+
+        // Re-fetch to stream data through writer (B2 response body is consumed)
+        const b2Res2 = await fetch(`${downloadUrl}/file/${env.B2_BUCKET_NAME}/${encodeURIComponent(f.b2FileName)}`, {
+          headers: { Authorization: auth.authorizationToken }
+        })
+        if (!b2Res2.ok) throw new Error(`Failed to stream ${f.name}: ${b2Res2.status}`)
+
+        const reader = b2Res2.body.getReader()
+        let bytesWritten = 0
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          await writer.write(value)
+          bytesWritten += value.byteLength
+        }
+
+        const dd = zipDataDescriptor(crc, bytesWritten, bytesWritten)
+        await writer.write(dd)
+        currentOffset += bytesWritten + dd.byteLength
+
+        entries.push({ nameBytes, crc, compressedSize: bytesWritten, uncompressedSize: bytesWritten, localHeaderOffset })
+      }
+
+      // Write central directory
+      const cdStart = currentOffset
+      for (const e of entries) {
+        const cdEntry = zipCentralDirEntry(
+          '', e.nameBytes, e.crc, e.compressedSize, e.uncompressedSize, e.localHeaderOffset
+        )
+        await writer.write(cdEntry)
+        currentOffset += cdEntry.byteLength
+      }
+
+      // Write EOCD
+      const eocd = zipEOCD(entries.length, currentOffset - cdStart, cdStart)
+      await writer.write(eocd)
+
+      await writer.close()
+    } catch (e) {
+      await writer.abort(e?.message || String(e) || 'Unknown error')
+    }
+  })()
+
+  return new Response(readable, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': 'attachment; filename="files.zip"',
+      ...corsHeaders(env),
+    }
+  })
+}
+
+async function handleZipDelete(request, env) {
+  const { fileIds, userId } = await request.json()
+  if (!userId) return json({ error: 'userId required' }, 400, env)
+  if (!fileIds?.length) return json({ error: 'No files selected' }, 400, env)
+  if (checkUidRateLimit(userId, '/api/zip-delete')) return json({ error: 'Too many requests' }, 429, env)
+
+  const auth = await b2Authorize(env)
+  const apiUrl = auth.apiInfo?.storageApi?.apiUrl
+  if (!apiUrl) return json({ error: 'B2 auth failed' }, 500, env)
+
+  const results = { deleted: 0, failed: 0, errors: [] }
+  for (const fileId of fileIds) {
+    try {
+      const doc = await firestoreGet(env, `files/${fileId}`)
+      if (!doc || doc.userId !== userId) { results.failed++; results.errors.push(`${fileId}: access denied`); continue }
+      if (!doc.b2FileId || !doc.b2FileName) { results.failed++; results.errors.push(`${fileId}: missing B2 metadata`); continue }
+      const res = await fetch(`${apiUrl}/b2api/v3/b2_delete_file_version`, {
+        method: 'POST',
+        headers: { Authorization: auth.authorizationToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: doc.b2FileId, fileName: doc.b2FileName })
+      })
+      if (!res.ok) throw new Error('B2 delete failed: ' + (await res.text()))
+      results.deleted++
+    } catch (e) {
+      results.failed++
+      results.errors.push(`${fileId}: ${e.message}`)
+    }
+  }
+  return json(results, 200, env)
+}
 
 export default {
   async fetch(request, env) {
@@ -346,10 +561,12 @@ export default {
       if (url.pathname === '/api/config' && request.method === 'GET') return handleConfig(env)
       if (url.pathname === '/api/upload-url' && request.method === 'GET') return await handleGetUploadUrl(request, env)
       if (url.pathname === '/api/download' && request.method === 'POST') return await handleDownload(request, env)
-      if (url.pathname === '/api/delete' && request.method === 'DELETE') return await handleDelete(request, env)
-      if (url.pathname === '/api/code-files' && request.method === 'POST') return await handleCodeFiles(request, env)
-      if (url.pathname === '/api/set-cors' && request.method === 'POST') return await handleSetCors(env)
-      if (url.pathname === '/api/set-lifecycle' && request.method === 'POST') return await handleSetLifecycle(env)
+       if (url.pathname === '/api/delete' && request.method === 'DELETE') return await handleDelete(request, env)
+       if (url.pathname === '/api/code-files' && request.method === 'POST') return await handleCodeFiles(request, env)
+       if (url.pathname === '/api/zip' && request.method === 'POST') return await handleZip(request, env)
+       if (url.pathname === '/api/zip-delete' && request.method === 'POST') return await handleZipDelete(request, env)
+       if (url.pathname === '/api/set-cors' && request.method === 'POST') return await handleSetCors(env)
+       if (url.pathname === '/api/set-lifecycle' && request.method === 'POST') return await handleSetLifecycle(env)
       return json({ error: 'Not found' }, 404, env)
     } catch (e) {
       return json({ error: e.message }, 500, env)

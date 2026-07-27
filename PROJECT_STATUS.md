@@ -463,7 +463,6 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [ ] Access code expiry picker: 5/15/30/60 min TTL
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
-- [ ] Multiple file upload (Web + Android): sequential upload of N files. Web: `multiple` attr on `<input>`, loop in `handleUpload()`. Android: `GetMultipleContents()` → loop URIs. Progress "File 2 of 5".
 - [ ] Multi-file download as ZIP: Worker endpoint streams multiple B2 files into a zip archive, client downloads single file. High value for classroom — student gets all materials at once.
 - [ ] Batch select + batch delete (Web + Android): checkbox multi-select, delete N files. Useful for teacher end-of-semester cleanup.
 - [ ] Trash / recycle bin: deleted files recoverable for 30 days. Low priority — B2 lifecycle (1-day version delete) already provides basic recovery.
@@ -594,6 +593,25 @@ See completed section above.
 - **All 4 Worker vars now in `wrangler.jsonc`**: `B2_BUCKET_ID`, `B2_BUCKET_NAME`, `ADMIN_UID`, `ALLOWED_ORIGINS`.
 - **Deployed**: Worker (`b00a4cf4`) + Firebase Hosting.
 - **Files changed**: `web/public/dashboard.html`, `workers/wrangler.jsonc`
+
+### Phase 41 - Multi-Select + Bulk Download (ZIP) + Bulk Delete
+
+- **Worker `POST /api/zip`**: streams ZIP (STORED method, data descriptors) from B2. CRC32 computed per file. Ownership verified per-file (fail-closed). Max 20 files, 10 req/min per UID. `Content-Disposition: attachment; filename="files.zip"`.
+- **Worker `POST /api/zip-delete`**: batch B2 delete for multiple file IDs. Ownership verified per-file (fail-closed). 6 req/min per UID.
+- **Web dashboard**: checkboxes in file rows + grid cards. `window.selectedIds` Set. Action bar below breadcrumb when selection > 0: "Download ZIP" + "Delete" + "Cancel". Select-all checkbox in header row.
+- **Android `FileCard`**: added check icon (✓/○) left of file type badge, wired to `toggleSelection()`.
+- **Android `FileGridCard`**: added `Checkbox` composable in top-right corner, wired to `toggleSelection()`.
+- **Android `ActionBar` composable**: shows when `selectedIds.isNotEmpty()` with Download ZIP + Delete + Cancel actions.
+- **Android `downloadSelected()`**: POST `/api/zip` with selected file metadata → saves as `files.zip` to `MediaStore.Downloads` (API 29+) or `DIRECTORY_DOWNLOADS` (older). Toast on success.
+- **Android `deleteSelected()`**: loops `selectedIds`, calls `fileRepository.deleteFile()` each, then `loadContents()` + `loadStorageBar()` once at end.
+- **Clears selection** on folder navigation, view toggle.
+- **3 files changed**: `workers/b2-proxy.js`, `web/public/dashboard.html`, `DashboardViewModel.kt`, `DashboardScreen.kt`
+- **Deployed**: Worker + Firebase Hosting.
+
+### Phase 41 continued — Web design updates
+
+- **Checkbox styling**: 16px accent-color = navy, 48px row height preserved, `.selected` class highlights row with surface-soft bg.
+- **Bulk bar**: sticky below topbar, navy-tinted background, primary/action/danger buttons, 48px height.
 
 ## What Was Tried & Failed
 

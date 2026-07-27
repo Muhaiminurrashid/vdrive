@@ -325,6 +325,15 @@ fun DashboardScreen(
                     isDarkTheme = isDarkTheme
                 )
 
+                if (state.selectedIds.isNotEmpty()) {
+                    ActionBar(
+                        count = state.selectedIds.size,
+                        onDownload = { viewModel.downloadSelected(context) },
+                        onDelete = { viewModel.deleteSelected() },
+                        onCancel = { viewModel.clearSelection() }
+                    )
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -405,6 +414,8 @@ fun DashboardScreen(
                             items(state.files, key = { it.id }) { file ->
                                 FileGridCard(
                                     file = file,
+                                    isSelected = file.id in state.selectedIds,
+                                    onToggleSelect = { viewModel.toggleSelection(file.id) },
                                     onClick = { viewModel.previewFile(file, context) },
                                     onDownload = { viewModel.downloadFile(file, context) },
                                     onDelete = { viewModel.deleteFile(file) },
@@ -639,6 +650,8 @@ private fun FolderGridCard(
 @Composable
 private fun FileGridCard(
     file: FileUiItem,
+    isSelected: Boolean = false,
+    onToggleSelect: () -> Unit = {},
     onClick: () -> Unit,
     onDownload: () -> Unit = {},
     onDelete: () -> Unit = {},
@@ -674,15 +687,23 @@ private fun FileGridCard(
                     color = if (isDarkTheme) DarkMutedSoft else MutedSoft
                 )
             }
-            Box(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) {
+            Row(
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onToggleSelect() },
+                    modifier = Modifier.size(20.dp)
+                )
                 IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = if (isDarkTheme) DarkMutedSoft else MutedSoft, modifier = Modifier.size(16.dp))
                 }
-                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("Download") }, onClick = { showMenu = false; onDownload() })
-                    DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
-                    DropdownMenuItem(text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
-                }
+            }
+            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                DropdownMenuItem(text = { Text("Download") }, onClick = { showMenu = false; onDownload() })
+                DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
+                DropdownMenuItem(text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
             }
         }
     }
@@ -964,6 +985,15 @@ private fun FileCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onToggleSelect, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    if (isSelected) Icons.Default.CheckCircle else Icons.Default.Circle,
+                    contentDescription = "Select",
+                    tint = if (isSelected) Primary else (if (isDarkTheme) DarkHairline else Hairline),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
             FileTypeBadge(typeLabel = file.typeLabel)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -1110,5 +1140,46 @@ internal fun Long.formatBytes(): String = when {
     this < 1024 -> "$this B"
     this < 1048576 -> "%.1f KB".format(this / 1024f)
     else -> "%.1f MB".format(this / 1048576f)
+}
+
+@Composable
+private fun ActionBar(
+    count: Int,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Primary.copy(alpha = 0.08f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "$count selected",
+                style = MaterialTheme.typography.labelMedium,
+                color = Primary,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onDownload) {
+                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("ZIP", style = MaterialTheme.typography.labelSmall)
+            }
+            TextButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Delete", style = MaterialTheme.typography.labelSmall)
+            }
+            TextButton(onClick = onCancel) {
+                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Cancel", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
 }
 

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.json.JSONArray
 import java.net.URL
 import javax.inject.Inject
 
@@ -205,7 +206,8 @@ class DashboardViewModel @Inject constructor(
         val path = _state.value.folderPath + folder
         _state.value = _state.value.copy(
             currentFolderId = folderId,
-            folderPath = path
+            folderPath = path,
+            selectedIds = emptySet()
         )
         loadContents()
     }
@@ -216,7 +218,8 @@ class DashboardViewModel @Inject constructor(
         val newPath = path.dropLast(1)
         _state.value = _state.value.copy(
             currentFolderId = newPath.lastOrNull()?.id,
-            folderPath = newPath
+            folderPath = newPath,
+            selectedIds = emptySet()
         )
         loadContents()
     }
@@ -227,7 +230,8 @@ class DashboardViewModel @Inject constructor(
         val newPath = path.take(index)
         _state.value = _state.value.copy(
             currentFolderId = newPath.lastOrNull()?.id,
-            folderPath = newPath
+            folderPath = newPath,
+            selectedIds = emptySet()
         )
         loadContents()
     }
@@ -275,8 +279,92 @@ class DashboardViewModel @Inject constructor(
 
     fun toggleViewMode() {
         _state.value = _state.value.copy(
-            viewMode = if (_state.value.viewMode == ViewMode.List) ViewMode.Grid else ViewMode.List
+            viewMode = if (_state.value.viewMode == ViewMode.List) ViewMode.Grid else ViewMode.List,
+            selectedIds = emptySet()
         )
+    }
+
+    fun downloadSelected(context: Context) {
+        val user = auth.currentUser ?: return
+        val files = _state.value.files.filter { it.id in _state.value.selectedIds }
+        if (files.isEmpty()) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(actionLabel = "Downloading ${files.size} files...", uploadProgress = 0f)
+            try {
+                val bytes = withContext(Dispatchers.IO) {
+                    val body = JSONObject().apply {
+                        put("files", JSONArray(files.map {
+                            JSONObject().apply {
+                                put("id", it.id)
+                                put("b2FileId", it.b2FileId ?: "")
+                                put("b2FileName", it.b2FileName ?: "")
+                                put("name", it.name)
+                            }
+                        }))
+                        put("userId", user.uid)
+                    }
+                    val conn = URL("$B2_PROXY_URL/api/zip").openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.outputStream.write(body.toString().toByteArray())
+                    if (conn.responseCode >= 300) {
+                        val errBody = conn.errorStream?.bufferedReader()?.readText() ?: "{}"
+                        val errMsg = JSONObject(errBody).optString("error", "Download failed")
+                        throw Exception(errMsg)
+                    }
+                    conn.inputStream.readBytes()
+                }
+                val fileName = "files.zip"
+                withContext(Dispatchers.IO) {
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                            put(MediaStore.Downloads.MIME_TYPE, "application/zip")
+                            put(MediaStore.Downloads.IS_PENDING, 1)
+                        }
+                        val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                        uri?.let {
+                            context.contentResolver.openOutputStream(it)?.use { out -> out.write(bytes) }
+                            values.clear()
+                            values.put(MediaStore.Downloads.IS_PENDING, 0)
+                            context.contentResolver.update(it, values, null, null)
+                        }
+                    } else {
+                        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        java.io.File(dir, fileName).writeBytes(bytes)
+                    }
+                }
+                _state.value = _state.value.copy(selectedIds = emptySet())
+                withContext(Dispatchers.Main) { Toast.makeText(context, "Downloaded to Downloads", Toast.LENGTH_SHORT).show() }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = userMessage(e))
+            } finally {
+                _state.value = _state.value.copy(uploadProgress = null, actionLabel = null)
+            }
+        }
+    }
+
+    fun deleteSelected() {
+        val user = auth.currentUser ?: return
+        val ids = _state.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(actionLabel = "Deleting...")
+            try {
+                for (id in ids) {
+                    val file = _state.value.files.find { it.id == id } ?: continue
+                    fileRepository.deleteFile(file.id, file.b2FileId, file.b2FileName)
+                }
+                loadContents(); loadStorageBar()
+                _state.value = _state.value.copy(selectedIds = emptySet())
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = userMessage(e))
+                loadContents(); loadStorageBar()
+            } finally {
+                _state.value = _state.value.copy(actionLabel = null)
+            }
+        }
     }
 
     fun renameFolder(folderId: String, newName: String) {
@@ -552,6 +640,10 @@ class DashboardViewModel @Inject constructor(
 
     fun clearGeneratedCode() {
         _state.value = _state.value.copy(generatedCode = null)
+    }
+
+    fun clearSelection() {
+        _state.value = _state.value.copy(selectedIds = emptySet())
     }
 
     fun signOut() {

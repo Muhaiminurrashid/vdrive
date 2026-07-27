@@ -190,7 +190,17 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #subscribeCard label { display:block; font-size:13px; color:var(--color-body); margin-bottom:4px; }
 #subscribeCard input { width:100%; padding:10px 12px; border:1px solid var(--color-hairline); border-radius:8px; background:var(--color-surface-soft); color:var(--color-ink); font-size:14px; margin-bottom:12px; box-sizing:border-box; outline:none; }
 #subscribeCard input:focus { border-color:var(--color-primary); }
-.copyable { cursor:pointer; color:var(--color-primary); font-weight:600; }
+/* Checkbox selection */
+.file-select { width:16px; height:16px; accent-color:var(--color-primary); cursor:pointer; flex-shrink:0; }
+.file-row.selected { background:var(--color-surface-soft); }
+.grid-card.selected { border-color:var(--color-primary); border-width:2px; }
+.bulk-bar { display:flex; align-items:center; gap:10px; padding:8px 16px; background:var(--color-surface-card); border-bottom:1px solid var(--color-hairline); flex-shrink:0; }
+.bulk-bar .count { font-size:13px; color:var(--color-muted); font-weight:500; }
+.bulk-bar button { padding:6px 12px; border:1px solid var(--color-hairline); border-radius:6px; background:transparent; font-size:12px; font-weight:500; cursor:pointer; color:var(--color-ink); }
+.bulk-bar button:hover { background:var(--color-surface-soft); }
+.bulk-bar button.danger { color:var(--color-error); border-color:var(--color-error); }
+.bulk-bar button.primary { background:var(--color-primary); color:var(--color-on-primary); border-color:var(--color-primary); }
+.bulk-bar.hidden { display:none; }
 </style>
 </head>
 <body class="grid-dots">
@@ -265,6 +275,13 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
       </div>
 
       <div id="uploadProgress" class="hidden"><div id="uploadStatus">Uploading...</div><div id="uploadProgressFill"></div></div>
+
+<div id="bulkBar" class="bulk-bar hidden">
+  <span class="count" id="bulkCount">0 selected</span>
+  <button class="primary" onclick="downloadSelected()">Download ZIP</button>
+  <button class="danger" onclick="deleteSelected()">Delete</button>
+  <button onclick="clearSelection()">Cancel</button>
+</div>
 
       <div id="codeDisplay">
         <p class="t">Classroom Access Code</p>
@@ -377,6 +394,7 @@ window.folderNames = {}
 window.panelFiles = {}
 window.panelFolders = {}
 window.lastCode = null
+window.selectedIds = new Set()
 // ponytail: client-side page window, switch to Firestore limit+startAfter if >5000 user files
 const PAGE_SIZE = 50
 window.fileCursor = null
@@ -456,6 +474,7 @@ document.addEventListener('click', e => {
 function toggleView(v) {
   window.viewMode = v
   localStorage.setItem('vdriveView', v)
+  clearSelection()
   $('viewListBtn').classList.toggle('active', v === 'list')
   $('viewGridBtn').classList.toggle('active', v === 'grid')
   renderCurrentView()
@@ -586,6 +605,7 @@ function navigateToFolder(id) {
   if (window.folderPath.length && window.folderPath[window.folderPath.length-1].id === id) return
   window.currentFolderId = id
   window.folderPath.push({ id, name: folder })
+  clearSelection()
   renderBreadcrumb(); loadContents()
 }
 
@@ -593,6 +613,7 @@ function navigateUp() {
   if (!window.folderPath.length) return
   window.folderPath.pop()
   window.currentFolderId = window.folderPath.length ? window.folderPath[window.folderPath.length-1].id : null
+  clearSelection()
   renderBreadcrumb(); loadContents()
 }
 
@@ -600,6 +621,7 @@ function navigateToBreadcrumb(index) {
   if (index >= window.folderPath.length + 1) return
   window.folderPath = window.folderPath.slice(0, index)
   window.currentFolderId = index === 0 ? null : window.folderPath[index-1].id
+  clearSelection()
   renderBreadcrumb(); loadContents()
 }
 
@@ -728,6 +750,85 @@ async function deleteFile(f) {
     closeInfoPanel(); loadContents(); loadStorageBar()
   } catch(e) { alert(userErrorMessage(e)); loadContents(); loadStorageBar() }
   hideProgress()
+}
+
+function toggleSelection(f) {
+  if (!f) return
+  if (window.selectedIds.has(f.id)) window.selectedIds.delete(f.id)
+  else window.selectedIds.add(f.id)
+  renderBulkBar()
+}
+
+function toggleSelectAll() {
+  const files = window.currentPageFiles
+  const allSelected = files.length > 0 && files.every(f => window.selectedIds.has(f.id))
+  if (allSelected) files.forEach(f => window.selectedIds.delete(f.id))
+  else files.forEach(f => window.selectedIds.add(f.id))
+  renderBulkBar()
+  renderCurrentView()
+}
+
+function clearSelection() {
+  window.selectedIds.clear()
+  renderBulkBar()
+  document.querySelectorAll('.file-select').forEach(cb => { cb.checked = false })
+  document.querySelectorAll('.file-row.selected, .grid-card.selected').forEach(el => el.classList.remove('selected'))
+}
+
+async function downloadSelected() {
+  if (window.selectedIds.size === 0) return
+  const files = window.currentPageFiles.filter(f => window.selectedIds.has(f.id))
+  if (!files.length) return
+  showProgress(`Downloading ${files.length} files as ZIP...`)
+  try {
+    const res = await fetch(B2_PROXY_URL + '/api/zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        files: files.map(f => ({ id: f.id, b2FileId: f.b2FileId, b2FileName: f.b2FileName, name: f.name })),
+        userId: window.currentUser?.uid
+      })
+    })
+    if (!res.ok) throw new Error((await res.json()).error || 'Download failed')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = 'files.zip'; a.click()
+    URL.revokeObjectURL(url)
+    clearSelection()
+  } catch(e) { alert(userErrorMessage(e)) }
+  hideProgress()
+}
+
+async function deleteSelected() {
+  if (window.selectedIds.size === 0) return
+  const ids = [...window.selectedIds]
+  const count = ids.length
+  if (!confirm(`Delete ${count} file${count > 1 ? 's' : ''}?`)) return
+  showProgress(`Deleting ${count} files...`)
+  for (const id of ids) {
+    const f = window.currentPageFiles.find(f => f.id === id)
+    if (!f) continue
+    try {
+      const res = await fetch(B2_PROXY_URL + '/api/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: f.id, fileName: f.b2FileName, userId: window.currentUser?.uid })
+      })
+      if (!res.ok) throw new Error('Delete failed')
+      await db.collection('files').doc(id).delete()
+    } catch(e) { console.error('Delete failed:', id, e) }
+  }
+  clearSelection()
+  hideProgress()
+  loadContents(); loadStorageBar()
+}
+
+function renderBulkBar() {
+  const bar = $('bulkBar')
+  const count = window.selectedIds.size
+  if (count === 0) { bar.classList.add('hidden'); return }
+  bar.classList.remove('hidden')
+  $('bulkCount').textContent = count + ' selected'
 }
 
 async function shareFile(fileId) {
@@ -971,6 +1072,7 @@ async function loadContents(isLoadMore = false) {
     window.fileCursor = null
     window.currentPageFiles = []
     $('searchInput').value = ''
+    clearSelection()
   }
 
   const fid = window.currentFolderId
@@ -1044,6 +1146,16 @@ function renderCurrentView() {
 
 // ponytail: list view, file type badge + single-line layout
 function renderList(container, folders, files) {
+  const hasSelection = window.selectedIds.size > 0
+  const allSelected = files.length > 0 && files.every(f => window.selectedIds.has(f.id))
+  const headerRow = document.createElement('div')
+  headerRow.className = 'file-row'
+  headerRow.style.justifyContent = 'flex-start'
+  headerRow.style.height = '36px'
+  headerRow.innerHTML = hasSelection
+    ? `<input type="checkbox" class="file-select" ${allSelected ? 'checked' : ''} onchange="toggleSelectAll()"> ${files.length} files`
+    : ''
+  if (hasSelection) container.appendChild(headerRow)
   folders.forEach(f => {
     const row = document.createElement('div')
     row.className = 'file-row isFolder'
@@ -1059,10 +1171,11 @@ function renderList(container, folders, files) {
   files.forEach(f => {
     const color = fileIconData(f.name).bg
     const row = document.createElement('div')
-    row.className = 'file-row'
+    row.className = 'file-row' + (window.selectedIds.has(f.id) ? ' selected' : '')
     row.ondblclick = () => previewFile(f)
     row.innerHTML =
-      `<span class="file-type-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</span>
+      `<input type="checkbox" class="file-select" ${window.selectedIds.has(f.id) ? 'checked' : ''} onchange="toggleSelection(panelFiles['${f.id}']); event.stopPropagation()">
+      <span class="file-type-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</span>
       <span class="file-name">${escapeHtml(f.name)}</span>
       <span class="file-size">${formatBytes(f.size)}</span>
       <button class="file-menu" data-id="${f.id}" data-type="file"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
@@ -1097,12 +1210,15 @@ function renderGrid(container, folders, files) {
   files.forEach(f => {
     const color = fileIconData(f.name).bg
     const card = document.createElement('div')
-    card.className = 'grid-card'
+    card.className = 'grid-card' + (window.selectedIds.has(f.id) ? ' selected' : '')
     card.style.setProperty('--accent-color', color)
     card.onclick = () => showInfoPanel('file', f.id)
     card.ondblclick = () => previewFile(f)
     card.innerHTML =
-      `<div class="grid-card-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</div>
+      `<div style="display:flex;align-items:center;justify-content:flex-end;padding:4px 8px 0">
+<input type="checkbox" class="file-select" ${window.selectedIds.has(f.id) ? 'checked' : ''} onchange="toggleSelection(panelFiles['${f.id}']); event.stopPropagation()">
+      </div>
+      <div class="grid-card-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</div>
       <div class="grid-card-name">${escapeHtml(f.name)}</div>
       <div class="grid-card-size">${formatBytes(f.size)}</div>
       <button class="grid-card-menu" data-id="${f.id}" data-type="file"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
