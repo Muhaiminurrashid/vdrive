@@ -50,7 +50,7 @@ jobs:
         run: npm run css
         working-directory: web
       - name: Deploy Firebase Hosting
-        run: npx firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
+        run: npx firebase deploy --only hosting --project vdrive-64deb --token "${{ secrets.FIREBASE_TOKEN }}"
         working-directory: web
       - name: Install workers deps
         run: npm ci
