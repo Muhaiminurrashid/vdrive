@@ -281,6 +281,12 @@ async function handleCodeFiles(request, env) {
         if (file && file.b2FileName) items.push({ name: file.name, b2FileName: file.b2FileName, size: parseInt(file.size || '0') })
       }
     }
+  } else {
+// ponytail: root-level share — no folderId/fileIds, query user's root files
+    const files = await firestoreQuery(env, 'files', [
+      { field: 'userId', op: 'EQUAL', type: 'stringValue', value: codeDoc.userId },
+    ])
+    items = files.filter(f => f.b2FileName && !f.folderId).map(f => ({ name: f.name, b2FileName: f.b2FileName, size: parseInt(f.size || '0') }))
   }
   return json({ files: items }, 200, env)
 }

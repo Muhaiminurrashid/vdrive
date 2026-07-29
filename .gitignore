@@ -42,3 +42,4 @@ service-account.json
 
 # Auto-generated docs
 DOCUMENTS.md
+web/node_modules/
