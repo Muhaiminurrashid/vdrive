@@ -37,6 +37,9 @@ Thumbs.db
 # Secrets
 service-account.json
 
+# Skills
+.agents/
+
 # Graphify
 /graphify-out/
 
