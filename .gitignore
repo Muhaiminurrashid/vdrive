@@ -36,6 +36,9 @@ Thumbs.db
 
 # Secrets
 service-account.json
+# Firebase Android config - contains OAuth client IDs + API key, keep local
+**/google-services.json
+!**/*google-services.json.example
 
 # Skills
 .agents/

@@ -432,6 +432,16 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - **Changed files**: `DashboardScreen.kt` (-1 composable, -5 lines)
 - **Build verified**: `./gradlew app:assembleDebug` + `app:testDebugUnitTest` both pass.
 
+### Phase 40 - Root-Level Access Code Fix
+- **Bug**: "Generate code" at root (My Files) returned empty file list on access page. Worked inside folders because code doc had `folderId`, failed at root where doc had no `folderId`/`fileIds`.
+- **Root cause**: Worker `handleCodeFiles` only handled two cases: `folderId` exists → query by folderId, `fileIds` exists → query by IDs. Root-level share had neither → `{ files: [] }`.
+- **Fix**: Added `else` branch querying all user files, filtering to root-only (`!f.folderId`). Covers both web (`folderId: null`) and Android (field omitted).
+- **Ponytail**: Worker-only change. One branch. Both platforms covered.
+- **1 file changed**: `workers/b2-proxy.js` (+6 lines). Zero client changes.
+- **Deployed**: Worker version `416436b6`.
+- **Pushed**: GitHub main (`3b933ab`).
+- **Also fixed**: added `web/node_modules/` to `.gitignore` (was missing, causing accidental staging of thousands of node_modules files).
+
 ## What Went Wrong
 
 1. **IP restriction mismatch**: First deploy failed because new token allowed a specific IP but deploy server hit from a different IP in the same subnet. Fixed by using subnet CIDR instead of single IP.
@@ -459,7 +469,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [x] MPA info pages: Privacy Policy, Terms & Conditions, About, Contact, 404
 - [ ] Pagination on admin panel (current: loads all users/subscriptions at once)
 - [ ] MIME type validation on upload
-- [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env
+- [ ] Audit all secrets stored in CI/GitHub - ensure no tokens leak through workflow logs or env (repo part done in Phase 42: google-services.json untracked + gitignored; CI `FIREBASE_TOKEN`/`CLOUDFLARE_API_TOKEN` scopes still need verifying)
 - [ ] Access code expiry picker: 5/15/30/60 min TTL
 - [ ] QR code for codes: scan -> open access page
 - [ ] Android file preview: double-tap inline preview
@@ -612,6 +622,24 @@ See completed section above.
 
 - **Checkbox styling**: 16px accent-color = navy, 48px row height preserved, `.selected` class highlights row with surface-soft bg.
 - **Bulk bar**: sticky below topbar, navy-tinted background, primary/action/danger buttons, 48px height.
+
+### Phase 42 - Firebase Config Scrub (Repo Hardening)
+
+- **Problem**: `android/google-services.json` + `android/app/google-services.json` were committed to git. While Firebase API keys are public-by-design, the OAuth `client_id` values (e.g. `541773803308-pfg0akfnak7p7bp0aesl96irded1oc9c.apps.googleusercontent.com`) and Android SHA-1 cert hashes were exposed in source — enough for an attacker to target the Firebase project with the known client identifiers.
+- **Fix**:
+  - `.gitignore` rule `**/google-services.json` + negation `!**/*google-services.json.example` — real config ignored locally.
+  - `git rm --cached` both tracked files (kept on disk for local builds).
+  - Added sanitized `android/app/google-services.json.example` template (placeholder client IDs, API key, cert hashes) so OSS contributors / CI get a clear drop-in structure.
+- **Verification**: `git ls-files` confirms no `google-services.json` tracked; `git log -S 'cfut_dceWfGmxG'` empty (Cloudflare token never in history); `grep` across tracked files finds no literal `B2_APP_KEY`/`FIREBASE_SERVICE_ACCOUNT` values — only `env.X` references in `b2-proxy.js`.
+- **No redeploy needed** — no code/runtime changes. Web Firebase config in `login.html`/`dashboard.html`/`admin.html` left in place (Firebase web API keys + OAuth client IDs are designed to be in public client JS).
+- **3 files changed**: `.gitignore`, `android/app/google-services.json.example` (new), untracked both `google-services.json` files.
+
+### Phase 42 - Security: Android google-services.json exposure
+
+- **Vulnerability**: Committed `google-services.json` files leaked OAuth client IDs + SHA-1 cert hashes to repo readers.
+- **Impact**: Attacker gains known client_id + package_name + cert hashes — enables targeted OAuth phishing / token minting against the Firebase project.
+- **Fix**: gitignored real files, untracked via `git rm --cached`, shipped sanitized `.example`. No live secret rotation required — Firebase API keys are public, the risk was the OAuth client_id pairing.
+- **No new dependencies. 1 file changed** (`workers/b2-proxy.js` already fail-closed since Phase 28; no Worker change).
 
 ## What Was Tried & Failed
 
