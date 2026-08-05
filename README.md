@@ -1,6 +1,6 @@
 # Virtual Pendrive
 
-Cloud-based virtual USB drive for classrooms. Teachers upload files, generate 6-character access codes (15-minute expiry), and share them with students. Students enter the code on any PC: no account required.
+Cloud-based virtual USB drive for classrooms. Teachers upload files, generate 6-character access codes (1-hour expiry), and share them with students. Students enter the code on any PC: no account required.
 
 **Live web app**: [vdrive-64deb.web.app](https://vdrive-64deb.web.app)
 **Android app**: download the APK from [GitHub Releases](https://github.com/Muhaiminurrashid/vdrive/releases)
@@ -12,10 +12,10 @@ Teachers constantly swap files with students via USB drives, email, or chat apps
 ## Features
 
 - **File upload & management**: upload, rename, delete, folder organization (Google Drive-style breadcrumbs)
-- **Access codes**: 6-char codes from an ambiguity-free alphabet, 15-minute TTL, no student account needed
+- **Access codes**: 6-char codes from an ambiguity-free alphabet, 1-hour TTL, no student account needed
 - **Storage quota**: visible per-user usage bar (1 GB free tier)
 - **Multi-platform**: Android app (Kotlin + Jetpack Compose) and web app (vanilla HTML/CSS/JS + Firebase SDK)
-- **Secure storage**: files in Backblaze B2, uploaded through a Cloudflare Worker auth proxy; Firestore never stores file bytes
+- **Secure storage**: files in secure cloud storage, uploaded through a Cloudflare Worker auth proxy; Firestore never stores file bytes
 - **Google Sign-In**: one-tap login on both web and Android
 
 ## Architecture
@@ -33,7 +33,7 @@ vdrive/
 │   ├── dashboard.html   # File CRUD, share code generation
 │   ├── access.html      # Code entry → file download
 │   └── styles.css       # Design system (navy + cool gray)
-├── workers/          # Cloudflare Worker: Backblaze B2 upload proxy
+├── workers/          # Cloudflare Worker: file upload proxy
 ├── firebase.json     # Firebase Hosting + Firestore config
 └── firestore.rules   # Auth-gated per-user rules
 ```
@@ -45,7 +45,7 @@ vdrive/
 | DI | Hilt | n/a |
 | Auth | Firebase Auth | Firebase Auth SDK |
 | Database | Firestore | Firestore SDK |
-| Storage | Backblaze B2 via Cloudflare Worker | Backblaze B2 |
+| Storage | Secure cloud storage via Cloudflare Worker | Secure cloud storage |
 
 ### Data model
 
@@ -82,7 +82,7 @@ firebase deploy --only hosting
 
 ### Cloudflare Worker
 
-The B2 upload proxy needs `B2_APPLICATION_KEY_ID` and `B2_APPLICATION_KEY` secrets set via `wrangler secret put`. Deploy:
+The upload proxy needs storage credentials set via `wrangler secret put`. Deploy:
 
 ```bash
 cd workers
