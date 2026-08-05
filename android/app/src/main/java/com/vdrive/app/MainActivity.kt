@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.vdrive.app.ui.admin.AdminScreen
 import com.vdrive.app.ui.auth.LoginScreen
 import com.vdrive.app.ui.files.DashboardScreen
 import com.vdrive.app.ui.navigation.Route
@@ -43,11 +44,18 @@ fun VDriveNavHost(isDarkTheme: Boolean, onToggleTheme: () -> Unit) {
             DashboardScreen(
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = onToggleTheme,
+                onAdminClick = { navController.navigate(Route.Admin.route) },
                 onSignOut = {
                     navController.navigate(Route.Login.route) {
                         popUpTo(Route.Dashboard.route) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable(Route.Admin.route) {
+            AdminScreen(
+                isDarkTheme = isDarkTheme,
+                onBack = { navController.popBackStack() }
             )
         }
     }

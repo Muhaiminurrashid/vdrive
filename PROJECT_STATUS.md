@@ -725,6 +725,24 @@ Replaced always-visible checkboxes with Drive-style selection: Ctrl/Cmd+click on
 - **Deployed**: Firebase Hosting (verified live via curl grep — dashboard `sidebar-action`/`promptModal`/`Open:`/`hamburger { display:flex }` all present).
 - **Android**: `assembleDebug` + `testDebugUnitTest` green. APK not pushed — user builds locally.
 
+### Phase 47 - Android UX Fixes + Android Admin Panel
+
+- **Copy code button not visible (Android)**: `CodeBottomSheet` buttons were split into two half-width buttons (`Row`, `weight(1f)`) but text kept at `titleLarge` (22sp) — content (icon 24dp + spacer + ~100dp text) exceeded half-width on phones, text wrapped to 2 lines and clipped inside the 48dp button → button rendered broken. Fix: stacked vertically (`Column` + `fillMaxWidth()` each). Fits any width/font-scale.
+- **Long-press multi-select "only 1 file" (Android)**: `toggleSelection()` was already Set-based and unit-tested — the real problems were UX: selection highlight `Primary.copy(alpha = 0.06f)` was nearly invisible, and with ≥1 selected, tapping another file opened the system viewer instead of adding to selection. Fix (Drive-style):
+  - Selected cards get `BorderStroke(2.dp, Primary)` (list + grid) — unmissable
+  - List card swaps leading `FileTypeBadge` → `CheckCircle` icon when selected; grid card overlays `CheckCircle` TopStart (3-dot stays TopEnd)
+  - Tap behavior: selection active → tap toggles selection; nothing selected → tap previews. Long-press unchanged.
+- **3-dot menu consistency (Android)**: `FolderCard` (list) menu got leading icons (Share/Edit/Delete-red, was icon-less); `FileGridCard` got "Move to" (was missing vs list card); `HorizontalDivider` before red Delete in all 4 menus.
+- **"Move to" removed entirely (Android)**: user request — deleted menu items, `onMove` params, `MoveFileDialog`, `showMoveFileDialog` state, `moveFile()` in ViewModel. -66 lines. (Web never had file moving via 3-dot for files? Web still has move-to-folder select dropdown from Phase 46 — Android-only removal.)
+- **Android Admin Panel** (mirrors web `admin.html`, same gates):
+  - New `ui/admin/AdminViewModel.kt` + `AdminScreen.kt`: `GET /api/config` → `adminUid` compared to `auth.currentUser.uid` (no hardcoded UIDs), subscriptions list (`orderBy createdAt desc`), users collection → email map, Pending/Active/Rejected/All filter chips, status badges (warning/success/error tints), Approve (`status:active` + `expiresAt` 30d Timestamp) / Reject buttons on pending only, local-state update after action (web cache-staleness lesson)
+  - Drawer: gear "Admin Panel" item only when `state.isAdmin` (config check in `DashboardViewModel.checkAdmin()`, init)
+  - `Route.Admin` in NavRoutes + MainActivity, back arrow returns
+  - Zero new dependencies: stdlib `HttpURLConnection` + `JSONObject` (same pattern as `downloadSelected`)
+- **Verified**: live Worker `/api/config` returns `{"adminUid":"eNlw9bVyN2dAhpLOj75IpCEuh8J3"}` matching Firestore rules UID — no Worker/rules deploy needed, gate works on first install.
+- **Build verified**: `assembleDebug` + `testDebugUnitTest` green. APK not pushed — user builds locally.
+- **Changed files**: `DashboardScreen.kt`, `DashboardViewModel.kt`, `MainActivity.kt`, `NavRoutes.kt`, `ui/admin/AdminViewModel.kt` (new), `ui/admin/AdminScreen.kt` (new)
+
 ## What Was Tried & Failed
 
 | Attempt | Reason Failed |

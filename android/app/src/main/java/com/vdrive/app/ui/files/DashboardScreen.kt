@@ -50,13 +50,13 @@ import java.util.*
 fun DashboardScreen(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
+    onAdminClick: () -> Unit = {},
     onSignOut: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     var showCreateFolderDialog by remember { mutableStateOf(false) }
-    var showMoveFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
     var showRenameFolderDialog by remember { mutableStateOf<Folder?>(null) }
     var showDeleteFolderDialog by remember { mutableStateOf<Folder?>(null) }
     var showRenameFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
@@ -133,18 +133,6 @@ fun DashboardScreen(
             onRename = { newName ->
                 viewModel.renameFile(file.id, newName)
                 showRenameFileDialog = null
-            }
-        )
-    }
-
-    showMoveFileDialog?.let { file ->
-        MoveFileDialog(
-            folders = state.folders,
-            currentFolderId = file.folderId,
-            onDismiss = { showMoveFileDialog = null },
-            onMove = { targetFolderId ->
-                viewModel.moveFile(file, targetFolderId)
-                showMoveFileDialog = null
             }
         )
     }
@@ -242,6 +230,17 @@ fun DashboardScreen(
                     }
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                if (state.isAdmin) {
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        label = { Text("Admin Panel") },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onAdminClick()
+                        }
+                    )
+                }
                 NavigationDrawerItem(
                     icon = { Icon(if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null) },
                     label = { Text(if (isDarkTheme) "Dark mode" else "Light mode") },
@@ -465,7 +464,10 @@ fun DashboardScreen(
                                     file = file,
                                     isSelected = file.id in state.selectedIds,
                                     onToggleSelect = { viewModel.toggleSelection(file.id) },
-                                    onClick = { viewModel.previewFile(file, context) },
+                                    onClick = {
+                                        if (state.selectedIds.isNotEmpty()) viewModel.toggleSelection(file.id)
+                                        else viewModel.previewFile(file, context)
+                                    },
                                     onDownload = { viewModel.downloadFile(file, context) },
                                     onDelete = { viewModel.deleteFile(file) },
                                     onRename = { showRenameFileDialog = file },
@@ -502,10 +504,12 @@ fun DashboardScreen(
                                     file = file,
                                     isSelected = file.id in state.selectedIds,
                                     onToggleSelect = { viewModel.toggleSelection(file.id) },
-                                    onClick = { viewModel.previewFile(file, context) },
+                                    onClick = {
+                                        if (state.selectedIds.isNotEmpty()) viewModel.toggleSelection(file.id)
+                                        else viewModel.previewFile(file, context)
+                                    },
                                     onDownload = { viewModel.downloadFile(file, context) },
                                     onDelete = { viewModel.deleteFile(file) },
-                                    onMove = { showMoveFileDialog = file },
                                     onRename = { showRenameFileDialog = file },
                                     isDarkTheme = isDarkTheme
                                 )
@@ -626,14 +630,18 @@ private fun FolderCard(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         text = { Text("Share") },
                         onClick = { showMenu = false; onShare() }
                     )
                     DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         text = { Text("Rename") },
                         onClick = { showMenu = false; onRename() }
                     )
+                    HorizontalDivider()
                     DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
                         text = { Text("Delete", color = ErrorRed) },
                         onClick = { showMenu = false; onDelete() }
                     )
@@ -681,6 +689,7 @@ private fun FolderGridCard(
                     DropdownMenuItem(
                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
+                    HorizontalDivider()
                     DropdownMenuItem(
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
                         text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
@@ -720,9 +729,18 @@ private fun FileGridCard(
         shape = RoundedCornerShape(14.dp),
         color = if (isSelected) Primary.copy(alpha = 0.06f) else bg,
         tonalElevation = 0.dp,
+        border = if (isSelected) BorderStroke(2.dp, Primary) else null,
         modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onToggleSelect)
     ) {
         Box {
+            if (isSelected) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = "Selected",
+                    tint = Primary,
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(22.dp)
+                )
+            }
             Column(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -758,6 +776,7 @@ private fun FileGridCard(
                 DropdownMenuItem(
                     leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
                     text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
+                HorizontalDivider()
                 DropdownMenuItem(
                     leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
                     text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
@@ -868,37 +887,6 @@ private fun RenameFileDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = Muted) }
-        }
-    )
-}
-
-@Composable
-private fun MoveFileDialog(
-    folders: List<Folder>,
-    currentFolderId: String?,
-    onDismiss: () -> Unit,
-    onMove: (String?) -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        title = { Text("Move to", style = MaterialTheme.typography.titleLarge, color = Ink) },
-        text = {
-            Column {
-                DropdownMenuItem(
-                    text = { Text("My Files (root)") },
-                    onClick = { onMove(null) }
-                )
-                folders.filter { it.id != currentFolderId }.forEach { folder ->
-                    DropdownMenuItem(
-                        text = { Text(folder.name) },
-                        onClick = { onMove(folder.id) }
-                    )
-                }
-            }
-        },
-        confirmButton = {
             TextButton(onClick = onDismiss) { Text("Cancel", color = Muted) }
         }
     )
@@ -1027,7 +1015,6 @@ private fun FileCard(
     onClick: () -> Unit,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
-    onMove: () -> Unit,
     onRename: () -> Unit,
     isDarkTheme: Boolean = false,
 ) {
@@ -1039,6 +1026,7 @@ private fun FileCard(
         shape = RoundedCornerShape(14.dp),
         color = bg,
         tonalElevation = 0.dp,
+        border = if (isSelected) BorderStroke(2.dp, Primary) else null,
     ) {
         Row(
             modifier = Modifier
@@ -1047,7 +1035,11 @@ private fun FileCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FileTypeBadge(typeLabel = file.typeLabel)
+            if (isSelected) {
+                Icon(Icons.Default.CheckCircle, contentDescription = "Selected", tint = Primary, modifier = Modifier.size(24.dp))
+            } else {
+                FileTypeBadge(typeLabel = file.typeLabel)
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -1074,9 +1066,7 @@ private fun FileCard(
                     DropdownMenuItem(
                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
-                    DropdownMenuItem(
-                        leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        text = { Text("Move to") }, onClick = { showMenu = false; onMove() })
+                    HorizontalDivider()
                     DropdownMenuItem(
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
                         text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
@@ -1124,9 +1114,9 @@ private fun CodeBottomSheet(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(20.dp))
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
                     onClick = {
@@ -1134,7 +1124,7 @@ private fun CodeBottomSheet(
                         clipboard.setPrimaryClip(ClipData.newPlainText("Access code", code))
                         Toast.makeText(context, "Code copied!", Toast.LENGTH_SHORT).show()
                     },
-                    modifier = Modifier.weight(1f).height(48.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                 ) {
@@ -1148,7 +1138,7 @@ private fun CodeBottomSheet(
                         clipboard.setPrimaryClip(ClipData.newPlainText("Access link", "https://vdrive-64deb.web.app/access.html"))
                         Toast.makeText(context, "Link copied!", Toast.LENGTH_SHORT).show()
                     },
-                    modifier = Modifier.weight(1f).height(48.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, Hairline),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),

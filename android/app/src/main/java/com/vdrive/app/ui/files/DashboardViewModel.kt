@@ -71,6 +71,7 @@ data class DashboardUiState(
     val uploadProgress: Float? = null,
     val actionLabel: String? = null,
     val isPremium: Boolean = false,
+    val isAdmin: Boolean = false,
 )
 
 // ponytail: set after deploying Worker
@@ -95,6 +96,23 @@ class DashboardViewModel @Inject constructor(
             loadFolders()
         }
         loadStorageBar()
+        checkAdmin()
+    }
+
+    // ponytail: fetch ADMIN_UID from Worker config instead of hardcoding, mirrors web admin gate
+    fun checkAdmin() {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val adminUid = withContext(Dispatchers.IO) {
+                    val conn = URL("$B2_PROXY_URL/api/config").openConnection() as java.net.HttpURLConnection
+                    conn.connectTimeout = 10000
+                    conn.readTimeout = 10000
+                    if (conn.responseCode >= 300) "" else JSONObject(conn.inputStream.bufferedReader().readText()).optString("adminUid")
+                }
+                _state.value = _state.value.copy(isAdmin = adminUid.isNotEmpty() && adminUid == user.uid)
+            } catch (_: Exception) { }
+        }
     }
 
     // ponytail: paginated file query per folder, folders from cache
@@ -399,16 +417,6 @@ class DashboardViewModel @Inject constructor(
                 firestore.collection("folders").document(folderId)
                     .update("name", newName).await()
                 loadFolders()
-            } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
-        }
-    }
-
-    fun moveFile(file: FileUiItem, targetFolderId: String?) {
-        viewModelScope.launch {
-            try {
-                firestore.collection("files").document(file.id)
-                    .update("folderId", targetFolderId).await()
-                loadContents()
             } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
     }
