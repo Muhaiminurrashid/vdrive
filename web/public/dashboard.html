@@ -194,10 +194,8 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #subscribeCard label { display:block; font-size:13px; color:var(--color-body); margin-bottom:4px; }
 #subscribeCard input { width:100%; padding:10px 12px; border:1px solid var(--color-hairline); border-radius:8px; background:var(--color-surface-soft); color:var(--color-ink); font-size:14px; margin-bottom:12px; box-sizing:border-box; outline:none; }
 #subscribeCard input:focus { border-color:var(--color-primary); }
-/* Checkbox selection */
-.file-select { width:16px; height:16px; accent-color:var(--color-primary); cursor:pointer; flex-shrink:0; }
-.file-row.selected { background:var(--color-surface-soft); }
-.grid-card.selected { border-color:var(--color-primary); border-width:2px; }
+.file-row.selected { background:color-mix(in srgb, var(--color-primary) 6%, transparent); box-shadow:inset 3px 0 0 var(--color-primary); }
+.grid-card.selected { border-color:var(--color-primary); border-width:2px; background:color-mix(in srgb, var(--color-primary) 5%, transparent); }
 .bulk-bar { display:flex; align-items:center; gap:10px; padding:8px 16px; background:var(--color-surface-card); border-bottom:1px solid var(--color-hairline); flex-shrink:0; }
 .bulk-bar .count { font-size:13px; color:var(--color-muted); font-weight:500; }
 .bulk-bar button { padding:6px 12px; border:1px solid var(--color-hairline); border-radius:6px; background:transparent; font-size:12px; font-weight:500; cursor:pointer; color:var(--color-ink); }
@@ -562,7 +560,7 @@ async function loadFolders() {
   snap.docs.forEach(doc => {
     const d = doc.data()
     window.folderNames[doc.id] = d.name
-    window.panelFolders[doc.id] = { id: doc.id, name: d.name }
+    window.panelFolders[doc.id] = { id: doc.id, name: d.name, parentId: d.parentId || null }
     window.allFolders.push({ id: doc.id, name: d.name, parentId: d.parentId || null })
   })
 }
@@ -637,17 +635,35 @@ async function createFolder() {
   await loadFolders(); loadContents()
 }
 
+async function collectFolderContents(folderId) {
+  const subIds = Object.values(window.panelFolders).filter(f => f.parentId === folderId).map(f => f.id)
+  let files = [], folders = []
+  for (const sid of subIds) {
+    const sub = await collectFolderContents(sid)
+    files = files.concat(sub.files); folders = folders.concat(sub.folders, sid)
+  }
+  const fileSnap = await db.collection('files')
+    .where('userId', '==', window.currentUser.uid)
+    .where('folderId', '==', folderId).get()
+  return { files: files.concat(fileSnap.docs), folders }
+}
+
 async function deleteFolderById(folderId) {
-  await db.collection('folders').doc(folderId).delete()
-  // ponytail: silent child cleanup
-  Promise.allSettled([
-    db.collection('files').where('folderId','==',folderId).get().then(snap =>
-      Promise.allSettled(snap.docs.map(d => d.ref.update({folderId:null}).catch(()=>{})))
-    ).catch(()=>{}),
-    db.collection('folders').where('parentId','==',folderId).get().then(snap =>
-      Promise.allSettled(snap.docs.map(d => d.ref.update({parentId:null}).catch(()=>{})))
-    ).catch(()=>{})
-  ])
+  const { files, folders } = await collectFolderContents(folderId)
+  if (files.length) {
+    const res = await fetch(B2_PROXY_URL + '/api/zip-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileIds: files.map(d => d.id), userId: window.currentUser?.uid })
+    })
+    if (!res.ok) throw new Error('Delete failed')
+  }
+  // ponytail: single batch, 500-write Firestore cap (folder with 500+ files unsupported)
+  const batch = db.batch()
+  folders.forEach(id => batch.delete(db.collection('folders').doc(id)))
+  files.forEach(d => batch.delete(d.ref))
+  batch.delete(db.collection('folders').doc(folderId))
+  await batch.commit()
 }
 
 async function renameFolder(id) {
@@ -758,22 +774,14 @@ function toggleSelection(f) {
   if (!f) return
   if (window.selectedIds.has(f.id)) window.selectedIds.delete(f.id)
   else window.selectedIds.add(f.id)
+  const el = document.querySelector('.file-row[data-id="' + f.id + '"], .grid-card[data-id="' + f.id + '"]')
+  if (el) el.classList.toggle('selected')
   renderBulkBar()
-}
-
-function toggleSelectAll() {
-  const files = window.currentPageFiles
-  const allSelected = files.length > 0 && files.every(f => window.selectedIds.has(f.id))
-  if (allSelected) files.forEach(f => window.selectedIds.delete(f.id))
-  else files.forEach(f => window.selectedIds.add(f.id))
-  renderBulkBar()
-  renderCurrentView()
 }
 
 function clearSelection() {
   window.selectedIds.clear()
   renderBulkBar()
-  document.querySelectorAll('.file-select').forEach(cb => { cb.checked = false })
   document.querySelectorAll('.file-row.selected, .grid-card.selected').forEach(el => el.classList.remove('selected'))
 }
 
@@ -934,7 +942,9 @@ function handleDotClick(e) {
 }
 
 async function deleteFolderConfirm(id) {
-  if (confirm('Delete this folder? Files and sub-folders will be detached.')) {
+  const { files } = await collectFolderContents(id)
+  const fileNote = files.length ? ` ${files.length} file${files.length > 1 ? 's' : ''} inside will be permanently deleted.` : ''
+  if (confirm('Delete this folder?' + fileNote + ' This cannot be undone.')) {
     await deleteFolderById(id)
     await loadFolders(); loadContents(); loadStorageBar()
   }
@@ -1148,16 +1158,6 @@ function renderCurrentView() {
 
 // ponytail: list view, file type badge + single-line layout
 function renderList(container, folders, files) {
-  const hasSelection = window.selectedIds.size > 0
-  const allSelected = files.length > 0 && files.every(f => window.selectedIds.has(f.id))
-  const headerRow = document.createElement('div')
-  headerRow.className = 'file-row'
-  headerRow.style.justifyContent = 'flex-start'
-  headerRow.style.height = '36px'
-  headerRow.innerHTML = hasSelection
-    ? `<input type="checkbox" class="file-select" ${allSelected ? 'checked' : ''} onchange="toggleSelectAll()"> ${files.length} files`
-    : ''
-  if (hasSelection) container.appendChild(headerRow)
   folders.forEach(f => {
     const row = document.createElement('div')
     row.className = 'file-row isFolder'
@@ -1174,10 +1174,11 @@ function renderList(container, folders, files) {
     const color = fileIconData(f.name).bg
     const row = document.createElement('div')
     row.className = 'file-row' + (window.selectedIds.has(f.id) ? ' selected' : '')
+    row.dataset.id = f.id
     row.ondblclick = () => previewFile(f)
+    row.onclick = (e) => { if (e.ctrlKey || e.metaKey) toggleSelection(panelFiles[f.id]) }
     row.innerHTML =
-      `<input type="checkbox" class="file-select" ${window.selectedIds.has(f.id) ? 'checked' : ''} onchange="toggleSelection(panelFiles['${f.id}']); event.stopPropagation()">
-      <span class="file-type-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</span>
+      `<span class="file-type-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</span>
       <span class="file-name">${escapeHtml(f.name)}</span>
       <span class="file-size">${formatBytes(f.size)}</span>
       <button class="file-menu" data-id="${f.id}" data-type="file"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`
@@ -1213,14 +1214,12 @@ function renderGrid(container, folders, files) {
     const color = fileIconData(f.name).bg
     const card = document.createElement('div')
     card.className = 'grid-card' + (window.selectedIds.has(f.id) ? ' selected' : '')
+    card.dataset.id = f.id
     card.style.setProperty('--accent-color', color)
-    card.onclick = () => showInfoPanel('file', f.id)
+    card.onclick = (e) => { if (e.ctrlKey || e.metaKey) toggleSelection(panelFiles[f.id]); else showInfoPanel('file', f.id) }
     card.ondblclick = () => previewFile(f)
     card.innerHTML =
-      `<div style="display:flex;align-items:center;justify-content:flex-end;padding:4px 8px 0">
-<input type="checkbox" class="file-select" ${window.selectedIds.has(f.id) ? 'checked' : ''} onchange="toggleSelection(panelFiles['${f.id}']); event.stopPropagation()">
-      </div>
-      <div class="grid-card-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</div>
+      `<div class="grid-card-badge" style="color:${color};background:${color}14">${fileTypeLabel(f.name)}</div>
       <div class="grid-card-name">${escapeHtml(f.name)}</div>
       <div class="grid-card-size">${formatBytes(f.size)}</div>
       <button class="grid-card-menu" data-id="${f.id}" data-type="file"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>`

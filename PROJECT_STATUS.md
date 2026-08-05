@@ -484,7 +484,7 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [x] **Web bulk delete broken — wrong B2 fileId** (`web/public/dashboard.html:817`): `deleteSelected()` sends `fileId: f.id` (Firestore doc id) to `/api/delete`, but Worker calls B2 `b2_delete_file_version` (`workers/b2-proxy.js:239`) which requires the **B2 file id** (`b2FileId`). Every bulk iteration fails silently (`!res.ok` → catch → `continue`), Firestore doc never deleted, files remain. Single 3-dot delete works because it sends `f.b2FileId` (`dashboard.html:746`). **Fix**: `body: JSON.stringify({ fileId: f.b2FileId, ... })`. Deploy: `firebase deploy --only hosting` only — no Worker change. **Fixed Phase 43.**
 - [x] **Web bulk delete — pagination-scoped lookup** (`web/public/dashboard.html:811`): `window.currentPageFiles.find(f => f.id === id)` only covers current 50-file page (Phase 26 pagination); files selected from earlier "Show more" pages → `undefined` → silently skipped. **Fix**: use `window.panelFiles[id]` (full map, populated at `:1093`). **Fixed Phase 43** (also `downloadSelected()` — same lookup dropped files from earlier pages in ZIP).
 - [x] **CI broken after Phase 42 — google-services.json missing**: `processDebugGoogleServices` task hard-fails when `android/app/google-services.json` is absent (scrubbed in Phase 42). Unit tests don't use the config values — the plugin just needs the file present. **Fix (recommended)**: in `.github/workflows/deploy.yml` test job before the gradle step: `echo "${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json`; add GitHub secret `ANDROID_GOOGLE_SERVICES_JSON` = base64 of real local file. Alt (no secret): `cp android/app/google-services.json.example android/app/google-services.json` — risky, plugin may reject placeholder values. **Fixed Phase 43 (alt route chosen — plugin accepts placeholders, verified locally).**
-- [ ] **Storage bar after folder delete (web) — NOT stale, behavior decision**: bar is correct — `deleteFolderById` (`dashboard.html:640`) **detaches** files to root (`folderId: null`), doesn't delete → bytes unchanged → "19.5 MB" persists. Phase 8 design: "Delete resets children to root". If "delete folder = free storage" is wanted: replace detach with recursive child delete (web `:643-650` + Android `DashboardViewModel.kt:260-264` — `update("folderId", null)` → `.delete()`), and `await` the delete before `loadStorageBar()` (web currently fire-and-forgets `Promise.allSettled` at `:643`). Android already refetches storage: `loadStorageBar()` added to `deleteFolder` (`DashboardViewModel.kt:258`, applied, tests pass, **uncommitted**).
+- [ ] **Storage bar after folder delete (web) — FIXED Phase 45**: folder delete now cascade-deletes contents (B2 + Firestore) instead of detaching — storage bar drops correctly. Root cause of "doesn't delete": `collectFolderContents()` queries lacked `userId` filter → Firestore rules (require `resource.data.userId == uid`) denied the query → folder delete aborted silently. Old detach code had the same latent rules violation (silent no-op inside `catch(()=>{})` — detach never actually ran). Fix: file queries scoped by `userId` (existing Phase 26 index covers), folder tree traversed in-memory (`window.panelFolders`/`state.folders` with `parentId`).
 - [ ] **Thank-you subscription email**: pending provider + admin-verification decision (see plan in session): Worker `POST /api/approve-subscription` — verify admin via Google tokeninfo (`sub == env.ADMIN_UID`), Firestore patch via existing service-account client, email via new `RESEND_API_KEY` Worker secret; `admin.html` `approve()` (line 135) calls Worker instead of direct Firestore write. Spark plan blocks Cloud Functions alternative. Deferred: expiry-reminder emails, renewal receipts.
 - [ ] **CI secrets scope audit** (Open #6 HIGH): verify `FIREBASE_TOKEN` (refresh-only) + `CLOUDFLARE_API_TOKEN` (Workers edit min scope, no account admin) in GitHub repo settings. Phase 28 token has office-subnet IP restriction — a CI token with IP restriction breaks clean `wrangler deploy` on GitHub runners (dynamic IPs).
 
@@ -659,6 +659,41 @@ See completed section above.
 - **Deployed**: Firebase Hosting (web). Android: `assembleDebug` + `testDebugUnitTest` pass.
 - **Changed files**: `web/public/dashboard.html`, `DashboardViewModel.kt`, `FileRepository.kt`, `.github/workflows/deploy.yml`, `PROJECT_STATUS.md`
 - **Pushed**: GitHub main.
+
+### Phase 45 - Folder Cascade Delete + Rules-Scoped Queries
+
+- **Behavior change**: deleting a folder now permanently deletes its files + sub-folders (B2 + Firestore), not detach-to-root. Storage bar drops correctly. Web + Android confirm dialogs warn "files inside will be permanently deleted".
+- **Bug fixed**: folder delete silently failed (web) / "Something went wrong" (Android) after Phase 44 change — `collectFolderContents()` queried `files`/`folders` by `folderId`/`parentId` only, but Firestore rules (`firestore.rules:16,29`) require `resource.data.userId == request.auth.uid` and **deny queries not provably scoped to readable docs** — any query without `userId` equality filter fails outright.
+- **Fix**:
+  - Web `dashboard.html`: file query now `where('userId','==',uid).where('folderId','==',id)` (covered by Phase 26 composite index); folder tree traversed in-memory via `window.panelFolders` (now stores `parentId`); batch deletes via `doc()` refs. B2 batch delete via `/api/zip-delete` (1 call, 6/min UID rate ok).
+  - Android `DashboardViewModel.kt`: file query +`whereEqualTo("userId", uid)`; sub-folders from `state.folders` (has `parentId`); `DocumentReference`s deleted directly. No new composite index, no rules change.
+- **Test**: `deleteFolder deletes nested files and subfolders` — seeds in-memory folder tree, verifies B2 delete + subfolder + folder doc deletes, asserts no error state. (Mockk gotcha: `any()` matcher stub must register BEFORE exact-value stubs — last-registered wins.)
+- **Deploy**: Firebase Hosting live. Android `assembleDebug` + `testDebugUnitTest` green.
+- **Zero new dependencies. 3 files changed** (+ test).
+
+### Phase 44 - Drive-style Selection (Ctrl+Click / Long-Press) - DONE
+
+Replaced always-visible checkboxes with Drive-style selection: Ctrl/Cmd+click on web, long-press on Android. Bulk bar appears only when selection active.
+
+- **Web** (`web/public/dashboard.html`):
+  - List rows: removed checkbox `<input>`; added `row.onclick = (e) => { if (e.ctrlKey || e.metaKey) toggleSelection(panelFiles[f.id]) }` — plain click no-op (dblclick previews), folder rows unchanged
+  - Grid cards: removed checkbox block; `card.onclick` → ctrl/meta ? toggleSelection : showInfoPanel
+  - Select-all header row removed + `toggleSelectAll()` deleted (dead code)
+  - `clearSelection()`: dropped `.file-select` uncheck loop
+  - `.file-select` CSS deleted
+  - `handleDotClick` already stopPropagation — ctrl+click on 3-dot opens menu only, no accidental toggle
+  - Bulk bar / `deleteSelected()` / `downloadSelected()` / `renderBulkBar()` — zero changes, keyed off `selectedIds`
+  - **Selected-state live toggle fix**: `toggleSelection()` now flips `.selected` class directly on the row/card (`data-id` lookup) — highlight previously only appeared on next re-render. Selected style strengthened: navy 6% tint bg + 3px navy left accent (list), navy border + tint (grid)
+- **Android** (`DashboardScreen.kt`):
+  - `FileCard`: removed check circle `IconButton`; `Row` `.clickable` → `.combinedClickable(onClick = onClick, onLongClick = onToggleSelect)`. Selected bg tint stays
+  - `FileGridCard`: removed `Checkbox`; `Surface` `.clickable` → `.combinedClickable` + added selected bg tint (`Primary.copy(alpha = 0.06f)`) — grid had zero selected-state feedback once checkbox went
+  - `@OptIn(ExperimentalFoundationApi::class)` on both composables + 2 imports
+  - ActionBar already auto-appears on `selectedIds.isNotEmpty()` (Download ZIP / Delete / Cancel). Deselect = long-press again or Cancel
+  - Folder cards keep long-press context menu (Rename/Delete) — no conflict
+  - `toggleSelection()` ViewModel + `fileMap` lookups unchanged
+- **Skipped**: shift-click range select (add when asked), folder selection (bulk ops file-only), hint tooltip (bulk bar count is feedback)
+- **Deploy**: `firebase deploy --only hosting` live. Android: `assembleDebug` + `testDebugUnitTest` pass.
+- **Zero new dependencies. 2 files changed.**
 
 ## What Was Tried & Failed
 

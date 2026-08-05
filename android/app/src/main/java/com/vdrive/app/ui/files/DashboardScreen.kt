@@ -8,7 +8,9 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -55,6 +57,7 @@ fun DashboardScreen(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var showMoveFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
     var showRenameFolderDialog by remember { mutableStateOf<Folder?>(null) }
+    var showDeleteFolderDialog by remember { mutableStateOf<Folder?>(null) }
     var showRenameFileDialog by remember { mutableStateOf<FileUiItem?>(null) }
     var showSubscribeDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -104,6 +107,21 @@ fun DashboardScreen(
                 viewModel.renameFolder(folder.id, newName)
                 showRenameFolderDialog = null
             }
+        )
+    }
+
+    showDeleteFolderDialog?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { showDeleteFolderDialog = null },
+            title = { Text("Delete folder?") },
+            text = { Text("Files inside \"${folder.name}\" and its sub-folders will be permanently deleted.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteFolder(folder.id)
+                    showDeleteFolderDialog = null
+                }) { Text("Delete", color = ErrorRed) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteFolderDialog = null }) { Text("Cancel") } }
         )
     }
 
@@ -405,7 +423,7 @@ fun DashboardScreen(
                                 FolderGridCard(
                                     folder = folder,
                                     onClick = { viewModel.navigateToFolder(folder.id) },
-                                    onDelete = { viewModel.deleteFolder(folder.id) },
+                                    onDelete = { showDeleteFolderDialog = folder },
                                     onRename = { showRenameFolderDialog = folder },
                                     onShare = { viewModel.generateFolderCode(folder.id) },
                                     isDarkTheme = isDarkTheme
@@ -442,7 +460,7 @@ fun DashboardScreen(
                                 FolderCard(
                                     folder = folder,
                                     onClick = { viewModel.navigateToFolder(folder.id) },
-                                    onDelete = { viewModel.deleteFolder(folder.id) },
+                                    onDelete = { showDeleteFolderDialog = folder },
                                     onRename = { showRenameFolderDialog = folder },
                                     onShare = { viewModel.generateFolderCode(folder.id) },
                                     isDarkTheme = isDarkTheme
@@ -647,6 +665,7 @@ private fun FolderGridCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileGridCard(
     file: FileUiItem,
@@ -662,9 +681,9 @@ private fun FileGridCard(
     val bg = if (isDarkTheme) DarkSurface else SurfaceCard
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = bg,
+        color = if (isSelected) Primary.copy(alpha = 0.06f) else bg,
         tonalElevation = 0.dp,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onToggleSelect)
     ) {
         Box {
             Column(
@@ -691,11 +710,6 @@ private fun FileGridCard(
                 modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Checkbox(
-                    checked = isSelected,
-                    onCheckedChange = { onToggleSelect() },
-                    modifier = Modifier.size(20.dp)
-                )
                 IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = if (isDarkTheme) DarkMutedSoft else MutedSoft, modifier = Modifier.size(16.dp))
                 }
@@ -957,6 +971,7 @@ private fun EmptyState(modifier: Modifier = Modifier, isDarkTheme: Boolean = fal
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileCard(
     file: FileUiItem,
@@ -981,19 +996,10 @@ private fun FileCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .combinedClickable(onClick = onClick, onLongClick = onToggleSelect)
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onToggleSelect, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    if (isSelected) Icons.Default.CheckCircle else Icons.Default.Circle,
-                    contentDescription = "Select",
-                    tint = if (isSelected) Primary else (if (isDarkTheme) DarkHairline else Hairline),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(4.dp))
             FileTypeBadge(typeLabel = file.typeLabel)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

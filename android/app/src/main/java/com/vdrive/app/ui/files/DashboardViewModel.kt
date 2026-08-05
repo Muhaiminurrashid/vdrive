@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -258,17 +259,33 @@ class DashboardViewModel @Inject constructor(
     fun deleteFolder(folderId: String) {
         viewModelScope.launch {
             try {
+                val (files, subFolderRefs) = collectFolderContents(folderId)
+                files.forEach { f ->
+                    runCatching {
+                        fileRepository.deleteFile(f.id, f.getString("b2FileId"), f.getString("b2FileName"))
+                    }
+                }
+                subFolderRefs.forEach { ref -> runCatching { ref.delete().await() } }
                 firestore.collection("folders").document(folderId).delete().await()
                 navigateUp(); loadFolders(); loadStorageBar()
-                // ponytail: silent child cleanup, errors don't block navigation
-                runCatching {
-                    firestore.collection("files").whereEqualTo("folderId", folderId).get().await()
-                        .documents.forEach { runCatching { it.reference.update("folderId", null).await() } }
-                    firestore.collection("folders").whereEqualTo("parentId", folderId).get().await()
-                        .documents.forEach { runCatching { it.reference.update("parentId", null).await() } }
-                }
             } catch (e: Exception) { _state.value = _state.value.copy(error = userMessage(e)) }
         }
+    }
+
+    // ponytail: folders traversed in memory (state.folders has parentId), file query scoped by userId for Firestore rules
+    private suspend fun collectFolderContents(folderId: String): Pair<List<DocumentSnapshot>, List<DocumentReference>> {
+        val ownFiles = firestore.collection("files")
+            .whereEqualTo("userId", auth.currentUser?.uid)
+            .whereEqualTo("folderId", folderId).get().await().documents
+        val subFolderIds = _state.value.folders.filter { it.parentId == folderId }.map { it.id }
+        var files = ownFiles
+        var folderRefs = emptyList<DocumentReference>()
+        for (sid in subFolderIds) {
+            val (f, d) = collectFolderContents(sid)
+            files = files + f
+            folderRefs = folderRefs + d + firestore.collection("folders").document(sid)
+        }
+        return files to folderRefs
     }
 
     fun renameFile(fileId: String, newName: String) {

@@ -8,6 +8,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.vdrive.app.data.repository.FileRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -198,5 +199,66 @@ class DashboardViewModelTest {
         assertEquals(1, viewModel.state.value.fileCount)
         viewModel.deleteFile(viewModel.state.value.files.first())
         advanceUntilIdle()
+    }
+
+    @Test
+    fun `deleteFolder deletes nested files and subfolders`() = runTest(testDispatcher) {
+        mockFirestoreSnapshot(emptyList())
+
+        val fileDoc = mockk<com.google.firebase.firestore.QueryDocumentSnapshot>()
+        every { fileDoc.id } returns "file1"
+        every { fileDoc.getString("b2FileId") } returns "b2-1"
+        every { fileDoc.getString("b2FileName") } returns "b2-1.txt"
+        every { fileDoc.reference } returns mockk<com.google.firebase.firestore.DocumentReference>().also {
+            coEvery { it.delete() } returns Tasks.forResult(null)
+        }
+
+        val filesColRef = mockk<CollectionReference>()
+        val fileQuery = mockk<Query>()
+        val fileSnap = mockk<QuerySnapshot>()
+        val emptySnap = mockk<QuerySnapshot>()
+        every { emptySnap.documents } returns emptyList()
+        every { firestore.collection("files") } returns filesColRef
+        every { filesColRef.whereEqualTo("userId", "user123") } returns filesColRef
+        coEvery { filesColRef.get() } returns Tasks.forResult(emptySnap)
+        val fallbackQuery = mockk<Query>()
+        every { fallbackQuery.orderBy(any<String>(), any<Query.Direction>()) } returns fallbackQuery
+        every { fallbackQuery.limit(any<Long>()) } returns fallbackQuery
+        coEvery { fallbackQuery.get() } returns Tasks.forResult(emptySnap)
+        every { filesColRef.whereEqualTo("folderId", any()) } returns fallbackQuery
+        every { filesColRef.whereEqualTo("folderId", "folder1") } returns fileQuery
+        coEvery { fileQuery.get() } returns Tasks.forResult(fileSnap)
+        every { fileSnap.documents } returns listOf(fileDoc)
+        every { filesColRef.whereEqualTo("folderId", "sub1") } returns mockk<Query>().also {
+            coEvery { it.get() } returns Tasks.forResult(emptySnap)
+        }
+
+        val folderColRef = mockk<com.google.firebase.firestore.CollectionReference>()
+        val foldersSnap = mockk<QuerySnapshot>()
+        val subFolderDoc = mockk<com.google.firebase.firestore.QueryDocumentSnapshot>()
+        every { subFolderDoc.id } returns "sub1"
+        every { subFolderDoc.data } returns mapOf("name" to "Sub", "parentId" to "folder1")
+        every { foldersSnap.documents } returns listOf(subFolderDoc)
+        val folderDocRef = mockk<com.google.firebase.firestore.DocumentReference>()
+        val sub1Ref = mockk<com.google.firebase.firestore.DocumentReference>()
+        every { firestore.collection("folders") } returns folderColRef
+        every { folderColRef.whereEqualTo("userId", "user123") } returns folderColRef
+        coEvery { folderColRef.get() } returns Tasks.forResult(foldersSnap)
+        every { folderColRef.document("folder1") } returns folderDocRef
+        coEvery { folderDocRef.delete() } returns Tasks.forResult(null)
+        every { folderColRef.document("sub1") } returns sub1Ref
+        coEvery { sub1Ref.delete() } returns Tasks.forResult(null)
+
+        coEvery { fileRepository.deleteFile("file1", "b2-1", "b2-1.txt") } returns Unit
+
+        viewModel = DashboardViewModel(auth, firestore, fileRepository)
+        advanceUntilIdle()
+        viewModel.deleteFolder("folder1")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { fileRepository.deleteFile("file1", "b2-1", "b2-1.txt") }
+        coVerify(exactly = 1) { sub1Ref.delete() }
+        coVerify(exactly = 1) { folderDocRef.delete() }
+        assertEquals(null, viewModel.state.value.error)
     }
 }
