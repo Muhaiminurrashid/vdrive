@@ -39,6 +39,22 @@ service-account.json
 # Firebase Android config - contains OAuth client IDs + API key, keep local
 **/google-services.json
 !**/*google-services.json.example
+# Android signing - keep local, never commit
+android/keystore.properties
+android/release.keystore
+
+# Release artifacts
+android/app/release/
+
+# Local-only docs & config
+PROJECT_STATUS.md
+AGENTS.md
+DESIGN.md
+opencode.json
+skills-lock.json
+.claude/
+.opencode/
+scripts/
 
 # Skills
 .agents/
