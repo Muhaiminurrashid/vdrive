@@ -21,24 +21,24 @@
 </head>
 <body class="bg-canvas text-body antialiased leading-relaxed grid-dots">
 
-<nav class="sticky top-0 z-50 h-18 px-8 bg-white/70 backdrop-blur-xl border-b border-blue-100 shadow-sm flex items-center justify-between max-w-7xl mx-auto rounded-b-2xl">
+<nav class="sticky top-0 z-50 h-18 px-4 md:px-8 bg-white/70 backdrop-blur-xl border-b border-blue-100 shadow-sm flex items-center justify-between max-w-7xl mx-auto rounded-b-2xl">
   <a href="/" class="flex items-center gap-3 text-lg font-bold text-ink tracking-tight hover:text-primary transition-all duration-300">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><rect x="7" y="3" width="10" height="16" rx="2" fill="currentColor"/><rect x="9" y="19" width="6" height="3" rx="1" fill="currentColor"/></svg>
     Virtual Pendrive
   </a>
   <div class="flex items-center gap-3">
-    <a href="/login.html" class="text-sm font-medium text-body hover:text-primary">Sign in</a>
-    <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Start for Free →</a>
+    <a href="/login.html" class="hidden min-[380px]:inline text-sm font-medium text-body hover:text-primary">Sign in</a>
+    <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Start for Free →</a>
   </div>
 </nav>
 
-<section class="relative overflow-hidden max-w-6xl mx-auto px-6 py-24 lg:py-32">
+<section class="relative overflow-hidden max-w-6xl mx-auto px-6 py-20 lg:py-32">
   <div class="absolute -top-20 -left-20 w-96 h-96 bg-blue-400 rounded-full blur-[160px] opacity-30"></div>
 
 <div class="absolute top-20 right-0 w-96 h-96 bg-indigo-400 rounded-full blur-[180px] opacity-25"></div>
-  <div class="relative z-10 flex gap-20 items-center flex-wrap lg:flex-nowrap">
-    <div class="flex-1 min-w-80">
-      <h1 class="text-5xl font-extrabold tracking-tight text-slate-900">
+  <div class="relative z-10 flex gap-10 lg:gap-20 items-center flex-wrap lg:flex-nowrap">
+    <div class="flex-1 min-w-0 sm:min-w-80">
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
     Your Files.<br>
     <span class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
         Anywhere.<br>Anytime.
@@ -51,13 +51,13 @@
       <p class="text-lg text-body max-w-lg mb-8 leading-8">
         Store, organize, and access your lecture slides, notes, assignments, and classroom files securely from anywhere. No USB drive required.
       </p>
-      <div class="flex gap-3">
-        <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Start for Free →</a>
-        <a href="/access.html" class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft inline-flex items-center">Enter Classroom Code</a>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center justify-center">Start for Free →</a>
+        <a href="/access.html" class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft inline-flex items-center justify-center">Enter Classroom Code</a>
       </div>
     </div>
 
-    <div class="relative bg-surface-dark rounded-3xl p-8 flex-1 min-w-80 shadow-2xl border border-white/10 hover:-translate-y-2 hover:shadow-[0_25px_80px_rgba(37,99,235,.35)] transition-all duration-500">
+    <div class="relative bg-surface-dark rounded-3xl p-6 sm:p-8 flex-1 min-w-0 sm:min-w-80 shadow-2xl border border-white/10 hover:-translate-y-2 hover:shadow-[0_25px_80px_rgba(37,99,235,.35)] transition-all duration-500">
       <div class="flex gap-2 items-center mb-5">
         <span class="size-2.5 rounded-full bg-error"></span>
         <span class="size-2.5 rounded-full bg-warning"></span>
@@ -147,12 +147,12 @@
 
 <footer class="bg-surface-dark border-t border-white/10 py-12 px-6">
   <div class="max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex gap-2 items-center">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+      <div class="flex gap-2 items-center justify-center md:justify-start">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><rect x="7" y="3" width="10" height="16" rx="2" fill="currentColor"/><rect x="9" y="19" width="6" height="3" rx="1" fill="currentColor"/></svg>
         <span class="text-sm font-semibold text-on-dark tracking-tight">Virtual Pendrive</span>
       </div>
-      <div class="flex gap-4 text-sm">
+      <div class="flex flex-wrap justify-center md:justify-end gap-x-4 gap-y-2 text-sm">
         <a href="/privacy.html" class="text-on-dark-soft hover:text-on-dark">Privacy Policy</a>
         <span class="text-on-dark-soft">·</span>
         <a href="/terms.html" class="text-on-dark-soft hover:text-on-dark">Terms &amp; Conditions</a>
@@ -162,7 +162,7 @@
         <a href="/contact.html" class="text-on-dark-soft hover:text-on-dark">Contact</a>
       </div>
     </div>
-    <p class="text-sm text-on-dark-soft">Designed for modern classrooms. Fast, secure and accessible from anywhere.</p>
+    <p class="text-sm text-on-dark-soft text-center md:text-left">Designed for modern classrooms. Fast, secure and accessible from anywhere.</p>
   </div>
 </footer>
 

@@ -58,6 +58,11 @@ html.dark {
 .file-card { transition:box-shadow .2s,transform .2s; cursor:pointer; }
 .file-card:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(20,20,19,.08); }
 html.dark .file-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.25); }
+@media(max-width:400px) {
+  .otp-wrap { gap:6px; }
+  .otp-input { width:36px; height:46px; font-size:20px; }
+  main { padding:32px 16px; }
+}
 #previewOverlay { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:400; display:none; align-items:center; justify-content:center; }
 #previewOverlay.show { display:flex; }
 #previewBox { position:relative; max-width:90vw; max-height:90vh; background:var(--color-surface-card); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }

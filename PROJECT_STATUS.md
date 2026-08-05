@@ -454,6 +454,11 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 
 ### Lesson
 
+- **Design parity work needs a visibly larger change than expected**. When copying a style language between pages, subtle deltas (opacity, 2px radius) read as "nothing changed". Ship the structural difference (card wrapper, glass, blobs at 30%+) first, refine down — not up.
+- **Check mobile element visibility by reading the CSS, not the screen**: `display:none` on hamburger + no media override = sidebar unreachable on mobile, and no error ever fires. After any responsive work, grep the media block for every element that toggles on desktop.
+- **Inline styles beat media queries** — any `style="width:...px"` needs `!important` in the override or the responsive fix silently no-ops. Also: viewport-math the fixed-size rows (6 OTP boxes ≈ 304px) against 320px screens before deploying.
+- **Tailwind v4 purges unused classes** — new responsive variants (`sm:flex-row`, `min-[380px]:inline`, etc.) are dead until `npm run css` reruns. Grep the built `styles.css` for each new class before deploying.
+- **Verify the live site, not the deploy log**: `curl` the deployed URL and grep for the changed markers (`sidebar-action`, `Open:`, etc.). Deploy success ≠ deploy correct (transient curl 000s happen — retry before assuming failure).
 - **Never assume a collection exists because it's in the data model**. `/users/{userId}` was spec'd in Phase 1 but never populated. Any future check against it will silently fail. Create user docs on signup, or don't write code that depends on them.
 - **Fail-closed is safer than fail-soft for security checks**, even if it temporarily breaks functionality. The Phase 24 "fix" that introduced fail-soft was the wrong lesson - it traded security for availability when the correct fix was fixing the Firestore query, not bypassing the check.
 - **Firebase Hosting caches old HTML** - Worker and Hosting deploys are independent. After changing client-side API calls, always redeploy hosting too.
@@ -695,6 +700,31 @@ Replaced always-visible checkboxes with Drive-style selection: Ctrl/Cmd+click on
 - **Deploy**: `firebase deploy --only hosting` live. Android: `assembleDebug` + `testDebugUnitTest` pass.
 - **Zero new dependencies. 2 files changed.**
 
+### Phase 46 - Dashboard Style Parity + Dark Mode Fix + Mobile Responsive (UI Session)
+
+- **Dashboard style parity with index/login** (`web/public/dashboard.html` only, inline CSS block — no Tailwind refactor):
+  - Ambient navy/indigo blur blobs (fixed, `blur(200px)`, z-0 behind `#app` z-1, dark variants), canvas gradient `#eef1f7 → canvas` (dark `#10151d`)
+  - Glass sidebar + topbar: `color-mix(surface-card 75%, transparent)` + `backdrop-filter: blur(18px) saturate(150%)`
+  - `#filePanel` white rounded card (16px radius, hairline border, soft shadow) wrapping file list + grid + empty state — login card pattern
+  - Pill search input (999px radius) + navy focus ring, pill view toggle, avatar ring, `#codeDisplay` navy 3px top strip (login card strip pattern)
+  - **First pass failed** (user: "dashboard still same wtf"): blobs at 25% opacity + 2px radius deltas were invisible. Second pass: bigger blobs (460px/32%), filePanel card, pill nav items, glow shadows — that's the visible version.
+- **Sidebar actions**: "Upload File" navy pill + "New Folder" outlined pill (index CTA style). Admin stays muted navItem.
+- **Browser `prompt()` killed**: generic `#promptModal` (overlay + card + navy strip) replaces create-folder/rename-folder/rename-file; move-to-folder became a real select dropdown. Enter submits, Esc/overlay cancels. Reuses `#subscribeModal` pattern.
+- **Dark mode palette fix**: dashboard dark `--color-primary` was `#3B5C9A` (dark navy on `#0d1117` = muddy) while access.html already had `#6B8FC4` — dashboard now matches access exactly (`#6B8FC4`/`#5A7DB0`). Everything downstream auto-fixed. Blobs retinted, folder rows 2%→5% tint in dark, genCode glow dark variant.
+- **Mobile responsive** (dashboard ≤768px):
+  - **Bug: hamburger `display:none` with no media override → sidebar unreachable on mobile entirely** (the "not mobile friendly" report). Fixed: `#hamburger { display:flex }` in media block.
+  - **Bug: `#searchInput` inline `width:200px; margin-left:auto` beat media query** → needed `width:100% !important; margin-left:0 !important`. Inline styles always win without !important.
+  - contentHeader wraps (search drops to full-width row, order 3), breadcrumb 20→15px, sidebar `min(85vw,300px)!important` (inline resize JS), filePanel padding 8→4px, grid 130→110px, tap targets: rows 44→48px + 3-dot 32→40px, blobs halved, file-size hidden ≤400px (Drive pattern)
+  - access.html: OTP boxes 44→36px at ≤400px (6×44px+5×8px ≈ 304px overflowed 320px screens)
+- **3-dot menu icons** (web): `dotIcons` map (info/download/rename/share/delete SVGs) rendered in `handleDotClick()` items, danger item + icon tinted red, min-width 180px, `font-weight:500`. Android: `leadingIcon` on all 3 DropdownMenus (Download/Edit/Delete, Share/Edit/Delete, Download/Edit/Folder/Delete), Delete icon `ErrorRed`.
+- **Post-code URL on both platforms**: web `#codeLinkRow` in codeDisplay — "Open: vdrive-64deb.web.app/access.html" (anchor + ghost Copy link button); Android `CodeBottomSheet` — same line + "Copy link" OutlinedButton beside "Copy code" (clipboard + toast). Label later shortened "Students open:" → "Open:" per user.
+- **index.html mobile + footer**: nav `px-4 md:px-8`, "Sign in" hidden <380px, CTA slimmer on mobile (was 440px+ → overflowed 360px); hero buttons stack full-width (`flex-col sm:flex-row`), `min-w-80` → `min-w-0 sm:min-w-80` (320px min-width caused horizontal scroll on phones), `gap-10 lg:gap-20`, h1 `text-4xl sm:text-5xl`, mockup `p-6 sm:p-8`; footer stacks + centers on mobile (flex-col md:flex-row), wrap-safe links, centered tagline.
+- **`npm run css` required after Tailwind class changes** — new variants (`sm:flex-row`, `min-w-0`, `md:flex-row`, `min-[380px]:inline`) don't exist in purged build until rebuild.
+- **Dead code removed**: `#newDropdown` CSS (no HTML/JS references — sidebar buttons replaced it).
+- **Files changed**: `web/public/dashboard.html`, `web/public/access.html`, `web/public/index.html`, `web/public/styles.css`, `DashboardScreen.kt`
+- **Deployed**: Firebase Hosting (verified live via curl grep — dashboard `sidebar-action`/`promptModal`/`Open:`/`hamburger { display:flex }` all present).
+- **Android**: `assembleDebug` + `testDebugUnitTest` green. APK not pushed — user builds locally.
+
 ## What Was Tried & Failed
 
 | Attempt | Reason Failed |
@@ -705,6 +735,8 @@ Replaced always-visible checkboxes with Drive-style selection: Ctrl/Cmd+click on
 | B2 public bucket | Making bucket public requires CC verification on B2 |
 | Worker upload proxy (plan) | User chose simpler B2 CORS config instead |
 | Firebase email verification + custom code-based verification | `sendEmailVerification()` returns "selected page mode is invalid" — Firebase Auth action handler URL misconfigured or broken for this project. All `actionCodeSettings` variants failed. |
+| Subtle CSS-only dashboard polish (Phase 46 first pass) | Blobs at 25% opacity, 2px radius bumps, hairline shadows — mathematically correct, visually invisible. User: "dashboard still same wtf". Reworked with filePanel card + 32% blobs + glow shadows before acceptance. |
+| Responsive CSS without `!important` on search input | Inline `style="width:200px;margin-left:auto"` silently beat the `@media` rule — CSS cascade loses to inline styles, no error, no warning. Looked broken on mobile until `!important` added. |
 
 ## What Won (Current)
 **Backblaze B2 (private bucket) + Cloudflare Worker** - 10 GB free, no per-file limit, CC only needed for initial verification (not recurring). Worker keeps app key server-side. Signed download URLs give access control without public bucket.

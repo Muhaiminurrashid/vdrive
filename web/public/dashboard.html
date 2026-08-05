@@ -24,8 +24,8 @@ html.dark {
   --color-body: #c9cdd3;
   --color-muted: #9aa0a8;
   --color-muted-soft: #7a8088;
-  --color-primary:  #3B5C9A;
-  --color-primary-active:  #2D4A7A;
+  --color-primary:  #6B8FC4;
+  --color-primary-active:  #5A7DB0;
   --color-on-primary: #ffffff;
   --color-hairline: #2b2f3b;
   --color-on-dark: #e8eaed;
@@ -73,6 +73,11 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #codeRow { display:flex; gap:8px; align-items:center; }
 #codeValue { font-family:JetBrains Mono,monospace; background:var(--color-surface-dark); color:var(--color-on-dark); padding:8px 16px; border-radius:6px; font-size:20px; font-weight:700; letter-spacing:.3em; }
 #copyBtn { padding:8px 16px; background:var(--color-primary); color:var(--color-on-primary); border:none; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; }
+#codeLinkRow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid var(--color-hairline); }
+#codeLinkRow span { font-size:12px; color:var(--color-muted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#codeLinkRow a { color:var(--color-primary); font-weight:500; }
+#codeLinkRow button { padding:6px 12px; background:transparent; color:var(--color-primary); border:1px solid var(--color-hairline); border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; flex-shrink:0; }
+#codeLinkRow button:hover { background:var(--color-surface-soft); }
 #codeDisplay:not(.show) { display:none; }
 .hidden { display:none !important; }
 #codeDisplay.show { display:block !important; }
@@ -112,11 +117,13 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .grid-card-menu { position:absolute; bottom:8px; right:8px; width:28px; height:28px; border:none; background:transparent; border-radius:6px; cursor:pointer; color:var(--color-muted-soft); display:flex; align-items:center; justify-content:center; transition:background .15s; }
 .grid-card-menu:hover { background:var(--color-surface-soft); }
 /* Dot menu */
-#dotMenu { position:fixed; background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:8px; padding:4px 0; min-width:160px; z-index:100; box-shadow:0 4px 12px rgba(0,0,0,.12); }
+#dotMenu { position:fixed; background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:12px; padding:6px 0; min-width:180px; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.14); }
 #dotMenu.hidden { display:none; }
-.dot-item { padding:8px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:10px; }
+.dot-item { padding:9px 14px; font-size:13px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:10px; }
+.dot-item svg { width:15px; height:15px; flex-shrink:0; }
 .dot-item:hover { background:var(--color-surface-soft); }
 .dot-item.danger { color:var(--color-error); }
+.dot-item.danger svg { color:var(--color-error); }
 .dot-divider { height:1px; background:var(--color-hairline); margin:4px 0; }
 /* Info panel */
 #panelOverlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:200; display:none; }
@@ -150,11 +157,6 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 #panelActions button { padding:10px 16px; border:1px solid var(--color-hairline); border-radius:8px; background:transparent; font-size:13px; font-weight:500; cursor:pointer; text-align:left; display:flex; align-items:center; gap:10px; color:var(--color-ink); }
 #panelActions button:hover { background:var(--color-surface-soft); }
 #panelActions button.danger { color:var(--color-error); }
-/* New dropdown */
-#newDropdown { position:fixed; z-index:100; background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:8px; padding:4px 0; min-width:180px; box-shadow:0 4px 12px rgba(0,0,0,.12); display:none; }
-#newDropdown.show { display:block; }
-.new-opt { padding:8px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:10px; }
-.new-opt:hover { background:var(--color-surface-soft); }
 /* Empty */
 .empty-state { text-align:center; padding:48px 24px; color:var(--color-muted-soft); }
 .empty-state svg { margin:0 auto 12px; }
@@ -162,14 +164,28 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .empty-state .p2 { font-size:13px; color:var(--color-muted); }
 /* Mobile */
 @media(max-width:768px) {
-  #sidebar { position:fixed; left:-100%; top:0; bottom:0; z-index:300; transition:left .2s; }
+  #sidebar { position:fixed; left:-100%; top:0; bottom:0; z-index:300; transition:left .2s; width:min(85vw,300px) !important; }
   #sidebar.open { left:0; }
   #sidebarOverlay { position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:299; display:none; }
   #sidebarOverlay.show { display:block; }
   #topbar { padding:0 12px; }
+  #hamburger { display:flex; }
   #content { padding:12px; }
-  #grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+  #grid { grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }
   .file-folder { display:none; }
+  #breadcrumb .seg { font-size:15px; }
+  .sep { font-size:13px; }
+  #contentHeader { flex-wrap:wrap; gap:8px; }
+  #searchInput { width:100% !important; margin-left:0 !important; order:3; }
+  #filePanel { padding:4px; }
+  .file-row { padding:0 10px; height:48px; }
+  .file-menu, .grid-card-menu { width:40px; height:40px; }
+  .ambient-blob-1 { width:240px; height:240px; top:-80px; left:-80px; }
+  .ambient-blob-2 { width:240px; height:240px; bottom:-80px; right:-80px; }
+}
+@media(max-width:400px) {
+  .file-size { display:none; }
+  #genCodeBtn { padding:0 12px; }
 }
 #hamburger { display:none; width:32px; height:32px; border:none; background:transparent; cursor:pointer; align-items:center; justify-content:center; color:var(--color-muted); margin-right:4px; }
 #hamburger:hover { color:var(--color-ink); }
@@ -203,9 +219,69 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 .bulk-bar button.danger { color:var(--color-error); border-color:var(--color-error); }
 .bulk-bar button.primary { background:var(--color-primary); color:var(--color-on-primary); border-color:var(--color-primary); }
 .bulk-bar.hidden { display:none; }
+/* --- Style parity with index/login: ambient blobs, glass, soft shadows --- */
+.ambient-blob { position:fixed; z-index:0; border-radius:50%; filter:blur(200px); pointer-events:none; }
+.ambient-blob-1 { top:-140px; left:-140px; width:460px; height:460px; background:rgba(59,92,154,.32); }
+.ambient-blob-2 { bottom:-140px; right:-140px; width:460px; height:460px; background:rgba(129,140,248,.22); }
+html.dark .ambient-blob-1 { background:rgba(107,143,196,.18); }
+html.dark .ambient-blob-2 { background:rgba(129,140,248,.14); }
+#app { position:relative; z-index:1; }
+body { background:linear-gradient(180deg,#eef1f7 0%,var(--color-canvas) 320px); }
+html.dark body { background:linear-gradient(180deg,#10151d 0%,var(--color-canvas) 320px); }
+html.dark .file-row.isFolder { background:color-mix(in srgb, var(--color-primary) 5%, transparent); }
+html.dark .file-row.isFolder:hover { background:color-mix(in srgb, var(--color-primary) 8%, transparent); }
+#sidebar, #topbar { background:color-mix(in srgb,var(--color-surface-card) 75%,transparent); backdrop-filter:blur(18px) saturate(150%); -webkit-backdrop-filter:blur(18px) saturate(150%); }
+#topbar { box-shadow:0 1px 6px rgba(20,20,19,.05); }
+#sidebar { box-shadow:1px 0 6px rgba(20,20,19,.05); }
+#filePanel { background:var(--color-surface-card); border:1px solid var(--color-hairline); border-radius:16px; box-shadow:0 2px 12px rgba(20,20,19,.07); padding:8px; }
+html.dark #filePanel { box-shadow:0 2px 16px rgba(0,0,0,.4); }
+#filePanel .file-row, #filePanel .grid-card { border-radius:10px; }
+.file-row { border-radius:10px; }
+.grid-card { border-radius:14px; box-shadow:0 1px 2px rgba(20,20,19,.05); }
+.grid-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(59,92,154,.16); }
+html.dark .grid-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.5); }
+#dotMenu, #avatarMenu { border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.14); }
+#infoPanel { border-radius:12px 0 0 12px; box-shadow:-4px 0 24px rgba(0,0,0,.08); }
+#codeDisplay { border-top:3px solid var(--color-primary); border-radius:12px; overflow:hidden; }
+#searchInput { border-radius:999px; }
+#searchInput:focus { box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 15%,transparent); }
+#viewToggle { border-radius:999px; }
+#viewToggle button { border-radius:999px; }
+#avatarBtn { box-shadow:0 0 0 2px color-mix(in srgb,var(--color-primary) 25%,transparent); }
+#genCodeBtn { box-shadow:0 2px 8px rgba(59,92,154,.35); }
+#genCodeBtn:hover { box-shadow:0 4px 12px rgba(59,92,154,.45); }
+html.dark #genCodeBtn { box-shadow:0 2px 8px rgba(107,143,196,.35); }
+html.dark #genCodeBtn:hover { box-shadow:0 4px 12px rgba(107,143,196,.45); }
+.navItem { border-radius:999px; }
+.navItem:hover { background:var(--color-surface-soft); color:var(--color-ink); }
+#sidebarBrand { border-radius:12px 12px 0 0; }
+/* Sidebar action buttons (index/login CTA style) */
+#navItems { display:flex; flex-direction:column; gap:6px; }
+.sidebar-action { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:background .15s,box-shadow .15s; }
+.sidebar-action.primary { background:var(--color-primary); color:var(--color-on-primary); box-shadow:0 2px 8px rgba(59,92,154,.35); }
+.sidebar-action.primary:hover { background:var(--color-primary-active); box-shadow:0 4px 12px rgba(59,92,154,.45); }
+.sidebar-action.outline { background:var(--color-surface-card); border:1px solid var(--color-hairline); color:var(--color-ink); }
+.sidebar-action.outline:hover { background:var(--color-surface-soft); }
+/* Prompt modal (styled, replaces browser prompt()) */
+#promptModal { display:none; position:fixed; inset:0; z-index:2100; justify-content:center; align-items:center; }
+#promptModal.show { display:flex; }
+#promptOverlay { position:absolute; inset:0; background:rgba(0,0,0,.4); }
+#promptCard { position:relative; background:var(--color-surface-card); border-radius:14px; max-width:380px; width:90%; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.2); z-index:1; }
+.prompt-strip { height:4px; background:var(--color-primary); }
+#promptCard h2 { margin:16px 20px 0; font-size:18px; font-weight:600; color:var(--color-ink); }
+#promptCard input, #promptCard select { margin:12px 20px 0; width:calc(100% - 40px); padding:10px 12px; border:1px solid var(--color-hairline); border-radius:10px; background:var(--color-surface-soft); color:var(--color-ink); font-size:14px; outline:none; box-sizing:border-box; }
+#promptCard input:focus, #promptCard select:focus { border-color:var(--color-primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--color-primary) 15%,transparent); }
+#promptCard .prompt-btns { display:flex; gap:8px; margin:16px 20px 20px; }
+.prompt-btn { flex:1; padding:10px; border:1px solid var(--color-hairline); border-radius:10px; background:transparent; color:var(--color-body); cursor:pointer; font-size:14px; }
+.prompt-btn:hover { background:var(--color-surface-soft); }
+.prompt-btn.primary { background:var(--color-primary); color:var(--color-on-primary); border-color:var(--color-primary); font-weight:500; }
+.prompt-btn.primary:hover { background:var(--color-primary-active); }
 </style>
 </head>
 <body class="grid-dots">
+
+<div class="ambient-blob ambient-blob-1"></div>
+<div class="ambient-blob ambient-blob-2"></div>
 
 <div id="app">
   <aside id="sidebar">
@@ -214,12 +290,12 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
       Virtual Pendrive
     </div>
     <div id="navItems">
-      <div class="navItem" id="uploadNav" style="cursor:pointer">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div class="sidebar-action primary" id="uploadNav" style="cursor:pointer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
         Upload File
       </div>
-      <div class="navItem" id="createFolderNav" style="cursor:pointer">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      <div class="sidebar-action outline" id="createFolderNav" style="cursor:pointer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
         New Folder
       </div>
       <div class="navItem" id="adminNav" style="display:none;cursor:pointer" onclick="window.location='/admin.html'">
@@ -271,7 +347,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Generate code
         </button>
-        <input id="searchInput" type="text" placeholder="Search files..." style="margin-left:auto;height:32px;padding:0 12px;border:1px solid var(--color-hairline);border-radius:6px;background:var(--color-surface-card);color:var(--color-ink);font-size:13px;outline:none;width:200px">
+        <input id="searchInput" type="text" placeholder="Search files..." style="margin-left:auto;height:32px;padding:0 16px;border:1px solid var(--color-hairline);border-radius:999px;background:var(--color-surface-card);color:var(--color-ink);font-size:13px;outline:none;width:200px">
       </div>
 
       <div id="uploadProgress" class="hidden"><div id="uploadStatus">Uploading...</div><div id="uploadProgressFill"></div></div>
@@ -290,8 +366,13 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
           <span id="codeValue"></span>
           <button id="copyBtn">Copy</button>
         </div>
+        <div id="codeLinkRow">
+          <span>Open: <a href="https://vdrive-64deb.web.app/access.html" target="_blank" rel="noopener">vdrive-64deb.web.app/access.html</a></span>
+          <button id="copyLinkBtn">Copy link</button>
+        </div>
       </div>
 
+      <div id="filePanel">
       <div id="fileList"></div>
       <div id="grid" class="hidden"></div>
 
@@ -300,6 +381,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
         <p id="emptyTitle" style="font-size:15px;font-weight:600;color:var(--color-ink);margin:0">No files yet</p>
         <p id="emptySub" class="p2" style="margin-top:4px">Upload a file or create a folder using the sidebar.</p>
       </div>
+      </div><!-- /filePanel -->
     </div>
   </div>
 </div>
@@ -352,6 +434,21 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
     <div style="display:flex;gap:8px;margin-top:8px">
       <button id="subCancelBtn" style="flex:1;padding:10px;border:1px solid var(--color-hairline);border-radius:8px;background:transparent;color:var(--color-body);cursor:pointer;font-size:14px">Cancel</button>
       <button id="subSubmitBtn" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--color-primary);color:var(--color-on-primary);cursor:pointer;font-size:14px;font-weight:500">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ponytail: styled modal replaces browser prompt() for create/rename/move -->
+<div id="promptModal">
+  <div id="promptOverlay"></div>
+  <div id="promptCard">
+    <div class="prompt-strip"></div>
+    <h2 id="promptTitle">New folder</h2>
+    <input id="promptInput" type="text" autocomplete="off">
+    <select id="promptSelect" class="hidden"></select>
+    <div class="prompt-btns">
+      <button id="promptCancelBtn" class="prompt-btn">Cancel</button>
+      <button id="promptOkBtn" class="prompt-btn primary">Create</button>
     </div>
   </div>
 </div>
@@ -451,9 +548,18 @@ $('upgradeLink').onclick = showSubscribe
 $('subCancelBtn').onclick = hideSubscribe
 $('subSubmitBtn').onclick = submitSubscription
 $('subscribeOverlay').onclick = hideSubscribe
+$('promptOkBtn').onclick = submitPrompt
+$('promptCancelBtn').onclick = closePrompt
+$('promptOverlay').onclick = closePrompt
+$('promptInput').onkeydown = e => { if (e.key === 'Enter') submitPrompt(); if (e.key === 'Escape') closePrompt() }
 $('panelClose').onclick = closeInfoPanel
 $('panelOverlay').onclick = closeInfoPanel
 $('copyBtn').onclick = copyCode
+$('copyLinkBtn').onclick = function() {
+  navigator.clipboard.writeText('https://vdrive-64deb.web.app/access.html')
+  this.textContent = 'Copied!'
+  setTimeout(() => this.textContent = 'Copy link', 2000)
+}
 
 // ponytail: client-side search, file names only
 $('searchInput').oninput = function() {
@@ -626,13 +732,13 @@ function navigateToBreadcrumb(index) {
 }
 
 async function createFolder() {
-  const name = prompt('Folder name:')
-  if (!name) return
-  await db.collection('folders').add({
-    name, userId: window.currentUser.uid, parentId: window.currentFolderId || null,
-    createdAt: firebase.firestore.Timestamp.now()
+  openPrompt('New folder', '', async name => {
+    await db.collection('folders').add({
+      name, userId: window.currentUser.uid, parentId: window.currentFolderId || null,
+      createdAt: firebase.firestore.Timestamp.now()
+    })
+    await loadFolders(); loadContents()
   })
-  await loadFolders(); loadContents()
 }
 
 async function collectFolderContents(folderId) {
@@ -667,21 +773,19 @@ async function deleteFolderById(folderId) {
 }
 
 async function renameFolder(id) {
-  const n = prompt('Rename folder:', window.panelFolders[id]?.name)
-  if (!n || n === window.panelFolders[id]?.name) return
-  await db.collection('folders').doc(id).update({ name: n })
-  await loadFolders(); loadContents()
+  openPrompt('Rename folder', window.panelFolders[id]?.name, async n => {
+    if (n === window.panelFolders[id]?.name) return
+    await db.collection('folders').doc(id).update({ name: n })
+    await loadFolders(); loadContents()
+  })
 }
 
 async function moveFileToFolder(fileId) {
-  const folders = Object.entries(window.folderNames).map(([id, name]) => ({ id, name }))
-  const c = ['My Files (root)', ...folders.map(f => f.name)]
-  const choice = prompt('Move to folder:\n' + c.map((c,i) => `${i}. ${c}`).join('\n') + '\n\nEnter number:')
-  if (choice === null) return
-  const idx = parseInt(choice)
-  if (isNaN(idx) || idx < 0 || idx > folders.length) return
-  await db.collection('files').doc(fileId).update({ folderId: idx === 0 ? null : folders[idx-1].id })
-  loadContents()
+  const opts = [{ value: '', label: 'My Files (root)' }, ...Object.entries(window.folderNames).map(([id, name]) => ({ value: id, label: name }))]
+  openPrompt('Move to folder', opts, async folderId => {
+    await db.collection('files').doc(fileId).update({ folderId: folderId || null })
+    loadContents()
+  })
 }
 
 // --- Upload ---
@@ -913,27 +1017,34 @@ function userErrorMessage(e) {
 
 // --- 3-dot menu ---
 // ponytail: uses data-id + data-type attributes, no string escaping
+const dotIcons = {
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  rename: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+  delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>'
+}
 function handleDotClick(e) {
   e.stopPropagation()
   const btn = e.currentTarget
   const id = btn.dataset.id, type = btn.dataset.type
   const items = type === 'folder' ? [
-    { label:'File info', cmd:"showInfoPanel('folder','" + id + "')" },
-    { label:'Share', cmd:"shareFolder('" + id + "')" },
-    { label:'Rename', cmd:"renameFolder('" + id + "')" },
+    { label:'File info', icon:'info', cmd:"showInfoPanel('folder','" + id + "')" },
+    { label:'Share', icon:'share', cmd:"shareFolder('" + id + "')" },
+    { label:'Rename', icon:'rename', cmd:"renameFolder('" + id + "')" },
     { label:'', divider: true },
-    { label:'Delete', danger:true, cmd:"deleteFolderConfirm('" + id + "')" }
+    { label:'Delete', icon:'delete', danger:true, cmd:"deleteFolderConfirm('" + id + "')" }
   ] : [
-    { label:'File info', cmd:"showInfoPanel('file','" + id + "')" },
-    { label:'Download', cmd:"downloadFile(panelFiles['" + id + "'])" },
-    { label:'Rename', cmd:"renameFile('" + id + "')" },
+    { label:'File info', icon:'info', cmd:"showInfoPanel('file','" + id + "')" },
+    { label:'Download', icon:'download', cmd:"downloadFile(panelFiles['" + id + "'])" },
+    { label:'Rename', icon:'rename', cmd:"renameFile('" + id + "')" },
     { label:'', divider: true },
-    { label:'Delete', danger:true, cmd:"deleteFile(panelFiles['" + id + "'])" }
+    { label:'Delete', icon:'delete', danger:true, cmd:"deleteFile(panelFiles['" + id + "'])" }
   ]
   const menu = $('dotMenu')
   menu.innerHTML = items.map(item =>
     item.divider ? '<div class="dot-divider"></div>' :
-    `<div class="dot-item${item.danger?' danger':''}" onclick="${item.cmd};$('dotMenu').classList.add('hidden')">${item.label}</div>`
+    `<div class="dot-item${item.danger?' danger':''}" onclick="${item.cmd};$('dotMenu').classList.add('hidden')">${dotIcons[item.icon]}<span>${item.label}</span></div>`
   ).join('')
   menu.classList.remove('hidden')
   const r = btn.getBoundingClientRect()
@@ -953,9 +1064,36 @@ async function deleteFolderConfirm(id) {
 function renameFile(id) {
   const f = window.panelFiles[id]
   if (!f) return
-  const n = prompt('Rename file:', f.name)
-  if (!n || n === f.name) return
-  db.collection('files').doc(id).update({ name: n }).then(loadContents)
+  openPrompt('Rename file', f.name, n => {
+    if (n !== f.name) db.collection('files').doc(id).update({ name: n }).then(loadContents)
+  })
+}
+
+// --- Prompt modal ---
+// ponytail: one generic modal for text input (create/rename) + select (move)
+let promptCallback = null
+function openPrompt(title, optsOrValue, onOk) {
+  promptCallback = onOk
+  $('promptTitle').textContent = title
+  const input = $('promptInput'), select = $('promptSelect')
+  if (Array.isArray(optsOrValue)) {
+    input.classList.add('hidden'); select.classList.remove('hidden')
+    select.innerHTML = optsOrValue.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('')
+    $('promptOkBtn').textContent = 'Move'
+  } else {
+    select.classList.add('hidden'); input.classList.remove('hidden')
+    input.value = optsOrValue || ''
+    $('promptOkBtn').textContent = title.startsWith('Rename') ? 'Save' : 'Create'
+  }
+  $('promptModal').classList.add('show')
+  setTimeout(() => (input.classList.contains('hidden') ? select : input).focus(), 50)
+}
+function closePrompt() { $('promptModal').classList.remove('show'); promptCallback = null }
+function submitPrompt() {
+  const input = $('promptInput'), select = $('promptSelect')
+  const v = select.classList.contains('hidden') ? input.value.trim() : select.value
+  if (!v || !promptCallback) return
+  const cb = promptCallback; closePrompt(); cb(v)
 }
 
 // --- Info panel ---

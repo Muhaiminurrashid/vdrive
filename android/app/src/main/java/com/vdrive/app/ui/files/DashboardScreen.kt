@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -184,9 +185,39 @@ fun DashboardScreen(
                 Text(
                     text = "Virtual Pendrive",
                     style = MaterialTheme.typography.titleLarge,
-                    color = if (isDarkTheme) DarkInk else Ink,
+                    color = Primary,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp)
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            filePicker.launch("*/*")
+                        },
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Upload", style = MaterialTheme.typography.labelMedium)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            showCreateFolderDialog = true
+                        },
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.CreateNewFolder, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Folder", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
                 DrawerStorageIndicator(
                     percent = state.storagePercent,
                     totalBytes = state.totalStorageBytes,
@@ -644,9 +675,15 @@ private fun FolderGridCard(
                     Icon(Icons.Default.MoreVert, contentDescription = "More", tint = if (isDarkTheme) DarkMutedSoft else MutedSoft, modifier = Modifier.size(16.dp))
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("Share") }, onClick = { showMenu = false; onShare() })
-                    DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
-                    DropdownMenuItem(text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        text = { Text("Share") }, onClick = { showMenu = false; onShare() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
+                        text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
                 }
             }
             Surface(shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.1f)) {
@@ -715,9 +752,15 @@ private fun FileGridCard(
                 }
             }
             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                DropdownMenuItem(text = { Text("Download") }, onClick = { showMenu = false; onDownload() })
-                DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
-                DropdownMenuItem(text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
+                DropdownMenuItem(
+                    leadingIcon = { Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    text = { Text("Download") }, onClick = { showMenu = false; onDownload() })
+                DropdownMenuItem(
+                    leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
+                DropdownMenuItem(
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
+                    text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
             }
         }
     }
@@ -731,6 +774,7 @@ private fun CreateFolderDialog(
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("New folder", style = MaterialTheme.typography.titleLarge, color = Ink) },
         text = {
             OutlinedTextField(
@@ -766,6 +810,7 @@ private fun RenameFolderDialog(
     var name by remember { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("Rename folder", style = MaterialTheme.typography.titleLarge, color = Ink) },
         text = {
             OutlinedTextField(
@@ -801,6 +846,7 @@ private fun RenameFileDialog(
     var name by remember { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("Rename file", style = MaterialTheme.typography.titleLarge, color = Ink) },
         text = {
             OutlinedTextField(
@@ -836,6 +882,7 @@ private fun MoveFileDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("Move to", style = MaterialTheme.typography.titleLarge, color = Ink) },
         text = {
             Column {
@@ -1021,10 +1068,18 @@ private fun FileCard(
                     Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = if (isDarkTheme) DarkMutedSoft else MutedSoft)
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("Download") }, onClick = { showMenu = false; onDownload() })
-                    DropdownMenuItem(text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
-                    DropdownMenuItem(text = { Text("Move to") }, onClick = { showMenu = false; onMove() })
-                    DropdownMenuItem(text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        text = { Text("Download") }, onClick = { showMenu = false; onDownload() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        text = { Text("Rename") }, onClick = { showMenu = false; onRename() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        text = { Text("Move to") }, onClick = { showMenu = false; onMove() })
+                    DropdownMenuItem(
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = ErrorRed) },
+                        text = { Text("Delete", color = ErrorRed) }, onClick = { showMenu = false; onDelete() })
                 }
             }
         }
@@ -1060,20 +1115,48 @@ private fun CodeBottomSheet(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(text = "Expires in $expiryLabel", style = MaterialTheme.typography.bodySmall, color = MutedSoft)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Open: vdrive-64deb.web.app/access.html",
+                style = MaterialTheme.typography.bodySmall,
+                color = Muted,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(20.dp))
-            Button(
-                onClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("Access code", code))
-                    Toast.makeText(context, "Code copied!", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(Icons.Default.ContentCopy, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Copy code", style = MaterialTheme.typography.titleLarge)
+                Button(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Access code", code))
+                        Toast.makeText(context, "Code copied!", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                ) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Copy code", style = MaterialTheme.typography.titleLarge)
+                }
+                OutlinedButton(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Access link", "https://vdrive-64deb.web.app/access.html"))
+                        Toast.makeText(context, "Link copied!", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Hairline),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),
+                ) {
+                    Icon(Icons.Default.Link, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Copy link", style = MaterialTheme.typography.titleLarge)
+                }
             }
         }
     }
@@ -1088,6 +1171,7 @@ private fun SubscribeDialog(
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = { Text("Upgrade to Premium") },
         text = {
             Column {
