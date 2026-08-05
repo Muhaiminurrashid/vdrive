@@ -21,33 +21,43 @@
 </head>
 <body class="bg-canvas text-body antialiased leading-relaxed grid-dots">
 
-<nav class="h-16 px-6 bg-canvas flex items-center justify-between max-w-6xl mx-auto">
-  <a href="/" class="flex items-center gap-2 text-sm font-semibold text-ink tracking-tight">
-    <img src="/favicon-32x32.png" width="18" height="18" alt="" style="display:block">
+<nav class="sticky top-0 z-50 h-18 px-8 bg-white/70 backdrop-blur-xl border-b border-blue-100 shadow-sm flex items-center justify-between max-w-7xl mx-auto rounded-b-2xl">
+  <a href="/" class="flex items-center gap-3 text-lg font-bold text-ink tracking-tight hover:text-primary transition-all duration-300">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><rect x="7" y="3" width="10" height="16" rx="2" fill="currentColor"/><rect x="9" y="19" width="6" height="3" rx="1" fill="currentColor"/></svg>
     Virtual Pendrive
   </a>
   <div class="flex items-center gap-3">
     <a href="/login.html" class="text-sm font-medium text-body hover:text-primary">Sign in</a>
-    <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Get Started</a>
+    <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Start for Free →</a>
   </div>
 </nav>
 
-<section class="max-w-6xl mx-auto px-6 py-24 lg:py-32">
-  <div class="flex gap-20 items-center flex-wrap lg:flex-nowrap">
+<section class="relative overflow-hidden max-w-6xl mx-auto px-6 py-24 lg:py-32">
+  <div class="absolute -top-20 -left-20 w-96 h-96 bg-blue-400 rounded-full blur-[160px] opacity-30"></div>
+
+<div class="absolute top-20 right-0 w-96 h-96 bg-indigo-400 rounded-full blur-[180px] opacity-25"></div>
+  <div class="relative z-10 flex gap-20 items-center flex-wrap lg:flex-nowrap">
     <div class="flex-1 min-w-80">
-      <h1 class="font-medium text-ink leading-tight tracking-tight text-5xl lg:text-6xl mb-5">
-        Your pendrive.<br>In the cloud.
-      </h1>
-      <p class="text-base text-body max-w-md mb-7 leading-relaxed">
-        Carry all your lecture slides, PDFs, and notes in one place. Access them from any classroom PC - no USB drive needed.
+      <h1 class="text-5xl font-extrabold tracking-tight text-slate-900">
+    Your Files.<br>
+    <span class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        Anywhere.<br>Anytime.
+    </span>
+</h1>
+      <div class="inline-flex items-center gap-2 bg-white border border-blue-200 shadow-lg px-4 py-2 rounded-full text-sm font-semibold text-blue-700 mb-5">
+        
+  ☁ Trusted by Students & Teachers
+</div>
+      <p class="text-lg text-body max-w-lg mb-8 leading-8">
+        Store, organize, and access your lecture slides, notes, assignments, and classroom files securely from anywhere. No USB drive required.
       </p>
       <div class="flex gap-3">
-        <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Get Started Free</a>
-        <a href="/access.html" class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft inline-flex items-center">Classroom Access</a>
+        <a href="/login.html" class="bg-primary text-on-primary rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-primary-active inline-flex items-center">Start for Free →</a>
+        <a href="/access.html" class="bg-surface-card border border-hairline text-ink rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-surface-soft inline-flex items-center">Enter Classroom Code</a>
       </div>
     </div>
 
-    <div class="bg-surface-dark rounded-2xl p-8 flex-1 min-w-80">
+    <div class="relative bg-surface-dark rounded-3xl p-8 flex-1 min-w-80 shadow-2xl border border-white/10 hover:-translate-y-2 hover:shadow-[0_25px_80px_rgba(37,99,235,.35)] transition-all duration-500">
       <div class="flex gap-2 items-center mb-5">
         <span class="size-2.5 rounded-full bg-error"></span>
         <span class="size-2.5 rounded-full bg-warning"></span>
@@ -84,7 +94,7 @@
 <section class="bg-surface-soft py-20">
   <div class="max-w-6xl mx-auto px-6 text-center">
     <h2 class="font-medium text-ink text-3xl lg:text-4xl mb-12">
-      Built for the classroom
+      Everything You Need in One Place
     </h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left">
@@ -98,7 +108,7 @@
         <h3 class="text-base font-semibold text-ink mb-1.5">Upload from anywhere</h3>
         <p class="text-sm text-body leading-relaxed">Add files from your phone. Organize by subject and semester.</p>
       </div>
-      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left">
+      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl">
         <div class="size-9 rounded-lg bg-primary flex items-center justify-center mb-4">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -108,7 +118,7 @@
         <h3 class="text-base font-semibold text-ink mb-1.5">Instant classroom access</h3>
         <p class="text-sm text-body leading-relaxed">Generate a code. Enter it on any PC. Files appear in seconds.</p>
       </div>
-      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left">
+      <div class="bg-surface-card border border-hairline rounded-xl p-6 text-left transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl">
         <div class="size-9 rounded-lg bg-primary flex items-center justify-center mb-4">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -122,7 +132,7 @@
 </section>
 
 <section class="py-20 max-w-6xl mx-auto px-6">
-  <div class="rounded-2xl bg-primary text-center px-8 py-14">
+ <div class="rounded-2xl bg-primary text-center px-8 py-14">
     <h2 class="font-medium text-on-primary text-2xl lg:text-3xl mb-2.5">
       Ready to ditch the USB drive?
     </h2>
@@ -130,16 +140,16 @@
       Free plan includes 1 GB storage. No credit card required.
     </p>
     <a href="/login.html" class="inline-flex items-center h-10 px-6 rounded-lg bg-white text-primary text-sm font-medium hover:bg-white/90">
-      Get Started Free
+      Start for Free →
     </a>
   </div>
 </section>
 
-<footer class="bg-surface-dark py-12 px-6">
+<footer class="bg-surface-dark border-t border-white/10 py-12 px-6">
   <div class="max-w-6xl mx-auto">
     <div class="flex items-center justify-between mb-6">
       <div class="flex gap-2 items-center">
-        <img src="/favicon-32x32.png" width="16" height="16" alt="" style="display:block">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><rect x="7" y="3" width="10" height="16" rx="2" fill="currentColor"/><rect x="9" y="19" width="6" height="3" rx="1" fill="currentColor"/></svg>
         <span class="text-sm font-semibold text-on-dark tracking-tight">Virtual Pendrive</span>
       </div>
       <div class="flex gap-4 text-sm">
@@ -152,7 +162,7 @@
         <a href="/contact.html" class="text-on-dark-soft hover:text-on-dark">Contact</a>
       </div>
     </div>
-    <p class="text-sm text-on-dark-soft">Built for teachers who deserve better than a USB drive.</p>
+    <p class="text-sm text-on-dark-soft">Designed for modern classrooms. Fast, secure and accessible from anywhere.</p>
   </div>
 </footer>
 
