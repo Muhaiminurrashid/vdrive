@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.io.IOException
 import java.net.URLEncoder
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -120,10 +121,11 @@ class FileRepository @Inject constructor(
                     put("fileName", b2FileName)
                     put("userId", FirebaseAuth.getInstance().currentUser?.uid)
                 }.toString().toRequestBody("application/json".toMediaType())
-                client.newCall(
+                val res = client.newCall(
                     Request.Builder().url("$B2_PROXY_URL/api/delete")
                         .delete(body).build()
-                ).execute().close()
+                ).execute()
+                if (!res.isSuccessful) throw IOException("B2 delete failed: ${res.code}")
             }
         }
         firestore.collection("files").document(fileId).delete().await()

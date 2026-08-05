@@ -51,6 +51,7 @@ data class FileUiItem(
 
 data class DashboardUiState(
     val files: List<FileUiItem> = emptyList(),
+    val fileMap: Map<String, FileUiItem> = emptyMap(),
     val fileCount: Int = 0,
     val storagePercent: Float = 0f,
     val totalStorageBytes: Long = 0L,
@@ -139,9 +140,12 @@ class DashboardViewModel @Inject constructor(
                     .map { it }
 
                 val allItems = if (isLoadMore) _state.value.files + items else items
+                // ponytail: full map survives refresh/page-shrink, mirrors web panelFiles
+                val allMap = if (isLoadMore) _state.value.fileMap + items.associateBy { it.id } else items.associateBy { it.id }
 
                 _state.value = _state.value.copy(
                     files = allItems,
+                    fileMap = allMap,
                     fileCount = allItems.size,
                     subFolders = subFolders,
                     hasMoreFiles = hasMore,
@@ -255,7 +259,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 firestore.collection("folders").document(folderId).delete().await()
-                navigateUp(); loadFolders()
+                navigateUp(); loadFolders(); loadStorageBar()
                 // ponytail: silent child cleanup, errors don't block navigation
                 runCatching {
                     firestore.collection("files").whereEqualTo("folderId", folderId).get().await()
@@ -286,7 +290,7 @@ class DashboardViewModel @Inject constructor(
 
     fun downloadSelected(context: Context) {
         val user = auth.currentUser ?: return
-        val files = _state.value.files.filter { it.id in _state.value.selectedIds }
+        val files = _state.value.selectedIds.mapNotNull { _state.value.fileMap[it] }
         if (files.isEmpty()) return
         viewModelScope.launch {
             _state.value = _state.value.copy(actionLabel = "Downloading ${files.size} files...", uploadProgress = 0f)
@@ -353,8 +357,13 @@ class DashboardViewModel @Inject constructor(
             _state.value = _state.value.copy(actionLabel = "Deleting...")
             try {
                 for (id in ids) {
-                    val file = _state.value.files.find { it.id == id } ?: continue
-                    fileRepository.deleteFile(file.id, file.b2FileId, file.b2FileName)
+                    val file = _state.value.fileMap[id] ?: continue
+                    try {
+                        fileRepository.deleteFile(file.id, file.b2FileId, file.b2FileName)
+                    } catch (e: Exception) {
+                        // ponytail: per-file continue, one failure shouldn't abort the batch
+                        _state.value = _state.value.copy(error = userMessage(e))
+                    }
                 }
                 loadContents(); loadStorageBar()
                 _state.value = _state.value.copy(selectedIds = emptySet())
