@@ -24,8 +24,8 @@ html.dark {
   --color-body: #c9cdd3;
   --color-muted: #9aa0a8;
   --color-muted-soft: #7a8088;
-  --color-primary: #6B8FC4;
-  --color-primary-active: #5A7DB0;
+  --color-primary:  #3B5C9A;
+  --color-primary-active:  #2D4A7A;
   --color-on-primary: #ffffff;
   --color-hairline: #2b2f3b;
   --color-on-dark: #e8eaed;
@@ -212,7 +212,7 @@ body { margin:0; font-family:Inter,sans-serif; background:var(--color-canvas); c
 <div id="app">
   <aside id="sidebar">
     <div id="sidebarBrand">
-      <img src="/favicon-32x32.png" width="20" height="20" alt="" style="display:block">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><rect x="7" y="3" width="10" height="16" rx="2" fill="currentColor"/><rect x="9" y="19" width="6" height="3" rx="1" fill="currentColor"/></svg>
       Virtual Pendrive
     </div>
     <div id="navItems">
@@ -779,7 +779,7 @@ function clearSelection() {
 
 async function downloadSelected() {
   if (window.selectedIds.size === 0) return
-  const files = window.currentPageFiles.filter(f => window.selectedIds.has(f.id))
+  const files = [...window.selectedIds].map(id => window.panelFiles[id]).filter(Boolean)
   if (!files.length) return
   showProgress(`Downloading ${files.length} files as ZIP...`)
   try {
@@ -808,13 +808,13 @@ async function deleteSelected() {
   if (!confirm(`Delete ${count} file${count > 1 ? 's' : ''}?`)) return
   showProgress(`Deleting ${count} files...`)
   for (const id of ids) {
-    const f = window.currentPageFiles.find(f => f.id === id)
+    const f = window.panelFiles[id]
     if (!f) continue
     try {
       const res = await fetch(B2_PROXY_URL + '/api/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: f.id, fileName: f.b2FileName, userId: window.currentUser?.uid })
+        body: JSON.stringify({ fileId: f.b2FileId, fileName: f.b2FileName, userId: window.currentUser?.uid })
       })
       if (!res.ok) throw new Error('Delete failed')
       await db.collection('files').doc(id).delete()

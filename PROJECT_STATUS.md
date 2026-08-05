@@ -479,6 +479,15 @@ Client → Worker proxy for all downloads (B2 URL never reaches client)
 - [ ] SEO meta tags on all MPA pages
 - [x] Verify Android builds clean after FileTypeBadge refactor
 
+### Pending Fixes (diagnosed, NOT yet implemented)
+
+- [x] **Web bulk delete broken — wrong B2 fileId** (`web/public/dashboard.html:817`): `deleteSelected()` sends `fileId: f.id` (Firestore doc id) to `/api/delete`, but Worker calls B2 `b2_delete_file_version` (`workers/b2-proxy.js:239`) which requires the **B2 file id** (`b2FileId`). Every bulk iteration fails silently (`!res.ok` → catch → `continue`), Firestore doc never deleted, files remain. Single 3-dot delete works because it sends `f.b2FileId` (`dashboard.html:746`). **Fix**: `body: JSON.stringify({ fileId: f.b2FileId, ... })`. Deploy: `firebase deploy --only hosting` only — no Worker change. **Fixed Phase 43.**
+- [x] **Web bulk delete — pagination-scoped lookup** (`web/public/dashboard.html:811`): `window.currentPageFiles.find(f => f.id === id)` only covers current 50-file page (Phase 26 pagination); files selected from earlier "Show more" pages → `undefined` → silently skipped. **Fix**: use `window.panelFiles[id]` (full map, populated at `:1093`). **Fixed Phase 43** (also `downloadSelected()` — same lookup dropped files from earlier pages in ZIP).
+- [x] **CI broken after Phase 42 — google-services.json missing**: `processDebugGoogleServices` task hard-fails when `android/app/google-services.json` is absent (scrubbed in Phase 42). Unit tests don't use the config values — the plugin just needs the file present. **Fix (recommended)**: in `.github/workflows/deploy.yml` test job before the gradle step: `echo "${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json`; add GitHub secret `ANDROID_GOOGLE_SERVICES_JSON` = base64 of real local file. Alt (no secret): `cp android/app/google-services.json.example android/app/google-services.json` — risky, plugin may reject placeholder values. **Fixed Phase 43 (alt route chosen — plugin accepts placeholders, verified locally).**
+- [ ] **Storage bar after folder delete (web) — NOT stale, behavior decision**: bar is correct — `deleteFolderById` (`dashboard.html:640`) **detaches** files to root (`folderId: null`), doesn't delete → bytes unchanged → "19.5 MB" persists. Phase 8 design: "Delete resets children to root". If "delete folder = free storage" is wanted: replace detach with recursive child delete (web `:643-650` + Android `DashboardViewModel.kt:260-264` — `update("folderId", null)` → `.delete()`), and `await` the delete before `loadStorageBar()` (web currently fire-and-forgets `Promise.allSettled` at `:643`). Android already refetches storage: `loadStorageBar()` added to `deleteFolder` (`DashboardViewModel.kt:258`, applied, tests pass, **uncommitted**).
+- [ ] **Thank-you subscription email**: pending provider + admin-verification decision (see plan in session): Worker `POST /api/approve-subscription` — verify admin via Google tokeninfo (`sub == env.ADMIN_UID`), Firestore patch via existing service-account client, email via new `RESEND_API_KEY` Worker secret; `admin.html` `approve()` (line 135) calls Worker instead of direct Firestore write. Spark plan blocks Cloud Functions alternative. Deferred: expiry-reminder emails, renewal receipts.
+- [ ] **CI secrets scope audit** (Open #6 HIGH): verify `FIREBASE_TOKEN` (refresh-only) + `CLOUDFLARE_API_TOKEN` (Workers edit min scope, no account admin) in GitHub repo settings. Phase 28 token has office-subnet IP restriction — a CI token with IP restriction breaks clean `wrangler deploy` on GitHub runners (dynamic IPs).
+
 ### Removed Code
 - **Breadcrumb delete icon**: red `X` delete button (BreadcrumbBar) removed from both platforms - use context menu instead
 - **Breadcrumb + button**: small `+` in breadcrumb bar removed - use FAB instead
@@ -640,6 +649,16 @@ See completed section above.
 - **Impact**: Attacker gains known client_id + package_name + cert hashes — enables targeted OAuth phishing / token minting against the Firebase project.
 - **Fix**: gitignored real files, untracked via `git rm --cached`, shipped sanitized `.example`. No live secret rotation required — Firebase API keys are public, the risk was the OAuth client_id pairing.
 - **No new dependencies. 1 file changed** (`workers/b2-proxy.js` already fail-closed since Phase 28; no Worker change).
+
+### Phase 43 - Bulk Delete Fixes (Web + Android) + CI google-services
+
+- **Web bulk delete**: `deleteSelected()` now sends `fileId: f.b2FileId` (was Firestore doc id — B2 `b2_delete_file_version` silently failed every iteration), lookups via `window.panelFiles[id]` (was `currentPageFiles.find` — files from earlier "Show more" pages skipped). `downloadSelected()` same `panelFiles` lookup (multi-page ZIP was dropping files).
+- **Android bulk delete**: `DashboardUiState.fileMap` (id → FileUiItem) added, populated in `loadContents` (replace on fresh, merge on loadMore). `deleteSelected()`/`downloadSelected()` look up via `fileMap` — pull-to-refresh shrinks `files` to page 1, selections from earlier pages were silently skipped. Per-file try/catch + continue so one failure doesn't abort the batch.
+- **Android silent B2 orphan (single + bulk)**: `FileRepository.deleteFile()` ignored B2 response (`execute().close()`) then deleted Firestore doc regardless — B2 failure left orphaned files. Now throws on non-2xx, Firestore doc deleted only after B2 success (matches web).
+- **CI fix**: test job `cp app/google-services.json.example app/google-services.json` — plugin accepts placeholder values (verified locally, `testDebugUnitTest` green). No secret needed.
+- **Deployed**: Firebase Hosting (web). Android: `assembleDebug` + `testDebugUnitTest` pass.
+- **Changed files**: `web/public/dashboard.html`, `DashboardViewModel.kt`, `FileRepository.kt`, `.github/workflows/deploy.yml`, `PROJECT_STATUS.md`
+- **Pushed**: GitHub main.
 
 ## What Was Tried & Failed
 
