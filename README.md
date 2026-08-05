@@ -1,21 +1,22 @@
 # Virtual Pendrive
 
-Cloud-based virtual USB drive for classrooms. Teachers upload files, generate 6-character access codes (15-minute expiry), and share them with students. Students enter the code on any PC — no account required.
+Cloud-based virtual USB drive for classrooms. Teachers upload files, generate 6-character access codes (15-minute expiry), and share them with students. Students enter the code on any PC: no account required.
 
 **Live web app**: [vdrive-64deb.web.app](https://vdrive-64deb.web.app)
+**Android app**: download the APK from [GitHub Releases](https://github.com/Muhaiminurrashid/vdrive/releases)
 
 ## Why
 
-Teachers constantly swap files with students via USB drives, email, or chat apps — slow, flaky, and accounts required. Virtual Pendrive makes file distribution instant: upload once, share a short code, done. Students just open a URL, type the code, download.
+Teachers constantly swap files with students via USB drives, email, or chat apps: slow, flaky, and accounts required. Virtual Pendrive makes file distribution instant: upload once, share a short code, done. Students just open a URL, type the code, download.
 
 ## Features
 
-- **File upload & management** — upload, rename, delete, folder organization (Google Drive-style breadcrumbs)
-- **Access codes** — 6-char codes from an ambiguity-free alphabet, 15-minute TTL, no student account needed
-- **Storage quota** — visible per-user usage bar (1 GB free tier)
-- **Multi-platform** — Android app (Kotlin + Jetpack Compose) and web app (vanilla HTML/CSS/JS + Firebase SDK)
-- **Secure storage** — files in Backblaze B2, uploaded through a Cloudflare Worker auth proxy; Firestore never stores file bytes
-- **Google Sign-In** — one-tap login on both web and Android
+- **File upload & management**: upload, rename, delete, folder organization (Google Drive-style breadcrumbs)
+- **Access codes**: 6-char codes from an ambiguity-free alphabet, 15-minute TTL, no student account needed
+- **Storage quota**: visible per-user usage bar (1 GB free tier)
+- **Multi-platform**: Android app (Kotlin + Jetpack Compose) and web app (vanilla HTML/CSS/JS + Firebase SDK)
+- **Secure storage**: files in Backblaze B2, uploaded through a Cloudflare Worker auth proxy; Firestore never stores file bytes
+- **Google Sign-In**: one-tap login on both web and Android
 
 ## Architecture
 
@@ -32,7 +33,7 @@ vdrive/
 │   ├── dashboard.html   # File CRUD, share code generation
 │   ├── access.html      # Code entry → file download
 │   └── styles.css       # Design system (navy + cool gray)
-├── workers/          # Cloudflare Worker — Backblaze B2 upload proxy
+├── workers/          # Cloudflare Worker: Backblaze B2 upload proxy
 ├── firebase.json     # Firebase Hosting + Firestore config
 └── firestore.rules   # Auth-gated per-user rules
 ```
@@ -41,7 +42,7 @@ vdrive/
 |-------|---------|-----|
 | Language | Kotlin | Vanilla JS |
 | UI | Jetpack Compose + Material 3 | HTML/CSS |
-| DI | Hilt | — |
+| DI | Hilt | n/a |
 | Auth | Firebase Auth | Firebase Auth SDK |
 | Database | Firestore | Firestore SDK |
 | Storage | Backblaze B2 via Cloudflare Worker | Backblaze B2 |
@@ -90,4 +91,4 @@ npx wrangler deploy
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)
