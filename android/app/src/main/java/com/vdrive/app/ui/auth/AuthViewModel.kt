@@ -1,6 +1,7 @@
 package com.vdrive.app.ui.auth
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -63,6 +64,7 @@ class AuthViewModel @Inject constructor(
                 authRepository.signInWithGoogle(idToken)
                 _state.value = AuthUiState(isSuccess = true)
             } catch (e: Exception) {
+                Log.e("VDriveAuth", "signInWithGoogle failed", e)
                 _state.value = AuthUiState(error = authError(e))
             }
         }
